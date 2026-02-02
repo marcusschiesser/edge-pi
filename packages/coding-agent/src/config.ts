@@ -1,4 +1,4 @@
-import { getAssetDir, getPackageDir, initEnv } from "@mariozechner/pi-env";
+import { getAssetDir, getPackageDir, initEnv } from "@mariozechner/pi-env/app";
 import { readFileSync } from "@mariozechner/pi-env/fs";
 import { homedir } from "@mariozechner/pi-env/os";
 import { join, resolve } from "@mariozechner/pi-env/path";

@@ -90,6 +90,20 @@
 				"import": "./dist/node/crypto.js"
 			}
 		},
+		"./app": {
+			"bun": {
+				"types": "./dist/bun/app.d.ts",
+				"import": "./dist/bun/app.js"
+			},
+			"browser": {
+				"types": "./dist/browser/app.d.ts",
+				"import": "./dist/browser/app.js"
+			},
+			"default": {
+				"types": "./dist/node/app.d.ts",
+				"import": "./dist/node/app.js"
+			}
+		},
 		"./child-process": {
 			"bun": {
 				"types": "./dist/bun/child-process.d.ts",

@@ -12,7 +12,7 @@ import {
 	type Model,
 	type OAuthProvider,
 } from "@mariozechner/pi-ai";
-import { getUpdateAction } from "@mariozechner/pi-env";
+import { getUpdateAction } from "@mariozechner/pi-env/app";
 import { spawn, spawnSync } from "@mariozechner/pi-env/child-process";
 import * as crypto from "@mariozechner/pi-env/crypto";
 import * as fs from "@mariozechner/pi-env/fs";

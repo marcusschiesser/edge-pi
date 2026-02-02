@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { createJiti } from "@mariozechner/jiti";
 import * as _bundledPiAgentCore from "@mariozechner/pi-agent-core";
 import * as _bundledPiAi from "@mariozechner/pi-ai";
-import { getJitiOptions } from "@mariozechner/pi-env";
+import { getJitiOptions } from "@mariozechner/pi-env/app";
 import * as fs from "@mariozechner/pi-env/fs";
 import * as os from "@mariozechner/pi-env/os";
 import * as path from "@mariozechner/pi-env/path";
