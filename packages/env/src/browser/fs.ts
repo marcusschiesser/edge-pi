@@ -73,7 +73,7 @@ export function mkdirSync(path: string, options?: { recursive?: boolean; mode?: 
 		const parts = p.split("/").filter(Boolean);
 		let current = "";
 		for (const part of parts) {
-			current += "/" + part;
+			current += `/${part}`;
 			memoryDirs.add(current);
 		}
 	} else {
@@ -90,7 +90,7 @@ export function readdirSync(path: string): string[] {
 	if (!memoryDirs.has(p)) {
 		throw new Error(`ENOENT: no such file or directory, scandir '${path}'`);
 	}
-	const prefix = p === "/" ? "/" : p + "/";
+	const prefix = p === "/" ? "/" : `${p}/`;
 	const entries: string[] = [];
 	for (const key of memoryStore.keys()) {
 		if (key.startsWith(prefix)) {
@@ -164,12 +164,19 @@ export function renameSync(oldPath: string, newPath: string): void {
 	memoryStore.set(np, data);
 }
 
+export function unlinkSync(path: string): void {
+	const p = normalizePath(path);
+	if (!memoryStore.delete(p)) {
+		throw new Error(`ENOENT: no such file or directory, unlink '${path}'`);
+	}
+}
+
 export function rmSync(path: string, _options?: { recursive?: boolean; force?: boolean }): void {
 	const p = normalizePath(path);
 	memoryStore.delete(p);
 	memoryDirs.delete(p);
 	// If recursive, remove children
-	const prefix = p + "/";
+	const prefix = `${p}/`;
 	for (const key of memoryStore.keys()) {
 		if (key.startsWith(prefix)) memoryStore.delete(key);
 	}
@@ -218,7 +225,13 @@ export function closeSync(_fd: number): void {
 	fdMap.delete(_fd);
 }
 
-export function readSync(_fd: number, _buffer: Uint8Array, _offset: number, _length: number, _position: number): number {
+export function readSync(
+	_fd: number,
+	_buffer: Uint8Array,
+	_offset: number,
+	_length: number,
+	_position: number,
+): number {
 	// Minimal stub — real file operations should use Operations interfaces
 	return 0;
 }

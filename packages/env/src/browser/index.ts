@@ -1,7 +1,35 @@
-export { isBrowser, isBun, isBunBinary, isNode } from "./runtime.js";
-export * as fs from "./fs.js";
-export * as path from "./path.js";
-export * as os from "./os.js";
-export * as process from "./process.js";
-export * as crypto from "./crypto.js";
 export * as childProcess from "./child-process.js";
+export * as crypto from "./crypto.js";
+export * as fs from "./fs.js";
+export * as os from "./os.js";
+export * as path from "./path.js";
+export * as process from "./process.js";
+export { isBrowser, isBun, isBunBinary, isNode } from "./runtime.js";
+
+import { join } from "./path.js";
+
+/** No-op in browser. */
+export function initEnv(_callerImportMetaUrl: string): void {}
+
+/** Get the base directory for resolving package assets. */
+export function getPackageDir(): string {
+	return "/browser";
+}
+
+/** Resolve an asset directory relative to the package. */
+export function getAssetDir(subpath: string): string {
+	return join("/browser", subpath);
+}
+
+/** Get the update action string for version notifications. */
+export function getUpdateAction(_packageName: string): string {
+	return "";
+}
+
+/** Get jiti options for extension loading. */
+export function getJitiOptions(
+	_virtualModules: Record<string, unknown>,
+	getAliases: () => Record<string, string>,
+): { alias?: Record<string, string>; virtualModules?: Record<string, unknown>; tryNative?: boolean } {
+	return { alias: getAliases() };
+}

@@ -36,11 +36,11 @@ export function resolve(...segments: string[]): string {
 	for (let i = segments.length - 1; i >= 0; i--) {
 		const segment = segments[i];
 		if (!segment) continue;
-		resolved = resolved ? segment + "/" + resolved : segment;
+		resolved = resolved ? `${segment}/${resolved}` : segment;
 		if (segment.startsWith("/")) break;
 	}
 	if (!resolved.startsWith("/")) {
-		resolved = "/" + resolved;
+		resolved = `/${resolved}`;
 	}
 	return normalize(resolved);
 }
@@ -79,7 +79,7 @@ function normalize(p: string): string {
 	}
 
 	const result = normalized.join("/");
-	return isAbs ? "/" + result : result || ".";
+	return isAbs ? `/${result}` : result || ".";
 }
 
 const pathModule = {

@@ -1,82 +1,23 @@
-import { existsSync, readFileSync } from "@mariozechner/pi-env/fs";
+import { getAssetDir, getPackageDir, initEnv } from "@mariozechner/pi-env";
+import { readFileSync } from "@mariozechner/pi-env/fs";
 import { homedir } from "@mariozechner/pi-env/os";
-import { dirname, join, resolve } from "@mariozechner/pi-env/path";
-import { env, execPath } from "@mariozechner/pi-env/process";
-import { isBrowser, isBun, isBunBinary } from "@mariozechner/pi-env";
+import { join, resolve } from "@mariozechner/pi-env/path";
+import { env } from "@mariozechner/pi-env/process";
 
-// =============================================================================
-// Package / Runtime Detection
-// =============================================================================
-
-export { isBun as isBunRuntime, isBunBinary };
-
-// In browser environment, __dirname is not available via import.meta.url
-const __dirname = isBrowser ? "/browser" : dirname(new URL(import.meta.url).pathname);
+initEnv(import.meta.url);
 
 // =============================================================================
 // Package Asset Paths (shipped with executable)
 // =============================================================================
 
-/**
- * Get the base directory for resolving package assets (themes, package.json, README.md, CHANGELOG.md).
- * - For Bun binary: returns the directory containing the executable
- * - For Node.js (dist/): returns __dirname (the dist/ directory)
- * - For tsx (src/): returns parent directory (the package root)
- */
-export function getPackageDir(): string {
-	// Allow override via environment variable (useful for Nix/Guix where store paths tokenize poorly)
-	const envDir = process.env.PI_PACKAGE_DIR;
-	if (envDir) {
-		if (envDir === "~") return homedir();
-		if (envDir.startsWith("~/")) return homedir() + envDir.slice(1);
-		return envDir;
-	}
+export { getPackageDir };
 
-	if (isBunBinary) {
-		// Bun binary: process.execPath points to the compiled executable
-		return dirname(execPath);
-	}
-	// Node.js: walk up from __dirname until we find package.json
-	let dir = __dirname;
-	while (dir !== dirname(dir)) {
-		if (existsSync(join(dir, "package.json"))) {
-			return dir;
-		}
-		dir = dirname(dir);
-	}
-	// Fallback (shouldn't happen)
-	return __dirname;
-}
-
-/**
- * Get path to built-in themes directory (shipped with package)
- * - For Bun binary: theme/ next to executable
- * - For Node.js (dist/): dist/modes/interactive/theme/
- * - For tsx (src/): src/modes/interactive/theme/
- */
 export function getThemesDir(): string {
-	if (isBunBinary) {
-		return join(dirname(execPath), "theme");
-	}
-	// Theme is in modes/interactive/theme/ relative to src/ or dist/
-	const packageDir = getPackageDir();
-	const srcOrDist = existsSync(join(packageDir, "src")) ? "src" : "dist";
-	return join(packageDir, srcOrDist, "modes", "interactive", "theme");
+	return getAssetDir("modes/interactive/theme");
 }
 
-/**
- * Get path to HTML export template directory (shipped with package)
- * - For Bun binary: export-html/ next to executable
- * - For Node.js (dist/): dist/core/export-html/
- * - For tsx (src/): src/core/export-html/
- */
 export function getExportTemplateDir(): string {
-	if (isBunBinary) {
-		return join(dirname(execPath), "export-html");
-	}
-	const packageDir = getPackageDir();
-	const srcOrDist = existsSync(join(packageDir, "src")) ? "src" : "dist";
-	return join(packageDir, srcOrDist, "core", "export-html");
+	return getAssetDir("core/export-html");
 }
 
 /** Get path to package.json */
@@ -109,7 +50,7 @@ export function getChangelogPath(): string {
 // =============================================================================
 
 // In browser, package.json may not exist — use defaults
-let pkg: Record<string, unknown>;
+let pkg: { version: string; piConfig?: { name?: string; configDir?: string } };
 try {
 	pkg = JSON.parse(readFileSync(getPackageJsonPath(), "utf-8") as string);
 } catch {

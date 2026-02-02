@@ -1,6 +1,8 @@
 /**
  * Node.js filesystem implementation — thin re-export of built-in fs modules.
  */
+
+export type { FSWatcher, Stats, WriteStream } from "node:fs";
 export {
 	accessSync,
 	appendFileSync,
@@ -18,11 +20,10 @@ export {
 	renameSync,
 	rmSync,
 	statSync,
+	unlinkSync,
 	watch,
 	writeFileSync,
 } from "node:fs";
-
-export type { FSWatcher, Stats, WriteStream } from "node:fs";
 
 export {
 	access,
