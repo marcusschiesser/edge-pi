@@ -19,7 +19,6 @@ import * as _bundledPiTui from "@mariozechner/pi-tui";
 // Static imports of packages that extensions may use.
 // These MUST be static so Bun bundles them into the compiled binary.
 // The virtualModules option then makes them available to extensions.
-import * as _bundledTypebox from "@sinclair/typebox";
 import * as _bundledAi from "ai";
 import * as _bundledZod from "zod";
 import { getAgentDir } from "../../config.js";
@@ -43,7 +42,6 @@ import type {
 
 /** Modules available to extensions via virtualModules (for compiled Bun binary) */
 const VIRTUAL_MODULES: Record<string, unknown> = {
-	"@sinclair/typebox": _bundledTypebox,
 	"@mariozechner/pi-tui": _bundledPiTui,
 	"@mariozechner/pi-coding-agent": _bundledPiCodingAgent,
 	// Vercel AI SDK modules
@@ -67,13 +65,9 @@ function getAliases(): Record<string, string> {
 	const __dirname = path.dirname(fileURLToPath(import.meta.url));
 	const packageIndex = path.resolve(__dirname, "../..", "index.js");
 
-	const typeboxEntry = require.resolve("@sinclair/typebox");
-	const typeboxRoot = typeboxEntry.replace(/\/build\/cjs\/index\.js$/, "");
-
 	_aliases = {
 		"@mariozechner/pi-coding-agent": packageIndex,
 		"@mariozechner/pi-tui": require.resolve("@mariozechner/pi-tui"),
-		"@sinclair/typebox": typeboxRoot,
 		// Vercel AI SDK modules
 		zod: require.resolve("zod"),
 		ai: require.resolve("ai"),

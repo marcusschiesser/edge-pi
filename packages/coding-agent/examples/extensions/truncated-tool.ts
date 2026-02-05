@@ -23,16 +23,16 @@ import {
 	truncateHead,
 } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
-import { Type } from "@sinclair/typebox";
 import { execSync } from "child_process";
 import { mkdtempSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import { z } from "zod";
 
-const RgParams = Type.Object({
-	pattern: Type.String({ description: "Search pattern (regex)" }),
-	path: Type.Optional(Type.String({ description: "Directory to search (default: current directory)" })),
-	glob: Type.Optional(Type.String({ description: "File glob pattern, e.g. '*.ts'" })),
+const RgParams = z.object({
+	pattern: z.string().describe("Search pattern (regex)"),
+	path: z.string().describe("Directory to search (default: current directory)").optional(),
+	glob: z.string().describe("File glob pattern, e.g. '*.ts'").optional(),
 });
 
 interface RgDetails {

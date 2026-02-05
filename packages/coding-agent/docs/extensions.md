@@ -56,7 +56,7 @@ Create `~/.pi/agent/extensions/my-extension.ts`:
 
 ```typescript
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
 
 export default function (pi: ExtensionAPI) {
   // React to events
@@ -76,8 +76,8 @@ export default function (pi: ExtensionAPI) {
     name: "greet",
     label: "Greet",
     description: "Greet someone by name",
-    parameters: Type.Object({
-      name: Type.String({ description: "Name to greet" }),
+    parameters: z.object({
+      name: z.string().describe("Name to greet"),
     }),
     async execute(toolCallId, params, signal, onUpdate, ctx) {
       return {
@@ -138,9 +138,8 @@ To share extensions via npm or git as pi packages, see [packages.md](packages.md
 | Package | Purpose |
 |---------|---------|
 | `@mariozechner/pi-coding-agent` | Extension types (`ExtensionAPI`, `ExtensionContext`, events) |
-| `@sinclair/typebox` | Schema definitions for tool parameters |
+| `zod` | Schema definitions for tool parameters |
 | `ai` | Vercel AI SDK types and utilities |
-| `zod` | Schema definitions (alternative to TypeBox) |
 | `@mariozechner/pi-tui` | TUI components for custom rendering |
 
 npm dependencies work too. Add a `package.json` next to your extension (or in a parent directory), run `npm install`, and imports from `node_modules/` are resolved automatically.
@@ -778,16 +777,15 @@ Subscribe to events. See [Events](#events) for event types and return values.
 Register a custom tool callable by the LLM. See [Custom Tools](#custom-tools) for full details.
 
 ```typescript
-import { Type } from "@sinclair/typebox";
-import { StringEnum } from "@mariozechner/pi-coding-agent";
+import { z } from "zod";
 
 pi.registerTool({
   name: "my_tool",
   label: "My Tool",
   description: "What this tool does",
-  parameters: Type.Object({
-    action: StringEnum(["list", "add"] as const),
-    text: Type.Optional(Type.String()),
+  parameters: z.object({
+    action: z.enum(["list", "add"]),
+    text: z.string().optional(),
   }),
 
   async execute(toolCallId, params, signal, onUpdate, ctx) {
@@ -1134,17 +1132,16 @@ Register tools the LLM can call via `pi.registerTool()`. Tools appear in the sys
 ### Tool Definition
 
 ```typescript
-import { Type } from "@sinclair/typebox";
-import { StringEnum } from "@mariozechner/pi-coding-agent";
+import { z } from "zod";
 import { Text } from "@mariozechner/pi-tui";
 
 pi.registerTool({
   name: "my_tool",
   label: "My Tool",
   description: "What this tool does (shown to LLM)",
-  parameters: Type.Object({
-    action: StringEnum(["list", "add"] as const),  // Use StringEnum for Google compatibility
-    text: Type.Optional(Type.String()),
+  parameters: z.object({
+    action: z.enum(["list", "add"]),
+    text: z.string().optional(),
   }),
 
   async execute(toolCallId, params, signal, onUpdate, ctx) {
@@ -1174,8 +1171,6 @@ pi.registerTool({
   renderResult(result, options, theme) { ... },
 });
 ```
-
-**Important:** Use `z.enum()` from `zod` for string enums when needed.
 
 ### Overriding Built-in Tools
 

@@ -1,18 +1,18 @@
 import { constants, access as fsAccess, readFile as fsReadFile } from "@mariozechner/pi-env/fs";
-import { type Static, Type } from "@sinclair/typebox";
+import { z } from "zod";
 import { formatDimensionNote, resizeImage } from "../../utils/image-resize.js";
 import { detectSupportedImageMimeTypeFromFile } from "../../utils/mime.js";
 import type { AgentTool, ImageContent, TextContent } from "../ai-types.js";
 import { resolveReadPath } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
 
-const readSchema = Type.Object({
-	path: Type.String({ description: "Path to the file to read (relative or absolute)" }),
-	offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-indexed)" })),
-	limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read" })),
+const readSchema = z.object({
+	path: z.string().describe("Path to the file to read (relative or absolute)"),
+	offset: z.number().describe("Line number to start reading from (1-indexed)").optional(),
+	limit: z.number().describe("Maximum number of lines to read").optional(),
 });
 
-export type ReadToolInput = Static<typeof readSchema>;
+export type ReadToolInput = z.infer<typeof readSchema>;
 
 export interface ReadToolDetails {
 	truncation?: TruncationResult;

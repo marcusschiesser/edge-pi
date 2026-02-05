@@ -213,13 +213,13 @@ describe("ExtensionRunner", () => {
 	describe("tool collection", () => {
 		it("collects tools from multiple extensions", async () => {
 			const toolCode = (name: string) => `
-				import { Type } from "@sinclair/typebox";
+				import { z } from "zod";
 				export default function(pi) {
 					pi.registerTool({
 						name: "${name}",
 						label: "${name}",
 						description: "Test tool",
-						parameters: Type.Object({}),
+						parameters: z.object({}),
 						execute: async () => ({ content: [{ type: "text", text: "ok" }], details: {} }),
 					});
 				}

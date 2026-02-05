@@ -30,8 +30,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { type ExtensionAPI, StringEnum } from "@mariozechner/pi-coding-agent";
-import { type Static, Type } from "@sinclair/typebox";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { z } from "zod";
 
 const PROVIDER = "google-antigravity";
 
@@ -61,23 +61,21 @@ const ANTIGRAVITY_HEADERS = {
 const IMAGE_SYSTEM_INSTRUCTION =
 	"You are an AI image generator. Generate images based on user descriptions. Focus on creating high-quality, visually appealing images that match the user's request.";
 
-const TOOL_PARAMS = Type.Object({
-	prompt: Type.String({ description: "Image description." }),
-	model: Type.Optional(
-		Type.String({
-			description: "Image model id (e.g., gemini-3-pro-image, imagen-3). Default: gemini-3-pro-image.",
-		}),
-	),
-	aspectRatio: Type.Optional(StringEnum(ASPECT_RATIOS)),
-	save: Type.Optional(StringEnum(SAVE_MODES)),
-	saveDir: Type.Optional(
-		Type.String({
-			description: "Directory to save image when save=custom. Defaults to PI_IMAGE_SAVE_DIR if set.",
-		}),
-	),
+const TOOL_PARAMS = z.object({
+	prompt: z.string().describe("Image description."),
+	model: z
+		.string()
+		.describe("Image model id (e.g., gemini-3-pro-image, imagen-3). Default: gemini-3-pro-image.")
+		.optional(),
+	aspectRatio: z.enum(ASPECT_RATIOS).optional(),
+	save: z.enum(SAVE_MODES).optional(),
+	saveDir: z
+		.string()
+		.describe("Directory to save image when save=custom. Defaults to PI_IMAGE_SAVE_DIR if set.")
+		.optional(),
 });
 
-type ToolParams = Static<typeof TOOL_PARAMS>;
+type ToolParams = z.infer<typeof TOOL_PARAMS>;
 
 interface CloudCodeAssistRequest {
 	project: string;

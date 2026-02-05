@@ -4,7 +4,7 @@ import {
 	readFile as fsReadFile,
 	writeFile as fsWriteFile,
 } from "@mariozechner/pi-env/fs";
-import { type Static, Type } from "@sinclair/typebox";
+import { z } from "zod";
 import type { AgentTool } from "../ai-types.js";
 import {
 	detectLineEnding,
@@ -17,13 +17,13 @@ import {
 } from "./edit-diff.js";
 import { resolveToCwd } from "./path-utils.js";
 
-const editSchema = Type.Object({
-	path: Type.String({ description: "Path to the file to edit (relative or absolute)" }),
-	oldText: Type.String({ description: "Exact text to find and replace (must match exactly)" }),
-	newText: Type.String({ description: "New text to replace the old text with" }),
+const editSchema = z.object({
+	path: z.string().describe("Path to the file to edit (relative or absolute)"),
+	oldText: z.string().describe("Exact text to find and replace (must match exactly)"),
+	newText: z.string().describe("New text to replace the old text with"),
 });
 
-export type EditToolInput = Static<typeof editSchema>;
+export type EditToolInput = z.infer<typeof editSchema>;
 
 export interface EditToolDetails {
 	/** Unified diff of the changes made */

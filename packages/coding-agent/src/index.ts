@@ -2,7 +2,18 @@
 
 // Config paths
 export { getAgentDir, VERSION } from "./config.js";
-
+export { Agent, type AgentOptions } from "./core/agent.js";
+export {
+	AgentSession,
+	type AgentSessionConfig,
+	type AgentSessionEvent,
+	type AgentSessionEventListener,
+	type ModelCycleResult,
+	type ParsedSkillBlock,
+	type PromptOptions,
+	parseSkillBlock,
+	type SessionStats,
+} from "./core/agent-session.js";
 // AI types and utilities (from Vercel AI SDK integration)
 export type {
 	AgentEvent,
@@ -46,20 +57,6 @@ export {
 	EventStream,
 	StringEnum,
 } from "./core/ai-types.js";
-export { getModel, getModels, getProviders } from "./core/models.js";
-export { complete } from "./core/stream.js";
-export { Agent, type AgentOptions } from "./core/agent.js";
-export {
-	AgentSession,
-	type AgentSessionConfig,
-	type AgentSessionEvent,
-	type AgentSessionEventListener,
-	type ModelCycleResult,
-	type ParsedSkillBlock,
-	type PromptOptions,
-	parseSkillBlock,
-	type SessionStats,
-} from "./core/agent-session.js";
 // Auth and model registry
 export { type ApiKeyCredential, type AuthCredential, AuthStorage, type OAuthCredential } from "./core/auth-storage.js";
 // Compaction
@@ -177,6 +174,7 @@ export {
 export type { ReadonlyFooterDataProvider } from "./core/footer-data-provider.js";
 export { convertToLlm } from "./core/messages.js";
 export { ModelRegistry } from "./core/model-registry.js";
+export { getModel, getModels, getProviders } from "./core/models.js";
 export type {
 	PackageManager,
 	PathMetadata,
@@ -248,6 +246,7 @@ export {
 	type Skill,
 	type SkillFrontmatter,
 } from "./core/skills.js";
+export { complete } from "./core/stream.js";
 // Tools
 export {
 	type BashOperations,

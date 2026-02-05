@@ -131,7 +131,7 @@ See [docs/extensions.md](../../docs/extensions.md) for full documentation.
 
 ```typescript
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
 
 export default function (pi: ExtensionAPI) {
   // Subscribe to lifecycle events
@@ -147,8 +147,8 @@ export default function (pi: ExtensionAPI) {
     name: "greet",
     label: "Greeting",
     description: "Generate a greeting",
-    parameters: Type.Object({
-      name: Type.String({ description: "Name to greet" }),
+    parameters: z.object({
+      name: z.string().describe("Name to greet"),
     }),
     async execute(toolCallId, params, onUpdate, ctx, signal) {
       return {

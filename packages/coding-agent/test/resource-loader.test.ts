@@ -327,12 +327,12 @@ Content`,
 				join(ext1Dir, "index.ts"),
 				`
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
 export default function(pi: ExtensionAPI) {
   pi.registerTool({
     name: "duplicate-tool",
     description: "First",
-    parameters: Type.Object({}),
+    parameters: z.object({}),
     execute: async () => ({ result: "1" }),
   });
 }`,
@@ -342,12 +342,12 @@ export default function(pi: ExtensionAPI) {
 				join(ext2Dir, "index.ts"),
 				`
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
 export default function(pi: ExtensionAPI) {
   pi.registerTool({
     name: "duplicate-tool",
     description: "Second",
-    parameters: Type.Object({}),
+    parameters: z.object({}),
     execute: async () => ({ result: "2" }),
   });
 }`,
