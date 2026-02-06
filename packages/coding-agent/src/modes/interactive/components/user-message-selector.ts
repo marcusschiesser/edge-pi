@@ -1,5 +1,5 @@
+import { theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
 import { type Component, Container, getEditorKeybindings, Spacer, Text, truncateToWidth } from "@mariozechner/pi-tui";
-import { theme } from "../theme/theme.js";
 import { DynamicBorder } from "./dynamic-border.js";
 
 interface UserMessageItem {

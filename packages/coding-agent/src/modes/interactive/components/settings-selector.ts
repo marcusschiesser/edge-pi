@@ -1,3 +1,9 @@
+import type { ThinkingLevel } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
+import {
+	getSelectListTheme,
+	getSettingsListTheme,
+	theme,
+} from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
 import {
 	Container,
 	getCapabilities,
@@ -8,8 +14,6 @@ import {
 	Spacer,
 	Text,
 } from "@mariozechner/pi-tui";
-import type { ThinkingLevel } from "../../../core/ai-types.js";
-import { getSelectListTheme, getSettingsListTheme, theme } from "../theme/theme.js";
 import { DynamicBorder } from "./dynamic-border.js";
 
 const THINKING_DESCRIPTIONS: Record<ThinkingLevel, string> = {

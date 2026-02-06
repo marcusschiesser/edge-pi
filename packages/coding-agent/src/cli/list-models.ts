@@ -2,9 +2,9 @@
  * List available models with optional fuzzy search
  */
 
+import type { Api, Model } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
+import type { ModelRegistry } from "@mariozechner/pi-coding-agent-sdk/core/model-registry.js";
 import { fuzzyFilter } from "@mariozechner/pi-tui";
-import type { Api, Model } from "../core/ai-types.js";
-import type { ModelRegistry } from "../core/model-registry.js";
 
 /**
  * Format a number as human-readable (e.g., 200000 -> "200K", 1000000 -> "1M")

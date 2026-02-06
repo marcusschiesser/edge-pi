@@ -1,10 +1,10 @@
+import { getCustomThemesDir, getThemesDir } from "@mariozechner/pi-coding-agent-sdk/config.js";
 import * as fs from "@mariozechner/pi-env/fs";
 import * as path from "@mariozechner/pi-env/path";
 import type { EditorTheme, MarkdownTheme, SelectListTheme } from "@mariozechner/pi-tui";
 import chalk from "chalk";
 import { highlight, supportsLanguage } from "cli-highlight";
 import { z } from "zod";
-import { getCustomThemesDir, getThemesDir } from "../../../config.js";
 
 // ============================================================================
 // Types & Schema

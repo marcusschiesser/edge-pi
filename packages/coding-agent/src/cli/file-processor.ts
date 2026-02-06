@@ -2,13 +2,13 @@
  * Process @file CLI arguments into text content and image attachments
  */
 
+import type { ImageContent } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
+import { resolveReadPath } from "@mariozechner/pi-coding-agent-sdk/core/tools/path-utils.js";
+import { formatDimensionNote, resizeImage } from "@mariozechner/pi-coding-agent-sdk/utils/image-resize.js";
+import { detectSupportedImageMimeTypeFromFile } from "@mariozechner/pi-coding-agent-sdk/utils/mime.js";
 import { access, readFile, stat } from "@mariozechner/pi-env/fs";
 import { resolve } from "@mariozechner/pi-env/path";
 import chalk from "chalk";
-import type { ImageContent } from "../core/ai-types.js";
-import { resolveReadPath } from "../core/tools/path-utils.js";
-import { formatDimensionNote, resizeImage } from "../utils/image-resize.js";
-import { detectSupportedImageMimeTypeFromFile } from "../utils/mime.js";
 
 export interface ProcessedFiles {
 	text: string;

@@ -4,9 +4,8 @@
 
 import chalk from "chalk";
 import { minimatch } from "minimatch";
-import { isValidThinkingLevel } from "../cli/args.js";
 import { type Api, type KnownProvider, type Model, modelsAreEqual, type ThinkingLevel } from "./ai-types.js";
-import { DEFAULT_THINKING_LEVEL } from "./defaults.js";
+import { DEFAULT_THINKING_LEVEL, isValidThinkingLevel } from "./defaults.js";
 import type { ModelRegistry } from "./model-registry.js";
 
 /** Default model IDs for each known provider */

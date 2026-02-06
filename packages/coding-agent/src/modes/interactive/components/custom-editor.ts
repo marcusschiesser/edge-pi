@@ -1,5 +1,5 @@
+import type { AppAction, KeybindingsManager } from "@mariozechner/pi-coding-agent-sdk/core/keybindings.js";
 import { Editor, type EditorOptions, type EditorTheme, type TUI } from "@mariozechner/pi-tui";
-import type { AppAction, KeybindingsManager } from "../../../core/keybindings.js";
 
 /**
  * Custom editor that handles app-level keybindings for coding-agent.

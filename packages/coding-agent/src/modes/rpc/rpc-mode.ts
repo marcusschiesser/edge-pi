@@ -11,15 +11,15 @@
  * - Extension UI: Extension UI requests are emitted, client responds with extension_ui_response
  */
 
-import * as crypto from "@mariozechner/pi-env/crypto";
-import * as readline from "readline";
-import type { AgentSession } from "../../core/agent-session.js";
+import type { AgentSession } from "@mariozechner/pi-coding-agent-sdk/core/agent-session.js";
 import type {
 	ExtensionUIContext,
 	ExtensionUIDialogOptions,
 	ExtensionWidgetOptions,
-} from "../../core/extensions/index.js";
-import { type Theme, theme } from "../interactive/theme/theme.js";
+} from "@mariozechner/pi-coding-agent-sdk/core/extensions/index.js";
+import { type Theme, theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import * as crypto from "@mariozechner/pi-env/crypto";
+import * as readline from "readline";
 import type {
 	RpcCommand,
 	RpcExtensionUIRequest,

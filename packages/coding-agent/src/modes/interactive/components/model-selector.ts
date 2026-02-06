@@ -1,3 +1,8 @@
+import type { Model } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
+import type { ModelRegistry } from "@mariozechner/pi-coding-agent-sdk/core/model-registry.js";
+import { modelsAreEqual } from "@mariozechner/pi-coding-agent-sdk/core/models.js";
+import type { SettingsManager } from "@mariozechner/pi-coding-agent-sdk/core/settings-manager.js";
+import { theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
 import {
 	Container,
 	type Focusable,
@@ -8,11 +13,6 @@ import {
 	Text,
 	type TUI,
 } from "@mariozechner/pi-tui";
-import type { Model } from "../../../core/ai-types.js";
-import type { ModelRegistry } from "../../../core/model-registry.js";
-import { modelsAreEqual } from "../../../core/models.js";
-import type { SettingsManager } from "../../../core/settings-manager.js";
-import { theme } from "../theme/theme.js";
 import { DynamicBorder } from "./dynamic-border.js";
 import { keyHint } from "./keybinding-hints.js";
 

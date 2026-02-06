@@ -1,6 +1,6 @@
+import type { AssistantMessage } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
+import { getMarkdownTheme, theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
 import { Container, Markdown, type MarkdownTheme, Spacer, Text } from "@mariozechner/pi-tui";
-import type { AssistantMessage } from "../../../core/ai-types.js";
-import { getMarkdownTheme, theme } from "../theme/theme.js";
 
 /**
  * Component that renders a complete assistant message

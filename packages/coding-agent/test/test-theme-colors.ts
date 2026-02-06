@@ -1,5 +1,5 @@
+import { initTheme, theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
 import fs from "fs";
-import { initTheme, theme } from "../src/modes/interactive/theme/theme.js";
 
 // --- Color utilities ---
 

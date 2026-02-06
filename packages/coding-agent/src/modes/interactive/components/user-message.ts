@@ -1,5 +1,5 @@
+import { getMarkdownTheme, theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
 import { Container, Markdown, type MarkdownTheme, Spacer } from "@mariozechner/pi-tui";
-import { getMarkdownTheme, theme } from "../theme/theme.js";
 
 /**
  * Component that renders a user message

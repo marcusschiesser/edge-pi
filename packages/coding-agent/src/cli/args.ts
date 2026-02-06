@@ -2,10 +2,13 @@
  * CLI argument parsing and help display
  */
 
+import { APP_NAME, CONFIG_DIR_NAME, ENV_AGENT_DIR } from "@mariozechner/pi-coding-agent-sdk/config.js";
+import type { ThinkingLevel } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
+import { isValidThinkingLevel } from "@mariozechner/pi-coding-agent-sdk/core/defaults.js";
+import { allTools, type ToolName } from "@mariozechner/pi-coding-agent-sdk/core/tools/index.js";
 import chalk from "chalk";
-import { APP_NAME, CONFIG_DIR_NAME, ENV_AGENT_DIR } from "../config.js";
-import type { ThinkingLevel } from "../core/ai-types.js";
-import { allTools, type ToolName } from "../core/tools/index.js";
+
+export { isValidThinkingLevel };
 
 export type Mode = "text" | "json" | "rpc";
 
@@ -43,12 +46,6 @@ export interface Args {
 	fileArgs: string[];
 	/** Unknown flags (potentially extension flags) - map of flag name to value */
 	unknownFlags: Map<string, boolean | string>;
-}
-
-const VALID_THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh"] as const;
-
-export function isValidThinkingLevel(level: string): level is ThinkingLevel {
-	return VALID_THINKING_LEVELS.includes(level as ThinkingLevel);
 }
 
 export function parseArgs(args: string[], extensionFlags?: Map<string, { type: "boolean" | "string" }>): Args {
@@ -114,7 +111,7 @@ export function parseArgs(args: string[], extensionFlags?: Map<string, { type: "
 			} else {
 				console.error(
 					chalk.yellow(
-						`Warning: Invalid thinking level "${level}". Valid values: ${VALID_THINKING_LEVELS.join(", ")}`,
+						`Warning: Invalid thinking level "${level}". Valid values: off, minimal, low, medium, high, xhigh`,
 					),
 				);
 			}

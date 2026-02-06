@@ -2,15 +2,15 @@
  * Component for displaying bash command execution with streaming output.
  */
 
-import { Container, Loader, Spacer, Text, type TUI } from "@mariozechner/pi-tui";
-import stripAnsi from "strip-ansi";
 import {
 	DEFAULT_MAX_BYTES,
 	DEFAULT_MAX_LINES,
 	type TruncationResult,
 	truncateTail,
-} from "../../../core/tools/truncate.js";
-import { theme } from "../theme/theme.js";
+} from "@mariozechner/pi-coding-agent-sdk/core/tools/truncate.js";
+import { theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { Container, Loader, Spacer, Text, type TUI } from "@mariozechner/pi-tui";
+import stripAnsi from "strip-ansi";
 import { DynamicBorder } from "./dynamic-border.js";
 import { editorKey, keyHint } from "./keybinding-hints.js";
 import { truncateToVisualLines } from "./visual-truncate.js";

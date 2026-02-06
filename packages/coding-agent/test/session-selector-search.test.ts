@@ -1,5 +1,5 @@
+import type { SessionInfo } from "@mariozechner/pi-coding-agent-sdk/core/session-manager.js";
 import { describe, expect, it } from "vitest";
-import type { SessionInfo } from "../src/core/session-manager.js";
 import { filterAndSortSessions } from "../src/modes/interactive/components/session-selector-search.js";
 
 function makeSession(
