@@ -14,6 +14,31 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DefaultPackageManager } from "../src/core/package-manager.js";
 import { SettingsManager } from "../src/core/settings-manager.js";
 
+// Check if git commits can be made in this environment
+function canMakeGitCommits(): boolean {
+	const testDir = join(tmpdir(), `git-commit-check-${Date.now()}`);
+	try {
+		mkdirSync(testDir, { recursive: true });
+		spawnSync("git", ["init"], { cwd: testDir, encoding: "utf-8" });
+		spawnSync("git", ["config", "user.email", "test@test.com"], { cwd: testDir });
+		spawnSync("git", ["config", "user.name", "Test"], { cwd: testDir });
+		writeFileSync(join(testDir, "test.txt"), "test");
+		spawnSync("git", ["add", "test.txt"], { cwd: testDir });
+		const result = spawnSync("git", ["commit", "-m", "test"], { cwd: testDir, encoding: "utf-8" });
+		return result.status === 0;
+	} catch {
+		return false;
+	} finally {
+		try {
+			rmSync(testDir, { recursive: true, force: true });
+		} catch {
+			// ignore cleanup errors
+		}
+	}
+}
+
+const canCommit = canMakeGitCommits();
+
 // Helper to run git commands in a directory
 function git(args: string[], cwd: string): string {
 	const result = spawnSync("git", args, {
@@ -44,7 +69,7 @@ function getFileContent(repoDir: string, filename: string): string {
 	return readFileSync(join(repoDir, filename), "utf-8");
 }
 
-describe("DefaultPackageManager git update", () => {
+describe.skipIf(!canCommit)("DefaultPackageManager git update", () => {
 	let tempDir: string;
 	let remoteDir: string; // Simulates the "remote" repository
 	let agentDir: string; // The agent directory where extensions are installed
