@@ -545,17 +545,12 @@ export async function generateSummary(
 	}
 	promptText += basePrompt;
 
-	const summarizationMessages = [
-		{
-			role: "user" as const,
-			content: [{ type: "text" as const, text: promptText }],
-			timestamp: Date.now(),
-		},
-	];
-
 	const response = await completeSimple(
 		model,
-		{ systemPrompt: SUMMARIZATION_SYSTEM_PROMPT, messages: summarizationMessages },
+		{
+			systemPrompt: SUMMARIZATION_SYSTEM_PROMPT,
+			messages: [{ role: "user" as const, content: promptText }],
+		},
 		{ maxTokens, signal, apiKey, reasoning: "high" },
 	);
 
@@ -783,17 +778,12 @@ async function generateTurnPrefixSummary(
 	const llmMessages = convertToLlm(messages);
 	const conversationText = serializeConversation(llmMessages);
 	const promptText = `<conversation>\n${conversationText}\n</conversation>\n\n${TURN_PREFIX_SUMMARIZATION_PROMPT}`;
-	const summarizationMessages = [
-		{
-			role: "user" as const,
-			content: [{ type: "text" as const, text: promptText }],
-			timestamp: Date.now(),
-		},
-	];
-
 	const response = await completeSimple(
 		model,
-		{ systemPrompt: SUMMARIZATION_SYSTEM_PROMPT, messages: summarizationMessages },
+		{
+			systemPrompt: SUMMARIZATION_SYSTEM_PROMPT,
+			messages: [{ role: "user" as const, content: promptText }],
+		},
 		{ maxTokens, signal, apiKey },
 	);
 

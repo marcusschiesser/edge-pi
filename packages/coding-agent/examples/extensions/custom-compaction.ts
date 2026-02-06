@@ -57,13 +57,7 @@ export default function (pi: ExtensionAPI) {
 		const previousContext = previousSummary ? `\n\nPrevious session summary for context:\n${previousSummary}` : "";
 
 		// Build messages that ask for a comprehensive summary
-		const summaryMessages = [
-			{
-				role: "user" as const,
-				content: [
-					{
-						type: "text" as const,
-						text: `You are a conversation summarizer. Create a comprehensive summary of this conversation that captures:${previousContext}
+		const promptText = `You are a conversation summarizer. Create a comprehensive summary of this conversation that captures:${previousContext}
 
 1. The main goals and objectives discussed
 2. Key decisions made and their rationale
@@ -78,16 +72,15 @@ Format the summary as structured markdown with clear sections.
 
 <conversation>
 ${conversationText}
-</conversation>`,
-					},
-				],
-				timestamp: Date.now(),
-			},
-		];
+</conversation>`;
 
 		try {
 			// Pass signal to honor abort requests (e.g., user cancels compaction)
-			const response = await complete(model, { messages: summaryMessages }, { apiKey, maxTokens: 8192, signal });
+			const response = await complete(
+				model,
+				{ messages: [{ role: "user" as const, content: promptText }] },
+				{ apiKey, maxTokens: 8192, signal },
+			);
 
 			const summary = response.content
 				.filter((c): c is { type: "text"; text: string } => c.type === "text")

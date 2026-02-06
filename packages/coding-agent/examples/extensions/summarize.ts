@@ -179,15 +179,11 @@ export default function (pi: ExtensionAPI) {
 				return;
 			}
 
-			const summaryMessages = [
-				{
-					role: "user" as const,
-					content: [{ type: "text" as const, text: buildSummaryPrompt(conversationText) }],
-					timestamp: Date.now(),
-				},
-			];
-
-			const response = await complete(model, { messages: summaryMessages }, { apiKey, reasoningEffort: "high" });
+			const response = await complete(
+				model,
+				{ messages: [{ role: "user" as const, content: buildSummaryPrompt(conversationText) }] },
+				{ apiKey, reasoningEffort: "high" },
+			);
 
 			const summary = response.content
 				.filter((c): c is { type: "text"; text: string } => c.type === "text")

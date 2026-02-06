@@ -8,8 +8,7 @@
  * - Transform context hooks for extensions
  */
 
-import { jsonSchema, type ModelMessage, tool as sdkTool, stepCountIs, streamText, type ToolSet } from "ai";
-import type { z } from "zod";
+import { type ModelMessage, tool as sdkTool, stepCountIs, streamText, type ToolSet } from "ai";
 import {
 	type AgentEvent,
 	type AgentMessage,
@@ -270,8 +269,7 @@ async function streamAssistantWithTools(
 	let steeringMessages: AgentMessage[] | undefined;
 
 	for (const agentTool of context.tools) {
-		// Convert TypeBox/Zod schema to Vercel SDK format
-		const inputSchema = convertToSdkSchema(agentTool.parameters);
+		const inputSchema = agentTool.parameters;
 
 		sdkTools[agentTool.name] = sdkTool({
 			description: agentTool.description,
@@ -540,46 +538,6 @@ function handleStreamChunk(
 			break;
 		}
 	}
-}
-
-// ============================================================================
-// Schema Conversion
-// ============================================================================
-
-/**
- * Check if a schema is a TypeBox schema.
- * TypeBox schemas have a "type" property that is a string (like "object", "string", etc.)
- * and a "properties" property for object schemas.
- */
-function isTypeBoxSchema(schema: unknown): boolean {
-	if (schema === null || typeof schema !== "object") return false;
-	const s = schema as Record<string, unknown>;
-	// TypeBox object schemas have type="object" and properties
-	return s.type === "object" && typeof s.properties === "object";
-}
-
-/**
- * Convert a TypeBox or Zod schema to Vercel AI SDK schema format.
- * TypeBox schemas are converted via jsonSchema(), Zod schemas are passed through.
- */
-function convertToSdkSchema(schema: unknown) {
-	// If it's a Zod schema (has ~standard property from Zod v4), pass through
-	if (schema !== null && typeof schema === "object" && "~standard" in schema) {
-		return schema as z.ZodType;
-	}
-
-	// If it's a TypeBox schema, convert to JSON schema
-	if (isTypeBoxSchema(schema)) {
-		// TypeBox schemas are already JSON Schema compatible
-		// Remove TypeBox-specific properties that aren't valid JSON Schema
-		const jsonSchemaObj = { ...(schema as Record<string, unknown>) };
-		delete jsonSchemaObj.static;
-		delete jsonSchemaObj[Symbol.for("TypeBox.Kind") as unknown as string];
-		return jsonSchema(jsonSchemaObj);
-	}
-
-	// Fallback: assume it's already a valid SDK schema
-	return schema;
 }
 
 // ============================================================================
