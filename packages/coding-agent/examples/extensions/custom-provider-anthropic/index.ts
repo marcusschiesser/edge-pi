@@ -31,9 +31,8 @@ import {
 	calculateCost,
 	createAssistantMessageEventStream,
 	type ExtensionAPI,
-	type ImageContent,
-	type Message,
 	type Model,
+	type ModelMessage,
 	type OAuthCredentials,
 	type OAuthLoginCallbacks,
 	type SimpleStreamOptions,
@@ -42,7 +41,6 @@ import {
 	type ThinkingContent,
 	type Tool,
 	type ToolCall,
-	type ToolResultMessage,
 } from "@mariozechner/pi-coding-agent";
 
 // =============================================================================
@@ -185,108 +183,92 @@ function sanitizeSurrogates(text: string): string {
 	return text.replace(/[\uD800-\uDFFF]/g, "\uFFFD");
 }
 
-function convertContentBlocks(
-	content: (TextContent | ImageContent)[],
-): string | Array<{ type: "text"; text: string } | { type: "image"; source: any }> {
-	const hasImages = content.some((c) => c.type === "image");
-	if (!hasImages) {
-		return sanitizeSurrogates(content.map((c) => (c as TextContent).text).join("\n"));
-	}
-
-	const blocks = content.map((block) => {
-		if (block.type === "text") {
-			return { type: "text" as const, text: sanitizeSurrogates(block.text) };
-		}
-		return {
-			type: "image" as const,
-			source: {
-				type: "base64" as const,
-				media_type: block.mimeType,
-				data: block.data,
-			},
-		};
-	});
-
-	if (!blocks.some((b) => b.type === "text")) {
-		blocks.unshift({ type: "text" as const, text: "(see attached image)" });
-	}
-
-	return blocks;
-}
-
-function convertMessages(messages: Message[], isOAuth: boolean, _tools?: Tool[]): any[] {
+function convertMessages(messages: ModelMessage[], isOAuth: boolean, _tools?: Tool[]): any[] {
 	const params: any[] = [];
 
-	for (let i = 0; i < messages.length; i++) {
-		const msg = messages[i];
-
+	for (const msg of messages) {
 		if (msg.role === "user") {
 			if (typeof msg.content === "string") {
 				if (msg.content.trim()) {
 					params.push({ role: "user", content: sanitizeSurrogates(msg.content) });
 				}
 			} else {
-				const blocks: ContentBlockParam[] = msg.content.map((item) =>
-					item.type === "text"
-						? { type: "text" as const, text: sanitizeSurrogates(item.text) }
-						: {
-								type: "image" as const,
-								source: { type: "base64" as const, media_type: item.mimeType as any, data: item.data },
+				const blocks: ContentBlockParam[] = msg.content.map((part) => {
+					if (part.type === "text") {
+						return { type: "text" as const, text: sanitizeSurrogates(part.text) };
+					}
+					if (part.type === "image") {
+						return {
+							type: "image" as const,
+							source: {
+								type: "base64" as const,
+								media_type: (part.mediaType || "image/png") as any,
+								data: typeof part.image === "string" ? part.image : "",
 							},
-				);
+						};
+					}
+					return { type: "text" as const, text: "" };
+				});
 				if (blocks.length > 0) {
 					params.push({ role: "user", content: blocks });
 				}
 			}
 		} else if (msg.role === "assistant") {
 			const blocks: ContentBlockParam[] = [];
-			for (const block of msg.content) {
-				if (block.type === "text" && block.text.trim()) {
-					blocks.push({ type: "text", text: sanitizeSurrogates(block.text) });
-				} else if (block.type === "thinking" && block.thinking.trim()) {
-					if ((block as ThinkingContent).thinkingSignature) {
+			if (typeof msg.content === "string") {
+				if (msg.content.trim()) {
+					blocks.push({ type: "text", text: sanitizeSurrogates(msg.content) });
+				}
+			} else {
+				for (const part of msg.content) {
+					if (part.type === "text" && part.text.trim()) {
+						blocks.push({ type: "text", text: sanitizeSurrogates(part.text) });
+					} else if (part.type === "reasoning" && part.text.trim()) {
+						if ((part as any).signature) {
+							blocks.push({
+								type: "thinking" as any,
+								thinking: sanitizeSurrogates(part.text),
+								signature: (part as any).signature,
+							});
+						} else {
+							blocks.push({ type: "text", text: sanitizeSurrogates(part.text) });
+						}
+					} else if (part.type === "tool-call") {
 						blocks.push({
-							type: "thinking" as any,
-							thinking: sanitizeSurrogates(block.thinking),
-							signature: (block as ThinkingContent).thinkingSignature!,
+							type: "tool_use",
+							id: part.toolCallId,
+							name: isOAuth ? toClaudeCodeName(part.toolName) : part.toolName,
+							input: part.input as Record<string, unknown>,
 						});
-					} else {
-						blocks.push({ type: "text", text: sanitizeSurrogates(block.thinking) });
 					}
-				} else if (block.type === "toolCall") {
-					blocks.push({
-						type: "tool_use",
-						id: block.id,
-						name: isOAuth ? toClaudeCodeName(block.name) : block.name,
-						input: block.arguments,
-					});
 				}
 			}
 			if (blocks.length > 0) {
 				params.push({ role: "assistant", content: blocks });
 			}
-		} else if (msg.role === "toolResult") {
+		} else if (msg.role === "tool") {
 			const toolResults: any[] = [];
-			toolResults.push({
-				type: "tool_result",
-				tool_use_id: msg.toolCallId,
-				content: convertContentBlocks(msg.content),
-				is_error: msg.isError,
-			});
-
-			let j = i + 1;
-			while (j < messages.length && messages[j].role === "toolResult") {
-				const nextMsg = messages[j] as ToolResultMessage;
-				toolResults.push({
-					type: "tool_result",
-					tool_use_id: nextMsg.toolCallId,
-					content: convertContentBlocks(nextMsg.content),
-					is_error: nextMsg.isError,
-				});
-				j++;
+			for (const part of msg.content) {
+				if (part.type === "tool-result") {
+					const output = part.output;
+					const isError = output.type === "error-text" || output.type === "error-json";
+					const text =
+						output.type === "text" || output.type === "error-text"
+							? output.value
+							: output.type === "json" || output.type === "error-json"
+								? JSON.stringify(output.value)
+								: "";
+					toolResults.push({
+						type: "tool_result",
+						tool_use_id: part.toolCallId,
+						content: sanitizeSurrogates(text),
+						is_error: isError,
+					});
+				}
 			}
-			i = j - 1;
-			params.push({ role: "user", content: toolResults });
+			if (toolResults.length > 0) {
+				params.push({ role: "user", content: toolResults });
+			}
 		}
 	}
 

@@ -308,18 +308,13 @@ export async function generateBranchSummary(
 	}
 	const promptText = `<conversation>\n${conversationText}\n</conversation>\n\n${instructions}`;
 
-	const summarizationMessages = [
-		{
-			role: "user" as const,
-			content: [{ type: "text" as const, text: promptText }],
-			timestamp: Date.now(),
-		},
-	];
-
 	// Call LLM for summarization
 	const response = await completeSimple(
 		model,
-		{ systemPrompt: SUMMARIZATION_SYSTEM_PROMPT, messages: summarizationMessages },
+		{
+			systemPrompt: SUMMARIZATION_SYSTEM_PROMPT,
+			messages: [{ role: "user" as const, content: promptText }],
+		},
 		{ apiKey, signal, maxTokens: 2048 },
 	);
 

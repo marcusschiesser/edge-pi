@@ -7,6 +7,7 @@
  */
 
 import type { LanguageModelV2, LanguageModelV3 } from "@ai-sdk/provider";
+import type { ModelMessage } from "@ai-sdk/provider-utils";
 
 // Re-export Vercel AI SDK types
 export type LanguageModel = LanguageModelV3 | LanguageModelV2;
@@ -180,7 +181,7 @@ export interface Tool<TParameters = any> {
 
 export interface Context {
 	systemPrompt?: string;
-	messages: Message[];
+	messages: ModelMessage[];
 	tools?: Tool[];
 }
 

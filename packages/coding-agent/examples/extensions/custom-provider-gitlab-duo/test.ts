@@ -58,7 +58,7 @@ async function main() {
 	};
 
 	const context: Context = {
-		messages: [{ role: "user", content: "Say hello in exactly 3 words.", timestamp: Date.now() }],
+		messages: [{ role: "user", content: [{ type: "text", text: "Say hello in exactly 3 words." }] }],
 	};
 
 	console.log(`Model: ${model.id}, Backend: ${cfg.backend}, Thinking: ${useThinking}`);

@@ -17,7 +17,6 @@ import {
 	complete,
 	convertToLlm,
 	type ExtensionAPI,
-	type Message,
 	type SessionEntry,
 	serializeConversation,
 } from "@mariozechner/pi-coding-agent";
@@ -88,20 +87,17 @@ export default function (pi: ExtensionAPI) {
 				const doGenerate = async () => {
 					const apiKey = await ctx.modelRegistry.getApiKey(ctx.model!);
 
-					const userMessage: Message = {
-						role: "user",
-						content: [
-							{
-								type: "text",
-								text: `## Conversation History\n\n${conversationText}\n\n## User's Goal for New Thread\n\n${goal}`,
-							},
-						],
-						timestamp: Date.now(),
-					};
-
 					const response = await complete(
 						ctx.model!,
-						{ systemPrompt: SYSTEM_PROMPT, messages: [userMessage] },
+						{
+							systemPrompt: SYSTEM_PROMPT,
+							messages: [
+								{
+									role: "user" as const,
+									content: `## Conversation History\n\n${conversationText}\n\n## User's Goal for New Thread\n\n${goal}`,
+								},
+							],
+						},
 						{ apiKey, signal: loader.signal },
 					);
 
