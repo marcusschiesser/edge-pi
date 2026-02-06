@@ -1,28 +1,31 @@
 import * as fs from "@mariozechner/pi-env/fs";
 import * as path from "@mariozechner/pi-env/path";
 import type { EditorTheme, MarkdownTheme, SelectListTheme } from "@mariozechner/pi-tui";
-import { type Static, Type } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 import chalk from "chalk";
 import { highlight, supportsLanguage } from "cli-highlight";
+import { z } from "zod";
 import { getCustomThemesDir, getThemesDir } from "../../../config.js";
 
 // ============================================================================
 // Types & Schema
 // ============================================================================
 
-const ColorValueSchema = Type.Union([
-	Type.String(), // hex "#ff0000", var ref "primary", or empty ""
-	Type.Integer({ minimum: 0, maximum: 255 }), // 256-color index
+const ColorValueSchema = z.union([
+	z.string(), // hex "#ff0000", var ref "primary", or empty ""
+	z
+		.number()
+		.int()
+		.min(0)
+		.max(255), // 256-color index
 ]);
 
-type ColorValue = Static<typeof ColorValueSchema>;
+type ColorValue = z.infer<typeof ColorValueSchema>;
 
-const ThemeJsonSchema = Type.Object({
-	$schema: Type.Optional(Type.String()),
-	name: Type.String(),
-	vars: Type.Optional(Type.Record(Type.String(), ColorValueSchema)),
-	colors: Type.Object({
+const ThemeJsonSchema = z.object({
+	$schema: z.string().optional(),
+	name: z.string(),
+	vars: z.record(z.string(), ColorValueSchema).optional(),
+	colors: z.object({
 		// Core UI (10 colors)
 		accent: ColorValueSchema,
 		border: ColorValueSchema,
@@ -82,18 +85,16 @@ const ThemeJsonSchema = Type.Object({
 		// Bash Mode (1 color)
 		bashMode: ColorValueSchema,
 	}),
-	export: Type.Optional(
-		Type.Object({
-			pageBg: Type.Optional(ColorValueSchema),
-			cardBg: Type.Optional(ColorValueSchema),
-			infoBg: Type.Optional(ColorValueSchema),
-		}),
-	),
+	export: z
+		.object({
+			pageBg: ColorValueSchema.optional(),
+			cardBg: ColorValueSchema.optional(),
+			infoBg: ColorValueSchema.optional(),
+		})
+		.optional(),
 });
 
-type ThemeJson = Static<typeof ThemeJsonSchema>;
-
-const validateThemeJson = TypeCompiler.Compile(ThemeJsonSchema);
+type ThemeJson = z.infer<typeof ThemeJsonSchema>;
 
 export type ThemeColor =
 	| "accent"
@@ -505,18 +506,20 @@ export function getAvailableThemesWithPaths(): ThemeInfo[] {
 }
 
 function parseThemeJson(label: string, json: unknown): ThemeJson {
-	if (!validateThemeJson.Check(json)) {
-		const errors = Array.from(validateThemeJson.Errors(json));
+	const result = ThemeJsonSchema.safeParse(json);
+	if (!result.success) {
 		const missingColors: string[] = [];
 		const otherErrors: string[] = [];
 
-		for (const e of errors) {
+		for (const issue of result.error.issues) {
 			// Check for missing required color properties
-			const match = e.path.match(/^\/colors\/(\w+)$/);
-			if (match && e.message.includes("Required")) {
-				missingColors.push(match[1]);
+			const pathStr = issue.path.join("/");
+			// In Zod v4, missing required properties show as invalid_type with "Required" in message
+			const isMissingRequired = issue.code === "invalid_type" && issue.message.toLowerCase().includes("required");
+			if (pathStr.startsWith("colors/") && isMissingRequired) {
+				missingColors.push(issue.path[issue.path.length - 1] as string);
 			} else {
-				otherErrors.push(`  - ${e.path}: ${e.message}`);
+				otherErrors.push(`  - /${pathStr}: ${issue.message}`);
 			}
 		}
 
@@ -534,7 +537,7 @@ function parseThemeJson(label: string, json: unknown): ThemeJson {
 		throw new Error(errorMessage);
 	}
 
-	return json as ThemeJson;
+	return result.data;
 }
 
 function parseThemeJsonContent(label: string, content: string): ThemeJson {

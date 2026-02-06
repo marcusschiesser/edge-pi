@@ -1,22 +1,20 @@
 import { spawnSync } from "@mariozechner/pi-env/child-process";
 import { existsSync } from "@mariozechner/pi-env/fs";
 import path from "@mariozechner/pi-env/path";
-import { type Static, Type } from "@sinclair/typebox";
 import { globSync } from "glob";
+import { z } from "zod";
 import { ensureTool } from "../../utils/tools-manager.js";
 import type { AgentTool } from "../ai-types.js";
 import { resolveToCwd } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
 
-const findSchema = Type.Object({
-	pattern: Type.String({
-		description: "Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'",
-	}),
-	path: Type.Optional(Type.String({ description: "Directory to search in (default: current directory)" })),
-	limit: Type.Optional(Type.Number({ description: "Maximum number of results (default: 1000)" })),
+const findSchema = z.object({
+	pattern: z.string().describe("Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'"),
+	path: z.string().describe("Directory to search in (default: current directory)").optional(),
+	limit: z.number().describe("Maximum number of results (default: 1000)").optional(),
 });
 
-export type FindToolInput = Static<typeof findSchema>;
+export type FindToolInput = z.infer<typeof findSchema>;
 
 const DEFAULT_LIMIT = 1000;
 

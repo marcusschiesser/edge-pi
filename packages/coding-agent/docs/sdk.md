@@ -438,7 +438,7 @@ const { session } = await createAgentSession({
 ### Custom Tools
 
 ```typescript
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
 import { createAgentSession, type ToolDefinition } from "@mariozechner/pi-coding-agent";
 
 // Inline custom tool
@@ -446,8 +446,8 @@ const myTool: ToolDefinition = {
   name: "my_tool",
   label: "My Tool",
   description: "Does something useful",
-  parameters: Type.Object({
-    input: Type.String({ description: "Input value" }),
+  parameters: z.object({
+    input: z.string().describe("Input value"),
   }),
   execute: async (toolCallId, params, onUpdate, ctx, signal) => ({
     content: [{ type: "text", text: `Result: ${params.input}` }],
@@ -750,7 +750,7 @@ interface LoadExtensionsResult {
 ## Complete Example
 
 ```typescript
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
 import {
   AuthStorage,
   createAgentSession,
@@ -780,7 +780,7 @@ const statusTool: ToolDefinition = {
   name: "status",
   label: "Status",
   description: "Get system status",
-  parameters: Type.Object({}),
+  parameters: z.object({}),
   execute: async () => ({
     content: [{ type: "text", text: `Uptime: ${process.uptime()}s` }],
     details: {},

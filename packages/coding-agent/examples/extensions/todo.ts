@@ -10,9 +10,9 @@
  * correct for that point in history.
  */
 
-import { type ExtensionAPI, type ExtensionContext, StringEnum, type Theme } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext, Theme } from "@mariozechner/pi-coding-agent";
 import { matchesKey, Text, truncateToWidth } from "@mariozechner/pi-tui";
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
 
 interface Todo {
 	id: number;
@@ -27,10 +27,10 @@ interface TodoDetails {
 	error?: string;
 }
 
-const TodoParams = Type.Object({
-	action: StringEnum(["list", "add", "toggle", "clear"] as const),
-	text: Type.Optional(Type.String({ description: "Todo text (for add)" })),
-	id: Type.Optional(Type.Number({ description: "Todo ID (for toggle)" })),
+const TodoParams = z.object({
+	action: z.enum(["list", "add", "toggle", "clear"]),
+	text: z.string().describe("Todo text (for add)").optional(),
+	id: z.number().describe("Todo ID (for toggle)").optional(),
 });
 
 /**

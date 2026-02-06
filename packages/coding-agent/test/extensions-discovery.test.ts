@@ -28,13 +28,13 @@ describe("extensions discovery", () => {
 	`;
 
 	const extensionCodeWithTool = (toolName: string) => `
-		import { Type } from "@sinclair/typebox";
+		import { z } from "zod";
 		export default function(pi) {
 			pi.registerTool({
 				name: "${toolName}",
 				label: "${toolName}",
 				description: "Test tool",
-				parameters: Type.Object({}),
+				parameters: z.object({}),
 				execute: async () => ({ content: [{ type: "text", text: "ok" }] }),
 			});
 		}

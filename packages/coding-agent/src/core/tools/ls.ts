@@ -1,16 +1,16 @@
 import { existsSync, readdirSync, statSync } from "@mariozechner/pi-env/fs";
 import nodePath from "@mariozechner/pi-env/path";
-import { type Static, Type } from "@sinclair/typebox";
+import { z } from "zod";
 import type { AgentTool } from "../ai-types.js";
 import { resolveToCwd } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
 
-const lsSchema = Type.Object({
-	path: Type.Optional(Type.String({ description: "Directory to list (default: current directory)" })),
-	limit: Type.Optional(Type.Number({ description: "Maximum number of entries to return (default: 500)" })),
+const lsSchema = z.object({
+	path: z.string().describe("Directory to list (default: current directory)").optional(),
+	limit: z.number().describe("Maximum number of entries to return (default: 500)").optional(),
 });
 
-export type LsToolInput = Static<typeof lsSchema>;
+export type LsToolInput = z.infer<typeof lsSchema>;
 
 const DEFAULT_LIMIT = 500;
 

@@ -21,11 +21,11 @@
  */
 
 import type { ExtensionAPI, TextContent } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
 import { appendFileSync, constants, readFileSync } from "fs";
 import { access, readFile } from "fs/promises";
 import { homedir } from "os";
 import { join, resolve } from "path";
+import { z } from "zod";
 
 const LOG_FILE = join(homedir(), ".pi", "agent", "read-access.log");
 
@@ -57,10 +57,10 @@ function logAccess(path: string, allowed: boolean, reason?: string) {
 	}
 }
 
-const readSchema = Type.Object({
-	path: Type.String({ description: "Path to the file to read (relative or absolute)" }),
-	offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-indexed)" })),
-	limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read" })),
+const readSchema = z.object({
+	path: z.string().describe("Path to the file to read (relative or absolute)"),
+	offset: z.number().describe("Line number to start reading from (1-indexed)").optional(),
+	limit: z.number().describe("Maximum number of lines to read").optional(),
 });
 
 export default function (pi: ExtensionAPI) {

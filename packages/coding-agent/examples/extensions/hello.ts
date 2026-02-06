@@ -3,15 +3,15 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
 
 export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "hello",
 		label: "Hello",
 		description: "A simple greeting tool",
-		parameters: Type.Object({
-			name: Type.String({ description: "Name to greet" }),
+		parameters: z.object({
+			name: z.string().describe("Name to greet"),
 		}),
 
 		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {

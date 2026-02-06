@@ -7,84 +7,82 @@
 import { execSync } from "@mariozechner/pi-env/child-process";
 import { existsSync, readFileSync } from "@mariozechner/pi-env/fs";
 import { join } from "@mariozechner/pi-env/path";
-import { type Static, Type } from "@sinclair/typebox";
-import AjvModule from "ajv";
+import { z } from "zod";
 import { getAgentDir } from "../config.js";
 import type { Api, KnownProvider, ModelInfo } from "./ai-types.js";
 import type { AuthStorage } from "./auth-storage.js";
 import { getModels, getProviders } from "./models.js";
 
-const Ajv = (AjvModule as any).default || AjvModule;
-
 // ============================================================================
-// TypeBox Schemas for models.json validation
+// Zod Schemas for models.json validation
 // ============================================================================
 
-const OpenRouterRoutingSchema = Type.Object({
-	only: Type.Optional(Type.Array(Type.String())),
-	order: Type.Optional(Type.Array(Type.String())),
+const OpenRouterRoutingSchema = z.object({
+	only: z.array(z.string()).optional(),
+	order: z.array(z.string()).optional(),
 });
 
-const VercelGatewayRoutingSchema = Type.Object({
-	only: Type.Optional(Type.Array(Type.String())),
-	order: Type.Optional(Type.Array(Type.String())),
+const VercelGatewayRoutingSchema = z.object({
+	only: z.array(z.string()).optional(),
+	order: z.array(z.string()).optional(),
 });
 
-const OpenAICompletionsCompatSchema = Type.Object({
-	supportsStore: Type.Optional(Type.Boolean()),
-	supportsDeveloperRole: Type.Optional(Type.Boolean()),
-	supportsReasoningEffort: Type.Optional(Type.Boolean()),
-	supportsUsageInStreaming: Type.Optional(Type.Boolean()),
-	maxTokensField: Type.Optional(Type.Union([Type.Literal("max_completion_tokens"), Type.Literal("max_tokens")])),
-	requiresToolResultName: Type.Optional(Type.Boolean()),
-	requiresAssistantAfterToolResult: Type.Optional(Type.Boolean()),
-	requiresThinkingAsText: Type.Optional(Type.Boolean()),
-	requiresMistralToolIds: Type.Optional(Type.Boolean()),
-	thinkingFormat: Type.Optional(Type.Union([Type.Literal("openai"), Type.Literal("zai"), Type.Literal("qwen")])),
-	openRouterRouting: Type.Optional(OpenRouterRoutingSchema),
-	vercelGatewayRouting: Type.Optional(VercelGatewayRoutingSchema),
+const OpenAICompletionsCompatSchema = z.object({
+	supportsStore: z.boolean().optional(),
+	supportsDeveloperRole: z.boolean().optional(),
+	supportsReasoningEffort: z.boolean().optional(),
+	supportsUsageInStreaming: z.boolean().optional(),
+	maxTokensField: z.enum(["max_completion_tokens", "max_tokens"]).optional(),
+	requiresToolResultName: z.boolean().optional(),
+	requiresAssistantAfterToolResult: z.boolean().optional(),
+	requiresThinkingAsText: z.boolean().optional(),
+	requiresMistralToolIds: z.boolean().optional(),
+	thinkingFormat: z.enum(["openai", "zai", "qwen"]).optional(),
+	openRouterRouting: OpenRouterRoutingSchema.optional(),
+	vercelGatewayRouting: VercelGatewayRoutingSchema.optional(),
+	supportsStrictMode: z.boolean().optional(),
 });
 
-const OpenAIResponsesCompatSchema = Type.Object({
+const OpenAIResponsesCompatSchema = z.object({
 	// Reserved for future use
 });
 
-const OpenAICompatSchema = Type.Union([OpenAICompletionsCompatSchema, OpenAIResponsesCompatSchema]);
+const OpenAICompatSchema = z.union([OpenAICompletionsCompatSchema, OpenAIResponsesCompatSchema]);
 
-const ModelDefinitionSchema = Type.Object({
-	id: Type.String({ minLength: 1 }),
-	name: Type.Optional(Type.String({ minLength: 1 })),
-	api: Type.Optional(Type.String({ minLength: 1 })),
-	reasoning: Type.Optional(Type.Boolean()),
-	input: Type.Optional(Type.Array(Type.Union([Type.Literal("text"), Type.Literal("image")]))),
-	cost: Type.Optional(
-		Type.Object({
-			input: Type.Number(),
-			output: Type.Number(),
-			cacheRead: Type.Number(),
-			cacheWrite: Type.Number(),
-		}),
-	),
-	contextWindow: Type.Optional(Type.Number()),
-	maxTokens: Type.Optional(Type.Number()),
-	headers: Type.Optional(Type.Record(Type.String(), Type.String())),
-	compat: Type.Optional(OpenAICompatSchema),
+const ModelDefinitionSchema = z.object({
+	id: z.string().min(1),
+	name: z.string().min(1).optional(),
+	api: z.string().min(1).optional(),
+	reasoning: z.boolean().optional(),
+	input: z.array(z.enum(["text", "image"])).optional(),
+	cost: z
+		.object({
+			input: z.number(),
+			output: z.number(),
+			cacheRead: z.number(),
+			cacheWrite: z.number(),
+		})
+		.optional(),
+	contextWindow: z.number().optional(),
+	maxTokens: z.number().optional(),
+	headers: z.record(z.string(), z.string()).optional(),
+	compat: OpenAICompatSchema.optional(),
 });
 
-const ProviderConfigSchema = Type.Object({
-	baseUrl: Type.Optional(Type.String({ minLength: 1 })),
-	apiKey: Type.Optional(Type.String({ minLength: 1 })),
-	api: Type.Optional(Type.String({ minLength: 1 })),
-	headers: Type.Optional(Type.Record(Type.String(), Type.String())),
-	authHeader: Type.Optional(Type.Boolean()),
-	models: Type.Optional(Type.Array(ModelDefinitionSchema)),
+const ProviderConfigSchema = z.object({
+	baseUrl: z.string().min(1).optional(),
+	apiKey: z.string().min(1).optional(),
+	api: z.string().min(1).optional(),
+	headers: z.record(z.string(), z.string()).optional(),
+	authHeader: z.boolean().optional(),
+	models: z.array(ModelDefinitionSchema).optional(),
 });
 
-const ModelsConfigSchema = Type.Object({
-	providers: Type.Record(Type.String(), ProviderConfigSchema),
+const ModelsConfigSchema = z.object({
+	providers: z.record(z.string(), ProviderConfigSchema),
 });
 
-type ModelsConfig = Static<typeof ModelsConfigSchema>;
+type ModelsConfig = z.infer<typeof ModelsConfigSchema>;
 
 // ============================================================================
 // Types
@@ -325,21 +323,18 @@ export class ModelRegistry {
 
 		try {
 			const content = readFileSync(modelsJsonPath, "utf-8");
-			const config: ModelsConfig = JSON.parse(content);
+			const rawConfig = JSON.parse(content);
 
-			// Validate schema
-			const ajv = new Ajv();
-			const validate = ajv.compile(ModelsConfigSchema);
-			if (!validate(config)) {
+			// Validate schema using Zod
+			const result = ModelsConfigSchema.safeParse(rawConfig);
+			if (!result.success) {
 				const errors =
-					validate.errors
-						?.map(
-							(e: { instancePath?: string; message?: string }) =>
-								`  - ${e.instancePath || "root"}: ${e.message}`,
-						)
-						.join("\n") || "Unknown schema error";
+					result.error.issues.map((e) => `  - /${e.path.join("/") || "root"}: ${e.message}`).join("\n") ||
+					"Unknown schema error";
 				return emptyCustomModelsResult(`Invalid models.json schema:\n${errors}\n\nFile: ${modelsJsonPath}`);
 			}
+
+			const config = result.data;
 
 			// Additional validation
 			this.validateConfig(config);

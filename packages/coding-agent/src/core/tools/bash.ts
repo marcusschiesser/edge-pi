@@ -3,7 +3,7 @@ import { randomBytes } from "@mariozechner/pi-env/crypto";
 import { createWriteStream, existsSync } from "@mariozechner/pi-env/fs";
 import { tmpdir } from "@mariozechner/pi-env/os";
 import { join } from "@mariozechner/pi-env/path";
-import { type Static, Type } from "@sinclair/typebox";
+import { z } from "zod";
 import { getShellConfig, getShellEnv, killProcessTree } from "../../utils/shell.js";
 import type { AgentTool } from "../ai-types.js";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateTail } from "./truncate.js";
@@ -16,12 +16,12 @@ function getTempFilePath(): string {
 	return join(tmpdir(), `pi-bash-${id}.log`);
 }
 
-const bashSchema = Type.Object({
-	command: Type.String({ description: "Bash command to execute" }),
-	timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (optional, no default timeout)" })),
+const bashSchema = z.object({
+	command: z.string().describe("Bash command to execute"),
+	timeout: z.number().describe("Timeout in seconds (optional, no default timeout)").optional(),
 });
 
-export type BashToolInput = Static<typeof bashSchema>;
+export type BashToolInput = z.infer<typeof bashSchema>;
 
 export interface BashToolDetails {
 	truncation?: TruncationResult;

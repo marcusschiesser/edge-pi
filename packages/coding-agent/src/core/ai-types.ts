@@ -169,8 +169,7 @@ export type Message = UserMessage | AssistantMessage | ToolResultMessage;
 
 /**
  * Tool definition.
- * TParameters can be a Zod schema (z.ZodType) or TypeBox schema (TSchema).
- * During migration, both are supported. Use Zod for new tools.
+ * TParameters should be a Zod schema (z.ZodType).
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface Tool<TParameters = any> {
@@ -293,8 +292,7 @@ export type AgentToolUpdateCallback<T = unknown> = (partialResult: AgentToolResu
 
 /**
  * Agent tool extends Tool with execution function.
- * TParameters can be a Zod schema or TypeBox schema.
- * During migration, both are supported. Use Zod for new tools.
+ * TParameters should be a Zod schema (z.ZodType).
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface AgentTool<TParameters = any, TDetails = unknown> extends Tool<TParameters> {
@@ -526,33 +524,4 @@ export interface OAuthLoginCallbacks {
 	onProgress?: (message: string) => void;
 	onManualCodeInput?: () => Promise<string>;
 	signal?: AbortSignal;
-}
-
-// ============================================================================
-// TypeBox Helpers
-// ============================================================================
-
-import { type TUnsafe, Type } from "@sinclair/typebox";
-
-/**
- * Creates a string enum schema compatible with Google's API and other providers
- * that don't support anyOf/const patterns.
- *
- * @example
- * const OperationSchema = StringEnum(["add", "subtract", "multiply", "divide"], {
- *   description: "The operation to perform"
- * });
- *
- * type Operation = Static<typeof OperationSchema>; // "add" | "subtract" | "multiply" | "divide"
- */
-export function StringEnum<T extends readonly string[]>(
-	values: T,
-	options?: { description?: string; default?: T[number] },
-): TUnsafe<T[number]> {
-	return Type.Unsafe<T[number]>({
-		type: "string",
-		enum: values as unknown as string[],
-		...(options?.description && { description: options.description }),
-		...(options?.default && { default: options.default }),
-	});
 }

@@ -18,7 +18,7 @@ import type {
 	OverlayOptions,
 	TUI,
 } from "@mariozechner/pi-tui";
-import type { Static, TSchema } from "@sinclair/typebox";
+import type { z } from "zod";
 import type { Theme } from "../../modes/interactive/theme/theme.js";
 import type {
 	AgentMessage,
@@ -308,27 +308,27 @@ export interface ToolRenderResultOptions {
 /**
  * Tool definition for registerTool().
  */
-export interface ToolDefinition<TParams extends TSchema = TSchema, TDetails = unknown> {
+export interface ToolDefinition<TParams extends z.ZodTypeAny = z.ZodTypeAny, TDetails = unknown> {
 	/** Tool name (used in LLM tool calls) */
 	name: string;
 	/** Human-readable label for UI */
 	label: string;
 	/** Description for LLM */
 	description: string;
-	/** Parameter schema (TypeBox) */
+	/** Parameter schema (Zod) */
 	parameters: TParams;
 
 	/** Execute the tool. */
 	execute(
 		toolCallId: string,
-		params: Static<TParams>,
+		params: z.infer<TParams>,
 		signal: AbortSignal | undefined,
 		onUpdate: AgentToolUpdateCallback<TDetails> | undefined,
 		ctx: ExtensionContext,
 	): Promise<AgentToolResult<TDetails>>;
 
 	/** Custom rendering for tool call display */
-	renderCall?: (args: Static<TParams>, theme: Theme) => Component;
+	renderCall?: (args: z.infer<TParams>, theme: Theme) => Component;
 
 	/** Custom rendering for tool result display */
 	renderResult?: (result: AgentToolResult<TDetails>, options: ToolRenderResultOptions, theme: Theme) => Component;
@@ -877,7 +877,9 @@ export interface ExtensionAPI {
 	// =========================================================================
 
 	/** Register a tool that the LLM can call. */
-	registerTool<TParams extends TSchema = TSchema, TDetails = unknown>(tool: ToolDefinition<TParams, TDetails>): void;
+	registerTool<TParams extends z.ZodTypeAny = z.ZodTypeAny, TDetails = unknown>(
+		tool: ToolDefinition<TParams, TDetails>,
+	): void;
 
 	// =========================================================================
 	// Command, Shortcut, Flag Registration

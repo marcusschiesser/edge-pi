@@ -6,7 +6,7 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
 
 export default function (pi: ExtensionAPI) {
 	// Register a /quit command that cleanly exits pi
@@ -22,7 +22,7 @@ export default function (pi: ExtensionAPI) {
 		name: "finish_and_exit",
 		label: "Finish and Exit",
 		description: "Complete a task and exit pi",
-		parameters: Type.Object({}),
+		parameters: z.object({}),
 		async execute(_toolCallId, _params, _signal, _onUpdate, ctx) {
 			// Do any final work here...
 			// Request graceful shutdown (deferred until agent is idle)
@@ -41,8 +41,8 @@ export default function (pi: ExtensionAPI) {
 		name: "deploy_and_exit",
 		label: "Deploy and Exit",
 		description: "Deploy the application and exit pi",
-		parameters: Type.Object({
-			environment: Type.String({ description: "Target environment (e.g., production, staging)" }),
+		parameters: z.object({
+			environment: z.string().describe("Target environment (e.g., production, staging)"),
 		}),
 		async execute(_toolCallId, params, _signal, onUpdate, ctx) {
 			onUpdate?.({ content: [{ type: "text", text: `Deploying to ${params.environment}...` }], details: {} });
