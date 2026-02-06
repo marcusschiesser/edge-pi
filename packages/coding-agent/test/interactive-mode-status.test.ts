@@ -1,4 +1,4 @@
-import { initTheme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { initTheme } from "../src/modes/interactive/theme/theme.js";
 import { Container } from "@mariozechner/pi-tui";
 import { beforeAll, describe, expect, test, vi } from "vitest";
 import { InteractiveMode } from "../src/modes/interactive/interactive-mode.js";

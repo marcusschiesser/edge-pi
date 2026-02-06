@@ -5,7 +5,7 @@
  */
 
 import type { AssistantMessage } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
-import { initTheme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { initTheme } from "../src/modes/interactive/theme/theme.js";
 import { ProcessTerminal, TUI } from "@mariozechner/pi-tui";
 import { readFileSync } from "fs";
 import { dirname, join } from "path";

@@ -3,7 +3,7 @@
  */
 
 import type { AppAction, KeybindingsManager } from "@mariozechner/pi-coding-agent-sdk/core/keybindings.js";
-import { theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { theme } from "../theme/theme.js";
 import { type EditorAction, getEditorKeybindings, type KeyId } from "@mariozechner/pi-tui";
 
 /**

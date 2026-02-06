@@ -1,5 +1,5 @@
 import { getOAuthProviders } from "@mariozechner/pi-coding-agent-sdk/core/model-registry.js";
-import { theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { theme } from "../theme/theme.js";
 import { exec } from "@mariozechner/pi-env/child-process";
 import { Container, type Focusable, getEditorKeybindings, Input, Spacer, Text, type TUI } from "@mariozechner/pi-tui";
 import { DynamicBorder } from "./dynamic-border.js";

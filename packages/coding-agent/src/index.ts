@@ -10,7 +10,7 @@ export {
 	initTheme,
 	Theme,
 	type ThemeColor,
-} from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+} from "./modes/interactive/theme/theme.js";
 // Main entry point (CLI)
 export { main } from "./main.js";
 // Run modes for programmatic SDK usage

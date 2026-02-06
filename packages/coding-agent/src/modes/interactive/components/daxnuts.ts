@@ -4,7 +4,7 @@
  * A heartfelt tribute to dax (@thdxr) for providing free Kimi K2.5 access via OpenCode.
  */
 
-import { theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { theme } from "../theme/theme.js";
 import type { Component, TUI } from "@mariozechner/pi-tui";
 
 // 32x32 RGB image of dax, hex encoded (3 bytes per pixel)

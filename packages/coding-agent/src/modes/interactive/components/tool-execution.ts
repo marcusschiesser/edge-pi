@@ -14,7 +14,7 @@ import {
 	getLanguageFromPath,
 	highlightCode,
 	theme,
-} from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+} from "../theme/theme.js";
 import { convertToPng } from "@mariozechner/pi-coding-agent-sdk/utils/image-convert.js";
 import { sanitizeBinaryOutput } from "@mariozechner/pi-coding-agent-sdk/utils/shell.js";
 import * as os from "@mariozechner/pi-env/os";

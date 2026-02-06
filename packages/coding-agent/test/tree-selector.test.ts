@@ -4,7 +4,7 @@ import type {
 	SessionMessageEntry,
 	SessionTreeNode,
 } from "@mariozechner/pi-coding-agent-sdk/core/session-manager.js";
-import { initTheme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { initTheme } from "../src/modes/interactive/theme/theme.js";
 import { beforeAll, describe, expect, test } from "vitest";
 import { TreeSelectorComponent } from "../src/modes/interactive/components/tree-selector.js";
 

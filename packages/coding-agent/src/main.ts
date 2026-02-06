@@ -22,7 +22,7 @@ import { SessionManager } from "@mariozechner/pi-coding-agent-sdk/core/session-m
 import { type PackageSource, SettingsManager } from "@mariozechner/pi-coding-agent-sdk/core/settings-manager.js";
 import { printTimings, time } from "@mariozechner/pi-coding-agent-sdk/core/timings.js";
 import { allTools } from "@mariozechner/pi-coding-agent-sdk/core/tools/index.js";
-import { initTheme, stopThemeWatcher } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { initTheme, stopThemeWatcher } from "./modes/interactive/theme/theme.js";
 import chalk from "chalk";
 import { createInterface } from "readline";
 import { type Args, parseArgs, printHelp } from "./cli/args.js";

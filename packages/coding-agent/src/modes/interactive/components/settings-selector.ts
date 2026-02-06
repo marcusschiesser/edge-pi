@@ -3,7 +3,7 @@ import {
 	getSelectListTheme,
 	getSettingsListTheme,
 	theme,
-} from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+} from "../theme/theme.js";
 import {
 	Container,
 	getCapabilities,

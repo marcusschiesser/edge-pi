@@ -3,7 +3,7 @@
  * Displays a list of string options with keyboard navigation.
  */
 
-import { theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { theme } from "../theme/theme.js";
 import { Container, getEditorKeybindings, Spacer, Text, type TUI } from "@mariozechner/pi-tui";
 import { CountdownTimer } from "./countdown-timer.js";
 import { DynamicBorder } from "./dynamic-border.js";

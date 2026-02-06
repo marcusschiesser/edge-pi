@@ -4,7 +4,7 @@
  */
 
 import type { KeybindingsManager } from "@mariozechner/pi-coding-agent-sdk/core/keybindings.js";
-import { getEditorTheme, theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { getEditorTheme, theme } from "../theme/theme.js";
 import { spawnSync } from "@mariozechner/pi-env/child-process";
 import * as fs from "@mariozechner/pi-env/fs";
 import * as os from "@mariozechner/pi-env/os";

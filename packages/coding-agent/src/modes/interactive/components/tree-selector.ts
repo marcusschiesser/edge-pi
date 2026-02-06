@@ -1,5 +1,5 @@
 import type { SessionTreeNode } from "@mariozechner/pi-coding-agent-sdk/core/session-manager.js";
-import { theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { theme } from "../theme/theme.js";
 import {
 	type Component,
 	Container,

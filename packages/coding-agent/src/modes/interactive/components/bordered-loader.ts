@@ -1,4 +1,4 @@
-import type { Theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import type { Theme } from "../theme/theme.js";
 import { CancellableLoader, Container, Loader, Spacer, Text, type TUI } from "@mariozechner/pi-tui";
 import { DynamicBorder } from "./dynamic-border.js";
 import { keyHint } from "./keybinding-hints.js";

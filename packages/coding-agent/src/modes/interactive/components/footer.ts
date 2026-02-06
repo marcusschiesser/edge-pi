@@ -1,7 +1,7 @@
 import type { AgentSession } from "@mariozechner/pi-coding-agent-sdk/core/agent-session.js";
 import type { AssistantMessage } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
 import type { ReadonlyFooterDataProvider } from "@mariozechner/pi-coding-agent-sdk/core/footer-data-provider.js";
-import { theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { theme } from "../theme/theme.js";
 import { type Component, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
 
 /**

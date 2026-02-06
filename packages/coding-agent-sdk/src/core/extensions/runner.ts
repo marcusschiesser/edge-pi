@@ -3,7 +3,7 @@
  */
 
 import type { KeyId } from "@mariozechner/pi-tui";
-import { type Theme, theme } from "../../modes/interactive/theme/theme.js";
+import { type Theme, theme } from "../theme.js";
 import type { AgentMessage, ImageContent, Model } from "../ai-types.js";
 import type { ResourceDiagnostic } from "../diagnostics.js";
 import type { KeyAction, KeybindingsConfig } from "../keybindings.js";

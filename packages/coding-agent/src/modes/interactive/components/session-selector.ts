@@ -1,6 +1,6 @@
 import { KeybindingsManager } from "@mariozechner/pi-coding-agent-sdk/core/keybindings.js";
 import type { SessionInfo, SessionListProgress } from "@mariozechner/pi-coding-agent-sdk/core/session-manager.js";
-import { theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { theme } from "../theme/theme.js";
 import { spawnSync } from "@mariozechner/pi-env/child-process";
 import { existsSync, unlink } from "@mariozechner/pi-env/fs";
 import * as os from "@mariozechner/pi-env/os";

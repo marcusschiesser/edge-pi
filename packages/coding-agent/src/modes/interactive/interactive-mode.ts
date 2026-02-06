@@ -55,7 +55,7 @@ import {
 	Theme,
 	type ThemeColor,
 	theme,
-} from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+} from "./theme/theme.js";
 import { getChangelogPath, getNewEntries, parseChangelog } from "@mariozechner/pi-coding-agent-sdk/utils/changelog.js";
 import { copyToClipboard } from "@mariozechner/pi-coding-agent-sdk/utils/clipboard.js";
 import {

@@ -3,7 +3,7 @@ import { homedir } from "@mariozechner/pi-env/os";
 import { join, resolve, sep } from "@mariozechner/pi-env/path";
 import chalk from "chalk";
 import { CONFIG_DIR_NAME, getAgentDir } from "../config.js";
-import { loadThemeFromPath, type Theme } from "../modes/interactive/theme/theme.js";
+import { loadThemeFromPath, type Theme } from "./theme.js";
 import type { ResourceDiagnostic } from "./diagnostics.js";
 
 export type { ResourceCollision, ResourceDiagnostic } from "./diagnostics.js";

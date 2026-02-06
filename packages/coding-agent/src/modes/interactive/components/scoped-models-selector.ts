@@ -1,5 +1,5 @@
 import type { Model } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
-import { theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { theme } from "../theme/theme.js";
 import {
 	Container,
 	type Focusable,

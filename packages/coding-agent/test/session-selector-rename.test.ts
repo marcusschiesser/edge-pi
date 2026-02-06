@@ -1,5 +1,5 @@
 import type { SessionInfo } from "@mariozechner/pi-coding-agent-sdk/core/session-manager.js";
-import { initTheme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { initTheme } from "../src/modes/interactive/theme/theme.js";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { SessionSelectorComponent } from "../src/modes/interactive/components/session-selector.js";
 

@@ -17,7 +17,7 @@ import type {
 	ExtensionUIDialogOptions,
 	ExtensionWidgetOptions,
 } from "@mariozechner/pi-coding-agent-sdk/core/extensions/index.js";
-import { type Theme, theme } from "@mariozechner/pi-coding-agent-sdk/modes/interactive/theme/theme.js";
+import { type Theme, theme } from "../interactive/theme/theme.js";
 import * as crypto from "@mariozechner/pi-env/crypto";
 import * as readline from "readline";
 import type {
