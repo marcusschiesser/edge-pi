@@ -1,14 +1,15 @@
 /**
- * Agent loop that uses Vercel AI SDK's streamText for LLM calls.
+ * Agent loop using Vercel AI SDK's ToolLoopAgent for LLM calls with tool execution.
  *
- * This module implements the agent loop pattern with:
- * - Multi-step tool calling via streamText with stepCountIs
+ * This module uses the AI SDK's ToolLoopAgent to handle multi-step tool calling,
+ * wrapped in an outer loop that manages:
+ * - Steering message injection mid-conversation
+ * - Follow-up message processing after agent completion
  * - Streaming events for UI updates
- * - Support for steering and follow-up message queues
- * - Transform context hooks for extensions
+ * - Context transforms for extensions
  */
 
-import { jsonSchema, type ModelMessage, tool as sdkTool, stepCountIs, streamText, type ToolSet } from "ai";
+import { jsonSchema, type ModelMessage, tool as sdkTool, stepCountIs, ToolLoopAgent, type ToolSet } from "ai";
 import type { z } from "zod";
 import {
 	type AgentEvent,
@@ -179,8 +180,8 @@ async function runLoop(
 				pendingMessages = [];
 			}
 
-			// Stream assistant response with tool execution
-			const { assistantMessage, toolResults, steeringMessages } = await streamAssistantWithTools(
+			// Stream assistant response using ToolLoopAgent
+			const { assistantMessage, toolResults, steeringMessages } = await streamWithAgent(
 				currentContext,
 				config,
 				signal,
@@ -231,7 +232,7 @@ async function runLoop(
 }
 
 // ============================================================================
-// Stream Assistant with Tool Execution
+// ToolLoopAgent-based Streaming
 // ============================================================================
 
 interface StreamResult {
@@ -240,7 +241,13 @@ interface StreamResult {
 	steeringMessages?: AgentMessage[];
 }
 
-async function streamAssistantWithTools(
+/**
+ * Stream an assistant response using the AI SDK's ToolLoopAgent.
+ *
+ * Creates a ToolLoopAgent configured with the current tools and model,
+ * then consumes its fullStream to emit UI events and collect results.
+ */
+async function streamWithAgent(
 	context: AgentContext,
 	config: AgentLoopConfig,
 	signal: AbortSignal | undefined,
@@ -264,13 +271,12 @@ async function streamAssistantWithTools(
 	// Create language model instance
 	const languageModel = createLanguageModel(config.model, apiKey);
 
-	// Convert AgentTools to Vercel AI SDK tools
+	// Convert AgentTools to AI SDK tool format
 	const sdkTools: ToolSet = {};
 	const toolResultsMap = new Map<string, ToolResultMessage>();
 	let steeringMessages: AgentMessage[] | undefined;
 
 	for (const agentTool of context.tools) {
-		// Convert TypeBox/Zod schema to Vercel SDK format
 		const inputSchema = convertToSdkSchema(agentTool.parameters);
 
 		sdkTools[agentTool.name] = sdkTool({
@@ -340,7 +346,7 @@ async function streamAssistantWithTools(
 					}
 				}
 
-				// Return text content for Vercel SDK
+				// Return text content for the SDK
 				return result.content
 					.filter((c): c is TextContent => c.type === "text")
 					.map((c) => c.text)
@@ -348,6 +354,14 @@ async function streamAssistantWithTools(
 			},
 		});
 	}
+
+	// Create the ToolLoopAgent for this turn
+	const agent = new ToolLoopAgent({
+		model: languageModel,
+		instructions: context.systemPrompt,
+		tools: Object.keys(sdkTools).length > 0 ? sdkTools : undefined,
+		stopWhen: stepCountIs(10),
+	});
 
 	// Build partial assistant message for streaming updates
 	const partialMessage: AssistantMessage = {
@@ -361,27 +375,22 @@ async function streamAssistantWithTools(
 		timestamp: Date.now(),
 	};
 
-	// Track content indices
-	const textIndex = -1;
-	const thinkingIndex = -1;
-	const toolCallIndices = new Map<string, number>();
+	// Track content indices for streaming
+	const indices = {
+		textIndex: -1,
+		thinkingIndex: -1,
+		toolCallIndices: new Map<string, number>(),
+	};
 
 	// Emit start event
 	stream.push({ type: "message_start", message: { ...partialMessage } });
 
 	try {
-		const result = streamText({
-			model: languageModel,
-			system: context.systemPrompt,
+		// Use the ToolLoopAgent's stream method
+		const result = await agent.stream({
 			messages: convertMessagesToVercelFormat(llmMessages),
-			tools: Object.keys(sdkTools).length > 0 ? sdkTools : undefined,
-			stopWhen: stepCountIs(10), // Allow up to 10 tool call steps
 			abortSignal: signal,
-			onChunk: ({ chunk }) => {
-				handleStreamChunk(chunk, partialMessage, stream, { textIndex, thinkingIndex, toolCallIndices });
-			},
 			onStepFinish: ({ usage }) => {
-				// Update usage from step
 				if (usage) {
 					partialMessage.usage.input += usage.inputTokens || 0;
 					partialMessage.usage.output += usage.outputTokens || 0;
@@ -390,9 +399,13 @@ async function streamAssistantWithTools(
 			},
 		});
 
-		// Wait for completion
-		const finalResult = await result;
-		const finishReason = await finalResult.finishReason;
+		// Consume the fullStream to drive tool execution and emit UI events
+		for await (const part of result.fullStream) {
+			handleStreamPart(part, partialMessage, stream, indices);
+		}
+
+		// Get final finish reason
+		const finishReason = await result.finishReason;
 
 		// Update final message
 		partialMessage.stopReason = finishReason === "tool-calls" ? "toolUse" : "stop";
@@ -428,7 +441,7 @@ async function streamAssistantWithTools(
 }
 
 // ============================================================================
-// Stream Chunk Handling
+// Stream Part Handling
 // ============================================================================
 
 interface ContentIndices {
@@ -437,15 +450,19 @@ interface ContentIndices {
 	toolCallIndices: Map<string, number>;
 }
 
-function handleStreamChunk(
-	chunk: { type: string; [key: string]: unknown },
+/**
+ * Handle a stream part from the AI SDK's fullStream.
+ * Maps AI SDK stream events to our custom AgentEvent/AssistantMessageEvent types.
+ */
+function handleStreamPart(
+	part: { type: string; [key: string]: unknown },
 	partialMessage: AssistantMessage,
 	stream: EventStream<AgentEvent, AgentMessage[]>,
 	indices: ContentIndices,
 ): void {
-	switch (chunk.type) {
-		case "text": {
-			const text = chunk.text as string;
+	switch (part.type) {
+		case "text-delta": {
+			const text = part.text as string;
 			if (indices.textIndex < 0) {
 				// Start new text content
 				indices.textIndex = partialMessage.content.length;
@@ -473,8 +490,8 @@ function handleStreamChunk(
 			break;
 		}
 
-		case "reasoning": {
-			const thinking = chunk.text as string;
+		case "reasoning-delta": {
+			const thinking = part.text as string;
 			if (indices.thinkingIndex < 0) {
 				// Start new thinking content
 				indices.thinkingIndex = partialMessage.content.length;
@@ -503,9 +520,9 @@ function handleStreamChunk(
 		}
 
 		case "tool-call": {
-			const toolCallId = chunk.toolCallId as string;
-			const toolName = chunk.toolName as string;
-			const input = chunk.input as Record<string, unknown>;
+			const toolCallId = part.toolCallId as string;
+			const toolName = part.toolName as string;
+			const input = part.input as Record<string, unknown>;
 
 			let contentIndex = indices.toolCallIndices.get(toolCallId);
 			if (contentIndex === undefined) {
@@ -539,6 +556,9 @@ function handleStreamChunk(
 			stream.push({ type: "message_update", message: { ...partialMessage }, assistantMessageEvent: endEvent });
 			break;
 		}
+
+		// Other stream parts (start-step, finish-step, start, finish, etc.) are
+		// handled by the ToolLoopAgent internally or via onStepFinish callback
 	}
 }
 
@@ -587,9 +607,9 @@ function convertToSdkSchema(schema: unknown) {
 // ============================================================================
 
 /**
- * Convert our Message[] format to Vercel AI SDK's format.
+ * Convert our Message[] format to Vercel AI SDK's ModelMessage[] format.
  */
-function convertMessagesToVercelFormat(messages: Message[]): ModelMessage[] {
+export function convertMessagesToVercelFormat(messages: Message[]): ModelMessage[] {
 	const result: ModelMessage[] = [];
 
 	for (const msg of messages) {

@@ -1,10 +1,11 @@
 /**
  * Streaming utilities using Vercel AI SDK.
  *
- * Provides completeSimple() for non-streaming completions.
+ * Provides complete() for non-streaming completions via generateText.
  */
 
-import { generateText, type ModelMessage } from "ai";
+import { generateText } from "ai";
+import { convertMessagesToVercelFormat } from "./agent-loop.js";
 import type {
 	AssistantMessage,
 	Context,
@@ -27,11 +28,15 @@ export async function completeSimple(
 	const apiKey = options?.apiKey ?? "";
 	const languageModel = createLanguageModel(model, apiKey);
 
+	// Convert messages using the shared conversion function
+	const messages = context.messages ?? [];
+	const vercelMessages = convertMessagesToVercelFormat(messages);
+
 	try {
 		const result = await generateText({
 			model: languageModel,
 			system: context.systemPrompt,
-			messages: context.messages.map(convertMessage),
+			messages: vercelMessages,
 			maxOutputTokens: options?.maxTokens,
 			temperature: options?.temperature,
 			abortSignal: options?.signal,
@@ -120,55 +125,6 @@ export async function completeSimple(
  * Alias for completeSimple for backward compatibility.
  */
 export const complete = completeSimple;
-
-/**
- * Convert our Message type to Vercel AI SDK format.
- */
-function convertMessage(msg: Context["messages"][number]): ModelMessage {
-	switch (msg.role) {
-		case "user":
-			if (typeof msg.content === "string") {
-				return { role: "user", content: msg.content };
-			}
-			return {
-				role: "user",
-				content: msg.content.map((c) => {
-					if (c.type === "text") return { type: "text", text: c.text };
-					if (c.type === "image") return { type: "image", image: c.data };
-					return { type: "text", text: "" };
-				}),
-			};
-
-		case "assistant": {
-			const text = msg.content
-				.filter((c): c is TextContent => c.type === "text")
-				.map((c) => c.text)
-				.join("");
-			return { role: "assistant", content: text };
-		}
-
-		case "toolResult": {
-			const resultText = msg.content
-				.filter((c): c is TextContent => c.type === "text")
-				.map((c) => c.text)
-				.join("");
-			return {
-				role: "tool",
-				content: [
-					{
-						type: "tool-result" as const,
-						toolCallId: msg.toolCallId,
-						toolName: msg.toolName,
-						output: { type: "text" as const, value: resultText },
-					},
-				],
-			};
-		}
-
-		default:
-			return { role: "user", content: "" };
-	}
-}
 
 /**
  * Map Vercel AI SDK finish reason to our StopReason.
