@@ -2,6 +2,7 @@
  * One-time migrations that run on startup.
  */
 
+import { CONFIG_DIR_NAME, getAgentDir, getBinDir } from "@mariozechner/pi-coding-agent-sdk/config.js";
 import {
 	existsSync,
 	mkdirSync,
@@ -13,7 +14,6 @@ import {
 } from "@mariozechner/pi-env/fs";
 import { dirname, join } from "@mariozechner/pi-env/path";
 import chalk from "chalk";
-import { CONFIG_DIR_NAME, getAgentDir, getBinDir } from "./config.js";
 
 const MIGRATION_GUIDE_URL =
 	"https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/CHANGELOG.md#extensions-migration";

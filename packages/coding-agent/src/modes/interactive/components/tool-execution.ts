@@ -1,3 +1,22 @@
+import type { ToolDefinition } from "@mariozechner/pi-coding-agent-sdk/core/extensions/types.js";
+import {
+	computeEditDiff,
+	type EditDiffError,
+	type EditDiffResult,
+} from "@mariozechner/pi-coding-agent-sdk/core/tools/edit-diff.js";
+import { allTools } from "@mariozechner/pi-coding-agent-sdk/core/tools/index.js";
+import {
+	DEFAULT_MAX_BYTES,
+	DEFAULT_MAX_LINES,
+	formatSize,
+} from "@mariozechner/pi-coding-agent-sdk/core/tools/truncate.js";
+import {
+	getLanguageFromPath,
+	highlightCode,
+	theme,
+} from "../theme/theme.js";
+import { convertToPng } from "@mariozechner/pi-coding-agent-sdk/utils/image-convert.js";
+import { sanitizeBinaryOutput } from "@mariozechner/pi-coding-agent-sdk/utils/shell.js";
 import * as os from "@mariozechner/pi-env/os";
 import {
 	Box,
@@ -12,13 +31,6 @@ import {
 	truncateToWidth,
 } from "@mariozechner/pi-tui";
 import stripAnsi from "strip-ansi";
-import type { ToolDefinition } from "../../../core/extensions/types.js";
-import { computeEditDiff, type EditDiffError, type EditDiffResult } from "../../../core/tools/edit-diff.js";
-import { allTools } from "../../../core/tools/index.js";
-import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize } from "../../../core/tools/truncate.js";
-import { convertToPng } from "../../../utils/image-convert.js";
-import { sanitizeBinaryOutput } from "../../../utils/shell.js";
-import { getLanguageFromPath, highlightCode, theme } from "../theme/theme.js";
 import { renderDiff } from "./diff.js";
 import { keyHint } from "./keybinding-hints.js";
 import { truncateToVisualLines } from "./visual-truncate.js";

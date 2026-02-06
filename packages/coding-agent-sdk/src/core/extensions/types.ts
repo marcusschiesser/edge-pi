@@ -19,7 +19,7 @@ import type {
 	TUI,
 } from "@mariozechner/pi-tui";
 import type { z } from "zod";
-import type { Theme } from "../../modes/interactive/theme/theme.js";
+import type { Theme } from "../theme.js";
 import type {
 	AgentMessage,
 	AgentToolResult,

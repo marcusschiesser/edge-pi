@@ -16,7 +16,7 @@
 import { readFileSync } from "@mariozechner/pi-env/fs";
 import { basename, dirname, join } from "@mariozechner/pi-env/path";
 import { getDocsPath } from "../config.js";
-import { theme } from "../modes/interactive/theme/theme.js";
+import { theme } from "./theme.js";
 import { stripFrontmatter } from "../utils/frontmatter.js";
 import { sleep } from "../utils/sleep.js";
 import type { Agent } from "./agent.js";

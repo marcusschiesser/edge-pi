@@ -3,6 +3,66 @@
  * Handles TUI rendering and user interaction, delegating business logic to AgentSession.
  */
 
+import {
+	APP_NAME,
+	getAuthPath,
+	getDebugLogPath,
+	getShareViewerUrl,
+	VERSION,
+} from "@mariozechner/pi-coding-agent-sdk/config.js";
+import {
+	type AgentSession,
+	type AgentSessionEvent,
+	parseSkillBlock,
+} from "@mariozechner/pi-coding-agent-sdk/core/agent-session.js";
+import type {
+	AgentMessage,
+	AssistantMessage,
+	ImageContent,
+	Message,
+	Model,
+} from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
+import type { CompactionResult } from "@mariozechner/pi-coding-agent-sdk/core/compaction/index.js";
+import type {
+	ExtensionContext,
+	ExtensionRunner,
+	ExtensionUIContext,
+	ExtensionUIDialogOptions,
+	ExtensionWidgetOptions,
+} from "@mariozechner/pi-coding-agent-sdk/core/extensions/index.js";
+import {
+	FooterDataProvider,
+	type ReadonlyFooterDataProvider,
+} from "@mariozechner/pi-coding-agent-sdk/core/footer-data-provider.js";
+import { type AppAction, KeybindingsManager } from "@mariozechner/pi-coding-agent-sdk/core/keybindings.js";
+import { createCompactionSummaryMessage } from "@mariozechner/pi-coding-agent-sdk/core/messages.js";
+import { getOAuthProviders } from "@mariozechner/pi-coding-agent-sdk/core/model-registry.js";
+import { resolveModelScope } from "@mariozechner/pi-coding-agent-sdk/core/model-resolver.js";
+import type { ResourceDiagnostic } from "@mariozechner/pi-coding-agent-sdk/core/resource-loader.js";
+import { type SessionContext, SessionManager } from "@mariozechner/pi-coding-agent-sdk/core/session-manager.js";
+import type { TruncationResult } from "@mariozechner/pi-coding-agent-sdk/core/tools/truncate.js";
+import {
+	getAvailableThemes,
+	getAvailableThemesWithPaths,
+	getEditorTheme,
+	getMarkdownTheme,
+	getThemeByName,
+	initTheme,
+	onThemeChange,
+	setRegisteredThemes,
+	setTheme,
+	setThemeInstance,
+	Theme,
+	type ThemeColor,
+	theme,
+} from "./theme/theme.js";
+import { getChangelogPath, getNewEntries, parseChangelog } from "@mariozechner/pi-coding-agent-sdk/utils/changelog.js";
+import { copyToClipboard } from "@mariozechner/pi-coding-agent-sdk/utils/clipboard.js";
+import {
+	extensionForImageMimeType,
+	readClipboardImage,
+} from "@mariozechner/pi-coding-agent-sdk/utils/clipboard-image.js";
+import { ensureTool } from "@mariozechner/pi-coding-agent-sdk/utils/tools-manager.js";
 import { getUpdateAction } from "@mariozechner/pi-env/app";
 import { spawn, spawnSync } from "@mariozechner/pi-env/child-process";
 import * as crypto from "@mariozechner/pi-env/crypto";
@@ -35,29 +95,6 @@ import {
 	TUI,
 	visibleWidth,
 } from "@mariozechner/pi-tui";
-import { APP_NAME, getAuthPath, getDebugLogPath, getShareViewerUrl, VERSION } from "../../config.js";
-import { type AgentSession, type AgentSessionEvent, parseSkillBlock } from "../../core/agent-session.js";
-import type { AgentMessage, AssistantMessage, ImageContent, Message, Model } from "../../core/ai-types.js";
-import type { CompactionResult } from "../../core/compaction/index.js";
-import type {
-	ExtensionContext,
-	ExtensionRunner,
-	ExtensionUIContext,
-	ExtensionUIDialogOptions,
-	ExtensionWidgetOptions,
-} from "../../core/extensions/index.js";
-import { FooterDataProvider, type ReadonlyFooterDataProvider } from "../../core/footer-data-provider.js";
-import { type AppAction, KeybindingsManager } from "../../core/keybindings.js";
-import { createCompactionSummaryMessage } from "../../core/messages.js";
-import { getOAuthProviders } from "../../core/model-registry.js";
-import { resolveModelScope } from "../../core/model-resolver.js";
-import type { ResourceDiagnostic } from "../../core/resource-loader.js";
-import { type SessionContext, SessionManager } from "../../core/session-manager.js";
-import type { TruncationResult } from "../../core/tools/truncate.js";
-import { getChangelogPath, getNewEntries, parseChangelog } from "../../utils/changelog.js";
-import { copyToClipboard } from "../../utils/clipboard.js";
-import { extensionForImageMimeType, readClipboardImage } from "../../utils/clipboard-image.js";
-import { ensureTool } from "../../utils/tools-manager.js";
 import { ArminComponent } from "./components/armin.js";
 import { AssistantMessageComponent } from "./components/assistant-message.js";
 import { BashExecutionComponent } from "./components/bash-execution.js";
@@ -84,21 +121,6 @@ import { ToolExecutionComponent } from "./components/tool-execution.js";
 import { TreeSelectorComponent } from "./components/tree-selector.js";
 import { UserMessageComponent } from "./components/user-message.js";
 import { UserMessageSelectorComponent } from "./components/user-message-selector.js";
-import {
-	getAvailableThemes,
-	getAvailableThemesWithPaths,
-	getEditorTheme,
-	getMarkdownTheme,
-	getThemeByName,
-	initTheme,
-	onThemeChange,
-	setRegisteredThemes,
-	setTheme,
-	setThemeInstance,
-	Theme,
-	type ThemeColor,
-	theme,
-} from "./theme/theme.js";
 
 /** Interface for components that can be expanded/collapsed */
 interface Expandable {

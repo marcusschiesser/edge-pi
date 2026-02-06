@@ -1,8 +1,8 @@
-import { type Component, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
-import type { AgentSession } from "../../../core/agent-session.js";
-import type { AssistantMessage } from "../../../core/ai-types.js";
-import type { ReadonlyFooterDataProvider } from "../../../core/footer-data-provider.js";
+import type { AgentSession } from "@mariozechner/pi-coding-agent-sdk/core/agent-session.js";
+import type { AssistantMessage } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
+import type { ReadonlyFooterDataProvider } from "@mariozechner/pi-coding-agent-sdk/core/footer-data-provider.js";
 import { theme } from "../theme/theme.js";
+import { type Component, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
 
 /**
  * Sanitize text for display in a single-line status.

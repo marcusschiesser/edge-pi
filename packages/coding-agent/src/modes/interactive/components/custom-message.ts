@@ -1,9 +1,9 @@
+import type { TextContent } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
+import type { MessageRenderer } from "@mariozechner/pi-coding-agent-sdk/core/extensions/types.js";
+import type { CustomMessage } from "@mariozechner/pi-coding-agent-sdk/core/messages.js";
+import { getMarkdownTheme, theme } from "../theme/theme.js";
 import type { Component } from "@mariozechner/pi-tui";
 import { Box, Container, Markdown, type MarkdownTheme, Spacer, Text } from "@mariozechner/pi-tui";
-import type { TextContent } from "../../../core/ai-types.js";
-import type { MessageRenderer } from "../../../core/extensions/types.js";
-import type { CustomMessage } from "../../../core/messages.js";
-import { getMarkdownTheme, theme } from "../theme/theme.js";
 
 /**
  * Component that renders a custom message entry from extensions.

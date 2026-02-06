@@ -5,10 +5,15 @@
  * Responses and events are emitted as JSON lines on stdout.
  */
 
-import type { SessionStats } from "../../core/agent-session.js";
-import type { AgentMessage, ImageContent, Model, ThinkingLevel } from "../../core/ai-types.js";
-import type { BashResult } from "../../core/bash-executor.js";
-import type { CompactionResult } from "../../core/compaction/index.js";
+import type { SessionStats } from "@mariozechner/pi-coding-agent-sdk/core/agent-session.js";
+import type {
+	AgentMessage,
+	ImageContent,
+	Model,
+	ThinkingLevel,
+} from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
+import type { BashResult } from "@mariozechner/pi-coding-agent-sdk/core/bash-executor.js";
+import type { CompactionResult } from "@mariozechner/pi-coding-agent-sdk/core/compaction/index.js";
 
 // ============================================================================
 // RPC Commands (stdin)

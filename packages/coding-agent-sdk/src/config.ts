@@ -13,7 +13,7 @@ initEnv(import.meta.url);
 export { getPackageDir };
 
 export function getThemesDir(): string {
-	return getAssetDir("modes/interactive/theme");
+	return getAssetDir("core/theme-data");
 }
 
 export function getExportTemplateDir(): string {

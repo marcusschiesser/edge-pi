@@ -1,6 +1,6 @@
-import { Box, Markdown, type MarkdownTheme, Text } from "@mariozechner/pi-tui";
-import type { ParsedSkillBlock } from "../../../core/agent-session.js";
+import type { ParsedSkillBlock } from "@mariozechner/pi-coding-agent-sdk/core/agent-session.js";
 import { getMarkdownTheme, theme } from "../theme/theme.js";
+import { Box, Markdown, type MarkdownTheme, Text } from "@mariozechner/pi-tui";
 import { editorKey } from "./keybinding-hints.js";
 
 /**

@@ -5,6 +5,24 @@
  * createAgentSession() options. The SDK does the heavy lifting.
  */
 
+import { getAgentDir, getModelsPath, VERSION } from "@mariozechner/pi-coding-agent-sdk/config.js";
+import type { ImageContent } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
+import { AuthStorage } from "@mariozechner/pi-coding-agent-sdk/core/auth-storage.js";
+import { DEFAULT_THINKING_LEVEL } from "@mariozechner/pi-coding-agent-sdk/core/defaults.js";
+import { exportFromFile } from "@mariozechner/pi-coding-agent-sdk/core/export-html/index.js";
+import type { LoadExtensionsResult } from "@mariozechner/pi-coding-agent-sdk/core/extensions/index.js";
+import { KeybindingsManager } from "@mariozechner/pi-coding-agent-sdk/core/keybindings.js";
+import { ModelRegistry } from "@mariozechner/pi-coding-agent-sdk/core/model-registry.js";
+import { resolveModelScope, type ScopedModel } from "@mariozechner/pi-coding-agent-sdk/core/model-resolver.js";
+import { modelsAreEqual, supportsXhigh } from "@mariozechner/pi-coding-agent-sdk/core/models.js";
+import { DefaultPackageManager } from "@mariozechner/pi-coding-agent-sdk/core/package-manager.js";
+import { DefaultResourceLoader } from "@mariozechner/pi-coding-agent-sdk/core/resource-loader.js";
+import { type CreateAgentSessionOptions, createAgentSession } from "@mariozechner/pi-coding-agent-sdk/core/sdk.js";
+import { SessionManager } from "@mariozechner/pi-coding-agent-sdk/core/session-manager.js";
+import { type PackageSource, SettingsManager } from "@mariozechner/pi-coding-agent-sdk/core/settings-manager.js";
+import { printTimings, time } from "@mariozechner/pi-coding-agent-sdk/core/timings.js";
+import { allTools } from "@mariozechner/pi-coding-agent-sdk/core/tools/index.js";
+import { initTheme, stopThemeWatcher } from "./modes/interactive/theme/theme.js";
 import chalk from "chalk";
 import { createInterface } from "readline";
 import { type Args, parseArgs, printHelp } from "./cli/args.js";
@@ -12,26 +30,8 @@ import { selectConfig } from "./cli/config-selector.js";
 import { processFileArguments } from "./cli/file-processor.js";
 import { listModels } from "./cli/list-models.js";
 import { selectSession } from "./cli/session-picker.js";
-import { getAgentDir, getModelsPath, VERSION } from "./config.js";
-import type { ImageContent } from "./core/ai-types.js";
-import { AuthStorage } from "./core/auth-storage.js";
-import { DEFAULT_THINKING_LEVEL } from "./core/defaults.js";
-import { exportFromFile } from "./core/export-html/index.js";
-import type { LoadExtensionsResult } from "./core/extensions/index.js";
-import { KeybindingsManager } from "./core/keybindings.js";
-import { ModelRegistry } from "./core/model-registry.js";
-import { resolveModelScope, type ScopedModel } from "./core/model-resolver.js";
-import { modelsAreEqual, supportsXhigh } from "./core/models.js";
-import { DefaultPackageManager } from "./core/package-manager.js";
-import { DefaultResourceLoader } from "./core/resource-loader.js";
-import { type CreateAgentSessionOptions, createAgentSession } from "./core/sdk.js";
-import { SessionManager } from "./core/session-manager.js";
-import { type PackageSource, SettingsManager } from "./core/settings-manager.js";
-import { printTimings, time } from "./core/timings.js";
-import { allTools } from "./core/tools/index.js";
 import { runMigrations, showDeprecationWarnings } from "./migrations.js";
 import { InteractiveMode, runPrintMode, runRpcMode } from "./modes/index.js";
-import { initTheme, stopThemeWatcher } from "./modes/interactive/theme/theme.js";
 
 /**
  * Read all content from piped stdin.

@@ -1,6 +1,6 @@
-import { Container, type SelectItem, SelectList } from "@mariozechner/pi-tui";
-import type { ThinkingLevel } from "../../../core/ai-types.js";
+import type { ThinkingLevel } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
 import { getSelectListTheme } from "../theme/theme.js";
+import { Container, type SelectItem, SelectList } from "@mariozechner/pi-tui";
 import { DynamicBorder } from "./dynamic-border.js";
 
 const LEVEL_DESCRIPTIONS: Record<ThinkingLevel, string> = {

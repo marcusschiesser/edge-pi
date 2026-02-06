@@ -1,7 +1,10 @@
-import { Container, getEditorKeybindings, Spacer, TruncatedText } from "@mariozechner/pi-tui";
-import type { AuthStorage } from "../../../core/auth-storage.js";
-import { getOAuthProviders, type OAuthProviderInterface } from "../../../core/model-registry.js";
+import type { AuthStorage } from "@mariozechner/pi-coding-agent-sdk/core/auth-storage.js";
+import {
+	getOAuthProviders,
+	type OAuthProviderInterface,
+} from "@mariozechner/pi-coding-agent-sdk/core/model-registry.js";
 import { theme } from "../theme/theme.js";
+import { Container, getEditorKeybindings, Spacer, TruncatedText } from "@mariozechner/pi-tui";
 import { DynamicBorder } from "./dynamic-border.js";
 
 /**

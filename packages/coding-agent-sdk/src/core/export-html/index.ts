@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "@mariozechner/pi-env/fs";
 import { basename, join } from "@mariozechner/pi-env/path";
 import { APP_NAME, getExportTemplateDir } from "../../config.js";
-import { getResolvedThemeColors, getThemeExportColors } from "../../modes/interactive/theme/theme.js";
+import { getResolvedThemeColors, getThemeExportColors } from "../theme.js";
 import type { AgentState } from "../ai-types.js";
 import type { SessionEntry } from "../session-manager.js";
 import { SessionManager } from "../session-manager.js";
