@@ -4,9 +4,9 @@
 
 import type { ResolvedPaths } from "@mariozechner/pi-coding-agent-sdk/core/package-manager.js";
 import type { SettingsManager } from "@mariozechner/pi-coding-agent-sdk/core/settings-manager.js";
-import { initTheme, stopThemeWatcher } from "../modes/interactive/theme/theme.js";
 import { ProcessTerminal, TUI } from "@mariozechner/pi-tui";
 import { ConfigSelectorComponent } from "../modes/interactive/components/config-selector.js";
+import { initTheme, stopThemeWatcher } from "../modes/interactive/theme/theme.js";
 
 export interface ConfigSelectorOptions {
 	resolvedPaths: ResolvedPaths;

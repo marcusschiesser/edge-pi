@@ -39,4 +39,4 @@ jobs:
         run: npm run check
 
       - name: Test
-        run: npm test
+        run: ./test.sh

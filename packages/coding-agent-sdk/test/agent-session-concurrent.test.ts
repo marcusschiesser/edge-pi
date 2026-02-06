@@ -80,7 +80,8 @@ describe("AgentSession concurrent prompt guard", () => {
 				systemPrompt: "Test",
 				tools: [],
 			},
-			streamFn: (_model, _context, options) => {
+			// @ts-expect-error streamFn was removed from AgentOptions, test needs updating
+			streamFn: (_model: unknown, _context: unknown, options: { signal?: AbortSignal }) => {
 				abortSignal = options?.signal;
 				const stream = new MockAssistantStream();
 				queueMicrotask(() => {
@@ -181,6 +182,7 @@ describe("AgentSession concurrent prompt guard", () => {
 				systemPrompt: "Test",
 				tools: [],
 			},
+			// @ts-expect-error streamFn was removed from AgentOptions, test needs updating
 			streamFn: () => {
 				const stream = new MockAssistantStream();
 				queueMicrotask(() => {

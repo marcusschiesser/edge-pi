@@ -1,16 +1,5 @@
 // Re-export everything from the SDK package
 export * from "@mariozechner/pi-coding-agent-sdk";
-// Theme utilities for custom tools and extensions
-export {
-	getLanguageFromPath,
-	getMarkdownTheme,
-	getSelectListTheme,
-	getSettingsListTheme,
-	highlightCode,
-	initTheme,
-	Theme,
-	type ThemeColor,
-} from "./modes/interactive/theme/theme.js";
 // Main entry point (CLI)
 export { main } from "./main.js";
 // Run modes for programmatic SDK usage
@@ -62,3 +51,14 @@ export {
 	UserMessageSelectorComponent,
 	type VisualTruncateResult,
 } from "./modes/interactive/components/index.js";
+// Theme utilities for custom tools and extensions
+export {
+	getLanguageFromPath,
+	getMarkdownTheme,
+	getSelectListTheme,
+	getSettingsListTheme,
+	highlightCode,
+	initTheme,
+	Theme,
+	type ThemeColor,
+} from "./modes/interactive/theme/theme.js";

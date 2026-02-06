@@ -10,11 +10,6 @@ import {
 	DEFAULT_MAX_LINES,
 	formatSize,
 } from "@mariozechner/pi-coding-agent-sdk/core/tools/truncate.js";
-import {
-	getLanguageFromPath,
-	highlightCode,
-	theme,
-} from "../theme/theme.js";
 import { convertToPng } from "@mariozechner/pi-coding-agent-sdk/utils/image-convert.js";
 import { sanitizeBinaryOutput } from "@mariozechner/pi-coding-agent-sdk/utils/shell.js";
 import * as os from "@mariozechner/pi-env/os";
@@ -31,6 +26,7 @@ import {
 	truncateToWidth,
 } from "@mariozechner/pi-tui";
 import stripAnsi from "strip-ansi";
+import { getLanguageFromPath, highlightCode, theme } from "../theme/theme.js";
 import { renderDiff } from "./diff.js";
 import { keyHint } from "./keybinding-hints.js";
 import { truncateToVisualLines } from "./visual-truncate.js";

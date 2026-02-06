@@ -9,7 +9,6 @@ import type {
 	ResolvedResource,
 } from "@mariozechner/pi-coding-agent-sdk/core/package-manager.js";
 import type { PackageSource, SettingsManager } from "@mariozechner/pi-coding-agent-sdk/core/settings-manager.js";
-import { theme } from "../theme/theme.js";
 import { basename, dirname, join, relative } from "@mariozechner/pi-env/path";
 import {
 	type Component,
@@ -22,6 +21,7 @@ import {
 	truncateToWidth,
 	visibleWidth,
 } from "@mariozechner/pi-tui";
+import { theme } from "../theme/theme.js";
 import { DynamicBorder } from "./dynamic-border.js";
 import { rawKeyHint } from "./keybinding-hints.js";
 

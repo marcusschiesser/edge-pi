@@ -16,7 +16,6 @@
 import { readFileSync } from "@mariozechner/pi-env/fs";
 import { basename, dirname, join } from "@mariozechner/pi-env/path";
 import { getDocsPath } from "../config.js";
-import { theme } from "./theme.js";
 import { stripFrontmatter } from "../utils/frontmatter.js";
 import { sleep } from "../utils/sleep.js";
 import type { Agent } from "./agent.js";
@@ -74,6 +73,7 @@ import type { ResourceExtensionPaths, ResourceLoader } from "./resource-loader.j
 import type { BranchSummaryEntry, CompactionEntry, SessionManager } from "./session-manager.js";
 import type { SettingsManager } from "./settings-manager.js";
 import { buildSystemPrompt } from "./system-prompt.js";
+import { theme } from "./theme.js";
 import type { BashOperations } from "./tools/bash.js";
 import { createAllTools } from "./tools/index.js";
 

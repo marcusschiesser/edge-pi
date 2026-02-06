@@ -2,8 +2,8 @@
  * Armin says hi! A fun easter egg with animated XBM art.
  */
 
-import { theme } from "../theme/theme.js";
 import type { Component, TUI } from "@mariozechner/pi-tui";
+import { theme } from "../theme/theme.js";
 
 // XBM image: 31x36 pixels, LSB first, 1=background, 0=foreground
 const WIDTH = 31;

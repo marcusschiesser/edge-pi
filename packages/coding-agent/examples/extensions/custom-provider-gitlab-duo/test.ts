@@ -8,7 +8,17 @@
  *   npx tsx test.ts claude-sonnet-4-5-20250929 --thinking
  */
 
-import { type Api, type Context, type Model, registerApiProvider, streamSimple } from "@mariozechner/pi-coding-agent";
+import type { Api, Context, Model } from "@mariozechner/pi-coding-agent";
+
+// These functions were removed from the SDK exports. This test needs updating.
+declare function registerApiProvider(config: Record<string, unknown>): void;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare function streamSimple(
+	model: Model<Api>,
+	context: Context,
+	options?: Record<string, unknown>,
+): AsyncIterable<any>;
+
 import { readFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";

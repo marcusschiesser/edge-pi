@@ -22,7 +22,6 @@ import { SessionManager } from "@mariozechner/pi-coding-agent-sdk/core/session-m
 import { type PackageSource, SettingsManager } from "@mariozechner/pi-coding-agent-sdk/core/settings-manager.js";
 import { printTimings, time } from "@mariozechner/pi-coding-agent-sdk/core/timings.js";
 import { allTools } from "@mariozechner/pi-coding-agent-sdk/core/tools/index.js";
-import { initTheme, stopThemeWatcher } from "./modes/interactive/theme/theme.js";
 import chalk from "chalk";
 import { createInterface } from "readline";
 import { type Args, parseArgs, printHelp } from "./cli/args.js";
@@ -32,6 +31,7 @@ import { listModels } from "./cli/list-models.js";
 import { selectSession } from "./cli/session-picker.js";
 import { runMigrations, showDeprecationWarnings } from "./migrations.js";
 import { InteractiveMode, runPrintMode, runRpcMode } from "./modes/index.js";
+import { initTheme, stopThemeWatcher } from "./modes/interactive/theme/theme.js";
 
 /**
  * Read all content from piped stdin.

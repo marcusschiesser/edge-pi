@@ -3,8 +3,8 @@ import {
 	getOAuthProviders,
 	type OAuthProviderInterface,
 } from "@mariozechner/pi-coding-agent-sdk/core/model-registry.js";
-import { theme } from "../theme/theme.js";
 import { Container, getEditorKeybindings, Spacer, TruncatedText } from "@mariozechner/pi-tui";
+import { theme } from "../theme/theme.js";
 import { DynamicBorder } from "./dynamic-border.js";
 
 /**
