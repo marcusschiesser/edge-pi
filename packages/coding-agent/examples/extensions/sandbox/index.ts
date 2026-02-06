@@ -41,12 +41,29 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { SandboxManager, type SandboxRuntimeConfig } from "@anthropic-ai/sandbox-runtime";
+import { SandboxManager } from "@anthropic-ai/sandbox-runtime";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { type BashOperations, createBashTool } from "@mariozechner/pi-coding-agent";
 
-interface SandboxConfig extends SandboxRuntimeConfig {
+// Define config types locally to avoid cross-zod-version type resolution issues
+// with SandboxRuntimeConfig (sandbox-runtime uses zod v3, SDK uses zod v4)
+interface NetworkConfig {
+	allowedDomains: string[];
+	deniedDomains: string[];
+}
+
+interface FilesystemConfig {
+	denyRead: string[];
+	allowWrite: string[];
+	denyWrite: string[];
+}
+
+interface SandboxConfig {
 	enabled?: boolean;
+	network: NetworkConfig;
+	filesystem: FilesystemConfig;
+	ignoreViolations?: Record<string, string[]>;
+	enableWeakerNestedSandbox?: boolean;
 }
 
 const DEFAULT_CONFIG: SandboxConfig = {
@@ -110,17 +127,11 @@ function deepMerge(base: SandboxConfig, overrides: Partial<SandboxConfig>): Sand
 		result.filesystem = { ...base.filesystem, ...overrides.filesystem };
 	}
 
-	const extOverrides = overrides as {
-		ignoreViolations?: Record<string, string[]>;
-		enableWeakerNestedSandbox?: boolean;
-	};
-	const extResult = result as { ignoreViolations?: Record<string, string[]>; enableWeakerNestedSandbox?: boolean };
-
-	if (extOverrides.ignoreViolations) {
-		extResult.ignoreViolations = extOverrides.ignoreViolations;
+	if (overrides.ignoreViolations) {
+		result.ignoreViolations = overrides.ignoreViolations;
 	}
-	if (extOverrides.enableWeakerNestedSandbox !== undefined) {
-		extResult.enableWeakerNestedSandbox = extOverrides.enableWeakerNestedSandbox;
+	if (overrides.enableWeakerNestedSandbox !== undefined) {
+		result.enableWeakerNestedSandbox = overrides.enableWeakerNestedSandbox;
 	}
 
 	return result;
@@ -253,17 +264,12 @@ export default function (pi: ExtensionAPI) {
 		}
 
 		try {
-			const configExt = config as unknown as {
-				ignoreViolations?: Record<string, string[]>;
-				enableWeakerNestedSandbox?: boolean;
-			};
-
 			await SandboxManager.initialize({
 				network: config.network,
 				filesystem: config.filesystem,
-				ignoreViolations: configExt.ignoreViolations,
-				enableWeakerNestedSandbox: configExt.enableWeakerNestedSandbox,
-			});
+				ignoreViolations: config.ignoreViolations,
+				enableWeakerNestedSandbox: config.enableWeakerNestedSandbox,
+			} as Parameters<typeof SandboxManager.initialize>[0]);
 
 			sandboxEnabled = true;
 			sandboxInitialized = true;

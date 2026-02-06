@@ -147,13 +147,16 @@ describe("Coding Agent Tools", () => {
 			writeFileSync(testFile, lines.join("\n"));
 
 			const result = await readTool.execute("test-call-9", { path: testFile });
+			const details = result.details as {
+				truncation?: { truncated: boolean; truncatedBy: string; totalLines: number; outputLines: number };
+			};
 
-			expect(result.details).toBeDefined();
-			expect(result.details?.truncation).toBeDefined();
-			expect(result.details?.truncation?.truncated).toBe(true);
-			expect(result.details?.truncation?.truncatedBy).toBe("lines");
-			expect(result.details?.truncation?.totalLines).toBe(2500);
-			expect(result.details?.truncation?.outputLines).toBe(2000);
+			expect(details).toBeDefined();
+			expect(details?.truncation).toBeDefined();
+			expect(details?.truncation?.truncated).toBe(true);
+			expect(details?.truncation?.truncatedBy).toBe("lines");
+			expect(details?.truncation?.totalLines).toBe(2500);
+			expect(details?.truncation?.outputLines).toBe(2000);
 		});
 
 		it("should detect image MIME type from file magic (not extension)", async () => {
@@ -225,10 +228,11 @@ describe("Coding Agent Tools", () => {
 			});
 
 			expect(getTextOutput(result)).toContain("Successfully replaced");
-			expect(result.details).toBeDefined();
-			expect(result.details.diff).toBeDefined();
-			expect(typeof result.details.diff).toBe("string");
-			expect(result.details.diff).toContain("testing");
+			const details = result.details as { diff: string };
+			expect(details).toBeDefined();
+			expect(details.diff).toBeDefined();
+			expect(typeof details.diff).toBe("string");
+			expect(details.diff).toContain("testing");
 		});
 
 		it("should fail if text not found", async () => {

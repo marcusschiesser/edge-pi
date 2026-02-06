@@ -19,9 +19,20 @@ import {
 	type OAuthCredentials,
 	type OAuthLoginCallbacks,
 	type SimpleStreamOptions,
-	streamSimpleAnthropic,
-	streamSimpleOpenAIResponses,
 } from "@mariozechner/pi-coding-agent";
+
+// These functions were removed from the SDK exports. This extension needs updating
+// to use the current provider API. For now, declare them to preserve the example structure.
+declare function streamSimpleAnthropic(
+	model: Model<"anthropic-messages">,
+	context: Context,
+	options?: SimpleStreamOptions,
+): AssistantMessageEventStream;
+declare function streamSimpleOpenAIResponses(
+	model: Model<"openai-responses">,
+	context: Context,
+	options?: SimpleStreamOptions,
+): AssistantMessageEventStream;
 
 // =============================================================================
 // Constants

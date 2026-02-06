@@ -8,7 +8,8 @@
 			"@mariozechner/pi-coding-agent-sdk/*": ["./packages/coding-agent-sdk/src/*"],
 			"@mariozechner/pi-coding-agent": ["./packages/coding-agent/src/index.ts"],
 			"@mariozechner/pi-coding-agent/*": ["./packages/coding-agent/src/*"],
-			"@sinclair/typebox": ["./node_modules/@sinclair/typebox"]
+			"@sinclair/typebox": ["./node_modules/@sinclair/typebox"],
+			"zod": ["./packages/coding-agent-sdk/node_modules/zod/index.d.ts"]
 		}
 	},
 	"include": ["packages/*/src/**/*", "packages/*/test/**/*", "packages/coding-agent/examples/**/*"],

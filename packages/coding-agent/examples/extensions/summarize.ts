@@ -182,7 +182,7 @@ export default function (pi: ExtensionAPI) {
 			const response = await complete(
 				model,
 				{ messages: [{ role: "user" as const, content: buildSummaryPrompt(conversationText) }] },
-				{ apiKey, reasoningEffort: "high" },
+				{ apiKey, reasoning: "high" },
 			);
 
 			const summary = response.content
