@@ -8,9 +8,9 @@ import {
 	type TruncationResult,
 	truncateTail,
 } from "@mariozechner/pi-coding-agent-sdk/core/tools/truncate.js";
-import { theme } from "../theme/theme.js";
 import { Container, Loader, Spacer, Text, type TUI } from "@mariozechner/pi-tui";
 import stripAnsi from "strip-ansi";
+import { theme } from "../theme/theme.js";
 import { DynamicBorder } from "./dynamic-border.js";
 import { editorKey, keyHint } from "./keybinding-hints.js";
 import { truncateToVisualLines } from "./visual-truncate.js";

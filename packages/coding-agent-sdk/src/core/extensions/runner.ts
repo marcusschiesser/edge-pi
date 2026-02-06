@@ -3,12 +3,12 @@
  */
 
 import type { KeyId } from "@mariozechner/pi-tui";
-import { type Theme, theme } from "../theme.js";
 import type { AgentMessage, ImageContent, Model } from "../ai-types.js";
 import type { ResourceDiagnostic } from "../diagnostics.js";
 import type { KeyAction, KeybindingsConfig } from "../keybindings.js";
 import type { ModelRegistry } from "../model-registry.js";
 import type { SessionManager } from "../session-manager.js";
+import { type Theme, theme } from "../theme.js";
 import type {
 	BeforeAgentStartEvent,
 	BeforeAgentStartEventResult,

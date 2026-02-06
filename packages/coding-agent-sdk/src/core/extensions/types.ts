@@ -19,7 +19,6 @@ import type {
 	TUI,
 } from "@mariozechner/pi-tui";
 import type { z } from "zod";
-import type { Theme } from "../theme.js";
 import type {
 	AgentMessage,
 	AgentToolResult,
@@ -51,6 +50,7 @@ import type {
 	SessionEntry,
 	SessionManager,
 } from "../session-manager.js";
+import type { Theme } from "../theme.js";
 import type { BashOperations } from "../tools/bash.js";
 import type { EditToolDetails } from "../tools/edit.js";
 import type {

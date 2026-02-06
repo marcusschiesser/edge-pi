@@ -5,9 +5,9 @@
  * and converting the ANSI output to HTML.
  */
 
-import type { Theme } from "../theme.js";
 import type { ImageContent, TextContent } from "../ai-types.js";
 import type { ToolDefinition } from "../extensions/types.js";
+import type { Theme } from "../theme.js";
 import { ansiLinesToHtml } from "./ansi-to-html.js";
 
 export interface ToolHtmlRendererDeps {

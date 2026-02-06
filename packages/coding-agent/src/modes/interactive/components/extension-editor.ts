@@ -4,7 +4,6 @@
  */
 
 import type { KeybindingsManager } from "@mariozechner/pi-coding-agent-sdk/core/keybindings.js";
-import { getEditorTheme, theme } from "../theme/theme.js";
 import { spawnSync } from "@mariozechner/pi-env/child-process";
 import * as fs from "@mariozechner/pi-env/fs";
 import * as os from "@mariozechner/pi-env/os";
@@ -18,6 +17,7 @@ import {
 	Text,
 	type TUI,
 } from "@mariozechner/pi-tui";
+import { getEditorTheme, theme } from "../theme/theme.js";
 import { DynamicBorder } from "./dynamic-border.js";
 import { appKeyHint, keyHint } from "./keybinding-hints.js";
 

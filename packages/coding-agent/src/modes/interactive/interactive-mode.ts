@@ -41,21 +41,6 @@ import { resolveModelScope } from "@mariozechner/pi-coding-agent-sdk/core/model-
 import type { ResourceDiagnostic } from "@mariozechner/pi-coding-agent-sdk/core/resource-loader.js";
 import { type SessionContext, SessionManager } from "@mariozechner/pi-coding-agent-sdk/core/session-manager.js";
 import type { TruncationResult } from "@mariozechner/pi-coding-agent-sdk/core/tools/truncate.js";
-import {
-	getAvailableThemes,
-	getAvailableThemesWithPaths,
-	getEditorTheme,
-	getMarkdownTheme,
-	getThemeByName,
-	initTheme,
-	onThemeChange,
-	setRegisteredThemes,
-	setTheme,
-	setThemeInstance,
-	Theme,
-	type ThemeColor,
-	theme,
-} from "./theme/theme.js";
 import { getChangelogPath, getNewEntries, parseChangelog } from "@mariozechner/pi-coding-agent-sdk/utils/changelog.js";
 import { copyToClipboard } from "@mariozechner/pi-coding-agent-sdk/utils/clipboard.js";
 import {
@@ -121,6 +106,21 @@ import { ToolExecutionComponent } from "./components/tool-execution.js";
 import { TreeSelectorComponent } from "./components/tree-selector.js";
 import { UserMessageComponent } from "./components/user-message.js";
 import { UserMessageSelectorComponent } from "./components/user-message-selector.js";
+import {
+	getAvailableThemes,
+	getAvailableThemesWithPaths,
+	getEditorTheme,
+	getMarkdownTheme,
+	getThemeByName,
+	initTheme,
+	onThemeChange,
+	setRegisteredThemes,
+	setTheme,
+	setThemeInstance,
+	Theme,
+	type ThemeColor,
+	theme,
+} from "./theme/theme.js";
 
 /** Interface for components that can be expanded/collapsed */
 interface Expandable {

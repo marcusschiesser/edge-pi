@@ -14,17 +14,17 @@ export {
 	setThemeInstance,
 	stopThemeWatcher,
 	Theme,
-	theme,
 	type ThemeBg,
 	type ThemeColor,
 	type ThemeInfo,
+	theme,
 } from "@mariozechner/pi-coding-agent-sdk/core/theme.js";
 
+import { type Theme, theme } from "@mariozechner/pi-coding-agent-sdk/core/theme.js";
 // TUI-specific imports
 import type { EditorTheme, MarkdownTheme, SelectListTheme } from "@mariozechner/pi-tui";
 import chalk from "chalk";
 import { highlight, supportsLanguage } from "cli-highlight";
-import { type Theme, theme } from "@mariozechner/pi-coding-agent-sdk/core/theme.js";
 
 // ============================================================================
 // TUI Helpers

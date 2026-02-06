@@ -1,8 +1,8 @@
-import { getCustomThemesDir, getThemesDir } from "../config.js";
 import * as fs from "@mariozechner/pi-env/fs";
 import * as path from "@mariozechner/pi-env/path";
 import chalk from "chalk";
 import { z } from "zod";
+import { getCustomThemesDir, getThemesDir } from "../config.js";
 
 // ============================================================================
 // Types & Schema

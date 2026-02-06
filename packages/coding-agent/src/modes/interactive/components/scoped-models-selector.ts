@@ -1,5 +1,4 @@
 import type { Model } from "@mariozechner/pi-coding-agent-sdk/core/ai-types.js";
-import { theme } from "../theme/theme.js";
 import {
 	Container,
 	type Focusable,
@@ -11,6 +10,7 @@ import {
 	Spacer,
 	Text,
 } from "@mariozechner/pi-tui";
+import { theme } from "../theme/theme.js";
 import { DynamicBorder } from "./dynamic-border.js";
 
 // EnabledIds: null = all enabled (no filter), string[] = explicit ordered list
