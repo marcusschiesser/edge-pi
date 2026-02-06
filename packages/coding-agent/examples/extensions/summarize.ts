@@ -187,7 +187,7 @@ export default function (pi: ExtensionAPI) {
 				},
 			];
 
-			const response = await complete(model, { messages: summaryMessages }, { apiKey, reasoningEffort: "high" });
+			const response = await complete(model, { messages: summaryMessages }, { apiKey, reasoning: "high" });
 
 			const summary = response.content
 				.filter((c): c is { type: "text"; text: string } => c.type === "text")

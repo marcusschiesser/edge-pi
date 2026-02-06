@@ -8,47 +8,12 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Agent } from "../src/core/agent.js";
 import { AgentSession } from "../src/core/agent-session.js";
-import { type AssistantMessage, type AssistantMessageEvent, EventStream } from "../src/core/ai-types.js";
 import { AuthStorage } from "../src/core/auth-storage.js";
 import { ModelRegistry } from "../src/core/model-registry.js";
 import { getModel } from "../src/core/models.js";
 import { SessionManager } from "../src/core/session-manager.js";
 import { SettingsManager } from "../src/core/settings-manager.js";
 import { createTestResourceLoader } from "./utilities.js";
-
-// Mock stream that mimics AssistantMessageEventStream
-class MockAssistantStream extends EventStream<AssistantMessageEvent, AssistantMessage> {
-	constructor() {
-		super(
-			(event) => event.type === "done" || event.type === "error",
-			(event) => {
-				if (event.type === "done") return event.message;
-				if (event.type === "error") return event.error;
-				throw new Error("Unexpected event type");
-			},
-		);
-	}
-}
-
-function createAssistantMessage(text: string): AssistantMessage {
-	return {
-		role: "assistant",
-		content: [{ type: "text", text }],
-		api: "anthropic-messages",
-		provider: "anthropic",
-		model: "mock",
-		usage: {
-			input: 0,
-			output: 0,
-			cacheRead: 0,
-			cacheWrite: 0,
-			totalTokens: 0,
-			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-		},
-		stopReason: "stop",
-		timestamp: Date.now(),
-	};
-}
 
 describe("AgentSession concurrent prompt guard", () => {
 	let session: AgentSession;
@@ -70,31 +35,14 @@ describe("AgentSession concurrent prompt guard", () => {
 
 	function createSession() {
 		const model = getModel("anthropic", "claude-sonnet-4-5")!;
-		let abortSignal: AbortSignal | undefined;
 
-		// Use a stream function that responds to abort
+		// Agent uses agentLoop internally which calls Vercel AI SDK
 		const agent = new Agent({
 			getApiKey: () => "test-key",
 			initialState: {
 				model,
 				systemPrompt: "Test",
 				tools: [],
-			},
-			streamFn: (_model, _context, options) => {
-				abortSignal = options?.signal;
-				const stream = new MockAssistantStream();
-				queueMicrotask(() => {
-					stream.push({ type: "start", partial: createAssistantMessage("") });
-					const checkAbort = () => {
-						if (abortSignal?.aborted) {
-							stream.push({ type: "error", reason: "aborted", error: createAssistantMessage("Aborted") });
-						} else {
-							setTimeout(checkAbort, 5);
-						}
-					};
-					checkAbort();
-				});
-				return stream;
 			},
 		});
 
@@ -180,14 +128,6 @@ describe("AgentSession concurrent prompt guard", () => {
 				model,
 				systemPrompt: "Test",
 				tools: [],
-			},
-			streamFn: () => {
-				const stream = new MockAssistantStream();
-				queueMicrotask(() => {
-					stream.push({ type: "start", partial: createAssistantMessage("") });
-					stream.push({ type: "done", reason: "stop", message: createAssistantMessage("Done") });
-				});
-				return stream;
 			},
 		});
 

@@ -55,7 +55,6 @@ export {
 	createAssistantMessageEventStream,
 	createEmptyUsage,
 	EventStream,
-	StringEnum,
 } from "./core/ai-types.js";
 // Auth and model registry
 export { type ApiKeyCredential, type AuthCredential, AuthStorage, type OAuthCredential } from "./core/auth-storage.js";
