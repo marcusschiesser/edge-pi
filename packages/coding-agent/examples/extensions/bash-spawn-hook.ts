@@ -23,8 +23,8 @@ export default function (pi: ExtensionAPI) {
 
 	pi.registerTool({
 		...bashTool,
-		execute: async (id, params, signal, onUpdate, _ctx) => {
-			return bashTool.execute(id, params, signal, onUpdate);
+		execute: async (input, options) => {
+			return bashTool.execute(input, { toolCallId: options.toolCallId, abortSignal: options.abortSignal, messages: options.messages, onUpdate: options.onUpdate });
 		},
 	});
 }

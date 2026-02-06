@@ -52,8 +52,9 @@ export default function (pi: ExtensionAPI) {
 		description: `Search file contents using ripgrep. Output is truncated to ${DEFAULT_MAX_LINES} lines or ${formatSize(DEFAULT_MAX_BYTES)} (whichever is hit first). If truncated, full output is saved to a temp file.`,
 		parameters: RgParams,
 
-		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-			const { pattern, path: searchPath, glob } = params;
+		async execute(input, options) {
+			const { ctx } = options;
+			const { pattern, path: searchPath, glob } = input;
 
 			// Build the ripgrep command
 			const args = ["rg", "--line-number", "--color=never"];

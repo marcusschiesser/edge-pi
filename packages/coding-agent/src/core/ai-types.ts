@@ -7,9 +7,11 @@
  */
 
 import type { LanguageModelV2, LanguageModelV3 } from "@ai-sdk/provider";
+import type { ToolExecutionOptions } from "@ai-sdk/provider-utils";
 
 // Re-export Vercel AI SDK types
 export type LanguageModel = LanguageModelV3 | LanguageModelV2;
+export type { ToolExecutionOptions } from "@ai-sdk/provider-utils";
 export type {
 	AssistantModelMessage,
 	ModelMessage,
@@ -291,18 +293,30 @@ export interface AgentToolResult<T = unknown> {
 export type AgentToolUpdateCallback<T = unknown> = (partialResult: AgentToolResult<T>) => void;
 
 /**
- * Agent tool extends Tool with execution function.
+ * Options passed to AgentTool.execute(), extending the AI SDK's ToolExecutionOptions
+ * with an optional onUpdate callback for streaming partial results.
+ */
+export interface AgentToolExecutionOptions extends ToolExecutionOptions {
+	/** Callback for streaming partial results during tool execution */
+	onUpdate?: AgentToolUpdateCallback;
+}
+
+/**
+ * Agent tool with AI SDK-compatible execute signature.
+ *
+ * The execute function follows the AI SDK's ToolExecuteFunction pattern:
+ * `execute(input, options) => Promise<AgentToolResult>`. The options extend
+ * the SDK's ToolExecutionOptions with an onUpdate callback for streaming.
+ *
  * TParameters should be a Zod schema (z.ZodType).
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface AgentTool<TParameters = any, TDetails = unknown> extends Tool<TParameters> {
 	label: string;
 	execute: (
-		toolCallId: string,
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		params: any,
-		signal?: AbortSignal,
-		onUpdate?: AgentToolUpdateCallback<TDetails>,
+		input: any,
+		options: AgentToolExecutionOptions,
 	) => Promise<AgentToolResult<TDetails>>;
 }
 

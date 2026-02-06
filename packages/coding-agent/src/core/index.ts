@@ -19,6 +19,7 @@ export { createEventBus, type EventBus, type EventBusController } from "./event-
 export {
 	type AgentEndEvent,
 	type AgentStartEvent,
+	type AgentToolExecutionOptions,
 	type AgentToolResult,
 	type AgentToolUpdateCallback,
 	type BeforeAgentStartEvent,

@@ -211,15 +211,15 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		...localBash,
 		label: "bash (sandboxed)",
-		async execute(id, params, signal, onUpdate, _ctx) {
+		async execute(input, options) {
 			if (!sandboxEnabled || !sandboxInitialized) {
-				return localBash.execute(id, params, signal, onUpdate);
+				return localBash.execute(input, { toolCallId: options.toolCallId, abortSignal: options.abortSignal, messages: options.messages, onUpdate: options.onUpdate });
 			}
 
 			const sandboxedBash = createBashTool(localCwd, {
 				operations: createSandboxedBashOps(),
 			});
-			return sandboxedBash.execute(id, params, signal, onUpdate);
+			return sandboxedBash.execute(input, { toolCallId: options.toolCallId, abortSignal: options.abortSignal, messages: options.messages, onUpdate: options.onUpdate });
 		},
 	});
 

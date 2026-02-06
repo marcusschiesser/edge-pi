@@ -71,8 +71,9 @@ export default function (pi: ExtensionAPI) {
 			"Read the contents of a file with access logging. Some sensitive paths (.env, secrets, credentials) are blocked.",
 		parameters: readSchema,
 
-		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-			const { path, offset, limit } = params;
+		async execute(input, options) {
+			const { ctx } = options;
+			const { path, offset, limit } = input;
 			const absolutePath = resolve(ctx.cwd, path);
 
 			// Check if path is blocked

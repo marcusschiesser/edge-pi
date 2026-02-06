@@ -60,7 +60,7 @@ describe("blockImages setting", () => {
 			writeFileSync(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
 
 			const tool = createReadTool(testDir);
-			const result = await tool.execute("test-1", { path: imagePath });
+			const result = await tool.execute({ path: imagePath }, { toolCallId: "test-1", messages: [] });
 
 			// Should have text note + image content
 			expect(result.content.length).toBeGreaterThanOrEqual(1);
@@ -74,7 +74,7 @@ describe("blockImages setting", () => {
 			writeFileSync(textPath, "Hello, world!");
 
 			const tool = createReadTool(testDir);
-			const result = await tool.execute("test-2", { path: textPath });
+			const result = await tool.execute({ path: textPath }, { toolCallId: "test-2", messages: [] });
 
 			expect(result.content).toHaveLength(1);
 			expect(result.content[0].type).toBe("text");

@@ -127,57 +127,57 @@ export default function (pi: ExtensionAPI) {
 
 	pi.registerTool({
 		...localRead,
-		async execute(id, params, signal, onUpdate, _ctx) {
+		async execute(input, options) {
 			const ssh = getSsh();
 			if (ssh) {
 				const tool = createReadTool(localCwd, {
 					operations: createRemoteReadOps(ssh.remote, ssh.remoteCwd, localCwd),
 				});
-				return tool.execute(id, params, signal, onUpdate);
+				return tool.execute(input, { toolCallId: options.toolCallId, abortSignal: options.abortSignal, messages: options.messages, onUpdate: options.onUpdate });
 			}
-			return localRead.execute(id, params, signal, onUpdate);
+			return localRead.execute(input, { toolCallId: options.toolCallId, abortSignal: options.abortSignal, messages: options.messages, onUpdate: options.onUpdate });
 		},
 	});
 
 	pi.registerTool({
 		...localWrite,
-		async execute(id, params, signal, onUpdate, _ctx) {
+		async execute(input, options) {
 			const ssh = getSsh();
 			if (ssh) {
 				const tool = createWriteTool(localCwd, {
 					operations: createRemoteWriteOps(ssh.remote, ssh.remoteCwd, localCwd),
 				});
-				return tool.execute(id, params, signal, onUpdate);
+				return tool.execute(input, { toolCallId: options.toolCallId, abortSignal: options.abortSignal, messages: options.messages, onUpdate: options.onUpdate });
 			}
-			return localWrite.execute(id, params, signal, onUpdate);
+			return localWrite.execute(input, { toolCallId: options.toolCallId, abortSignal: options.abortSignal, messages: options.messages, onUpdate: options.onUpdate });
 		},
 	});
 
 	pi.registerTool({
 		...localEdit,
-		async execute(id, params, signal, onUpdate, _ctx) {
+		async execute(input, options) {
 			const ssh = getSsh();
 			if (ssh) {
 				const tool = createEditTool(localCwd, {
 					operations: createRemoteEditOps(ssh.remote, ssh.remoteCwd, localCwd),
 				});
-				return tool.execute(id, params, signal, onUpdate);
+				return tool.execute(input, { toolCallId: options.toolCallId, abortSignal: options.abortSignal, messages: options.messages, onUpdate: options.onUpdate });
 			}
-			return localEdit.execute(id, params, signal, onUpdate);
+			return localEdit.execute(input, { toolCallId: options.toolCallId, abortSignal: options.abortSignal, messages: options.messages, onUpdate: options.onUpdate });
 		},
 	});
 
 	pi.registerTool({
 		...localBash,
-		async execute(id, params, signal, onUpdate, _ctx) {
+		async execute(input, options) {
 			const ssh = getSsh();
 			if (ssh) {
 				const tool = createBashTool(localCwd, {
 					operations: createRemoteBashOps(ssh.remote, ssh.remoteCwd, localCwd),
 				});
-				return tool.execute(id, params, signal, onUpdate);
+				return tool.execute(input, { toolCallId: options.toolCallId, abortSignal: options.abortSignal, messages: options.messages, onUpdate: options.onUpdate });
 			}
-			return localBash.execute(id, params, signal, onUpdate);
+			return localBash.execute(input, { toolCallId: options.toolCallId, abortSignal: options.abortSignal, messages: options.messages, onUpdate: options.onUpdate });
 		},
 	});
 

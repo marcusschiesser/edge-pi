@@ -2,7 +2,7 @@
  * Tool wrappers for extensions.
  */
 
-import type { AgentTool, AgentToolUpdateCallback } from "../ai-types.js";
+import type { AgentTool, AgentToolExecutionOptions } from "../ai-types.js";
 import type { ExtensionRunner } from "./runner.js";
 import type { RegisteredTool, ToolCallEventResult, ToolResultEventResult } from "./types.js";
 
@@ -17,8 +17,8 @@ export function wrapRegisteredTool(registeredTool: RegisteredTool, runner: Exten
 		label: definition.label,
 		description: definition.description,
 		parameters: definition.parameters,
-		execute: (toolCallId, params, signal, onUpdate) =>
-			definition.execute(toolCallId, params, signal, onUpdate, runner.createContext()),
+		execute: (input, options) =>
+			definition.execute(input, { ...options, ctx: runner.createContext() }),
 	};
 }
 
@@ -39,10 +39,8 @@ export function wrapToolWithExtensions<T>(tool: AgentTool<any, T>, runner: Exten
 	return {
 		...tool,
 		execute: async (
-			toolCallId: string,
-			params: Record<string, unknown>,
-			signal?: AbortSignal,
-			onUpdate?: AgentToolUpdateCallback<T>,
+			input: Record<string, unknown>,
+			options: AgentToolExecutionOptions,
 		) => {
 			// Emit tool_call event - extensions can block execution
 			if (runner.hasHandlers("tool_call")) {
@@ -50,8 +48,8 @@ export function wrapToolWithExtensions<T>(tool: AgentTool<any, T>, runner: Exten
 					const callResult = (await runner.emitToolCall({
 						type: "tool_call",
 						toolName: tool.name,
-						toolCallId,
-						input: params,
+						toolCallId: options.toolCallId,
+						input,
 					})) as ToolCallEventResult | undefined;
 
 					if (callResult?.block) {
@@ -68,15 +66,15 @@ export function wrapToolWithExtensions<T>(tool: AgentTool<any, T>, runner: Exten
 
 			// Execute the actual tool
 			try {
-				const result = await tool.execute(toolCallId, params, signal, onUpdate);
+				const result = await tool.execute(input, options);
 
 				// Emit tool_result event - extensions can modify the result
 				if (runner.hasHandlers("tool_result")) {
 					const resultResult = (await runner.emit({
 						type: "tool_result",
 						toolName: tool.name,
-						toolCallId,
-						input: params,
+						toolCallId: options.toolCallId,
+						input,
 						content: result.content,
 						details: result.details,
 						isError: false,
@@ -97,8 +95,8 @@ export function wrapToolWithExtensions<T>(tool: AgentTool<any, T>, runner: Exten
 					await runner.emit({
 						type: "tool_result",
 						toolName: tool.name,
-						toolCallId,
-						input: params,
+						toolCallId: options.toolCallId,
+						input,
 						content: [{ type: "text", text: err instanceof Error ? err.message : String(err) }],
 						details: undefined,
 						isError: true,

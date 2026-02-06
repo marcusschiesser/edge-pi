@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, statSync } from "@mariozechner/pi-env/fs";
 import nodePath from "@mariozechner/pi-env/path";
 import { z } from "zod";
-import type { AgentTool } from "../ai-types.js";
+import type { AgentTool, AgentToolExecutionOptions } from "../ai-types.js";
 import { resolveToCwd } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
 
@@ -52,10 +52,10 @@ export function createLsTool(cwd: string, options?: LsToolOptions): AgentTool<ty
 		description: `List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to ${DEFAULT_LIMIT} entries or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).`,
 		parameters: lsSchema,
 		execute: async (
-			_toolCallId: string,
 			{ path, limit }: { path?: string; limit?: number },
-			signal?: AbortSignal,
+			options: AgentToolExecutionOptions,
 		) => {
+			const signal = options.abortSignal;
 			return new Promise((resolve, reject) => {
 				if (signal?.aborted) {
 					reject(new Error("Operation aborted"));

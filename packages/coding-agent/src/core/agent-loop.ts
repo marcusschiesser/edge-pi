@@ -9,8 +9,7 @@
  * - Context transforms for extensions
  */
 
-import { jsonSchema, type ModelMessage, tool as sdkTool, stepCountIs, ToolLoopAgent, type ToolSet } from "ai";
-import type { z } from "zod";
+import { type ModelMessage, tool as sdkTool, stepCountIs, ToolLoopAgent, type ToolSet } from "ai";
 import {
 	type AgentEvent,
 	type AgentMessage,
@@ -271,41 +270,45 @@ async function streamWithAgent(
 	// Create language model instance
 	const languageModel = createLanguageModel(config.model, apiKey);
 
-	// Convert AgentTools to AI SDK tool format
+	// Convert AgentTools to AI SDK tools with event emission and result collection
 	const sdkTools: ToolSet = {};
 	const toolResultsMap = new Map<string, ToolResultMessage>();
 	let steeringMessages: AgentMessage[] | undefined;
 
 	for (const agentTool of context.tools) {
-		const inputSchema = convertToSdkSchema(agentTool.parameters);
-
 		sdkTools[agentTool.name] = sdkTool({
 			description: agentTool.description,
+			// AgentTool.parameters is always a Zod schema (AI SDK compatible)
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			inputSchema: inputSchema as any,
+			inputSchema: agentTool.parameters as any,
 			execute: async (
-				params: unknown,
-				{ abortSignal, toolCallId }: { abortSignal?: AbortSignal; toolCallId: string },
+				input: unknown,
+				{ abortSignal, toolCallId, messages: sdkMessages }: { abortSignal?: AbortSignal; toolCallId: string; messages: ModelMessage[] },
 			) => {
 				stream.push({
 					type: "tool_execution_start",
 					toolCallId,
 					toolName: agentTool.name,
-					args: params,
+					args: input,
 				});
 
 				let result: AgentToolResult;
 				let isError = false;
 
 				try {
-					result = await agentTool.execute(toolCallId, params, abortSignal, (partialResult) => {
-						stream.push({
-							type: "tool_execution_update",
-							toolCallId,
-							toolName: agentTool.name,
-							args: params,
-							partialResult,
-						});
+					result = await agentTool.execute(input, {
+						toolCallId,
+						abortSignal,
+						messages: sdkMessages,
+						onUpdate: (partialResult) => {
+							stream.push({
+								type: "tool_execution_update",
+								toolCallId,
+								toolName: agentTool.name,
+								args: input,
+								partialResult,
+							});
+						},
 					});
 				} catch (e) {
 					result = {
@@ -560,46 +563,6 @@ function handleStreamPart(
 		// Other stream parts (start-step, finish-step, start, finish, etc.) are
 		// handled by the ToolLoopAgent internally or via onStepFinish callback
 	}
-}
-
-// ============================================================================
-// Schema Conversion
-// ============================================================================
-
-/**
- * Check if a schema is a TypeBox schema.
- * TypeBox schemas have a "type" property that is a string (like "object", "string", etc.)
- * and a "properties" property for object schemas.
- */
-function isTypeBoxSchema(schema: unknown): boolean {
-	if (schema === null || typeof schema !== "object") return false;
-	const s = schema as Record<string, unknown>;
-	// TypeBox object schemas have type="object" and properties
-	return s.type === "object" && typeof s.properties === "object";
-}
-
-/**
- * Convert a TypeBox or Zod schema to Vercel AI SDK schema format.
- * TypeBox schemas are converted via jsonSchema(), Zod schemas are passed through.
- */
-function convertToSdkSchema(schema: unknown) {
-	// If it's a Zod schema (has ~standard property from Zod v4), pass through
-	if (schema !== null && typeof schema === "object" && "~standard" in schema) {
-		return schema as z.ZodType;
-	}
-
-	// If it's a TypeBox schema, convert to JSON schema
-	if (isTypeBoxSchema(schema)) {
-		// TypeBox schemas are already JSON Schema compatible
-		// Remove TypeBox-specific properties that aren't valid JSON Schema
-		const jsonSchemaObj = { ...(schema as Record<string, unknown>) };
-		delete jsonSchemaObj.static;
-		delete jsonSchemaObj[Symbol.for("TypeBox.Kind") as unknown as string];
-		return jsonSchema(jsonSchemaObj);
-	}
-
-	// Fallback: assume it's already a valid SDK schema
-	return schema;
 }
 
 // ============================================================================

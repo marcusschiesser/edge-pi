@@ -14,8 +14,8 @@ export default function (pi: ExtensionAPI) {
 			name: z.string().describe("Name to greet"),
 		}),
 
-		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-			const { name } = params as { name: string };
+		async execute(input, _options) {
+			const { name } = input as { name: string };
 			return {
 				content: [{ type: "text", text: `Hello, ${name}!` }],
 				details: { greeted: name },

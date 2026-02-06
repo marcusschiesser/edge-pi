@@ -1,7 +1,7 @@
 import { mkdir as fsMkdir, writeFile as fsWriteFile } from "@mariozechner/pi-env/fs";
 import { dirname } from "@mariozechner/pi-env/path";
 import { z } from "zod";
-import type { AgentTool } from "../ai-types.js";
+import type { AgentTool, AgentToolExecutionOptions } from "../ai-types.js";
 import { resolveToCwd } from "./path-utils.js";
 
 const writeSchema = z.object({
@@ -42,10 +42,10 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 			"Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
 		parameters: writeSchema,
 		execute: async (
-			_toolCallId: string,
 			{ path, content }: { path: string; content: string },
-			signal?: AbortSignal,
+			options: AgentToolExecutionOptions,
 		) => {
+			const signal = options.abortSignal;
 			const absolutePath = resolveToCwd(path, cwd);
 			const dir = dirname(absolutePath);
 

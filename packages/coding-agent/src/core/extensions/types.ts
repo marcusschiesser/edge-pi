@@ -22,6 +22,7 @@ import type { z } from "zod";
 import type { Theme } from "../../modes/interactive/theme/theme.js";
 import type {
 	AgentMessage,
+	AgentToolExecutionOptions,
 	AgentToolResult,
 	AgentToolUpdateCallback,
 	Api,
@@ -69,7 +70,7 @@ import type {
 } from "../tools/index.js";
 
 export type { ExecOptions, ExecResult } from "../exec.js";
-export type { AgentToolResult, AgentToolUpdateCallback };
+export type { AgentToolExecutionOptions, AgentToolResult, AgentToolUpdateCallback };
 export type { AppAction, KeybindingsManager } from "../keybindings.js";
 
 // ============================================================================
@@ -320,11 +321,8 @@ export interface ToolDefinition<TParams extends z.ZodTypeAny = z.ZodTypeAny, TDe
 
 	/** Execute the tool. */
 	execute(
-		toolCallId: string,
-		params: z.infer<TParams>,
-		signal: AbortSignal | undefined,
-		onUpdate: AgentToolUpdateCallback<TDetails> | undefined,
-		ctx: ExtensionContext,
+		input: z.infer<TParams>,
+		options: AgentToolExecutionOptions & { ctx: ExtensionContext },
 	): Promise<AgentToolResult<TDetails>>;
 
 	/** Custom rendering for tool call display */

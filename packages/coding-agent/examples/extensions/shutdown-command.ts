@@ -23,7 +23,8 @@ export default function (pi: ExtensionAPI) {
 		label: "Finish and Exit",
 		description: "Complete a task and exit pi",
 		parameters: z.object({}),
-		async execute(_toolCallId, _params, _signal, _onUpdate, ctx) {
+		async execute(_input, options) {
+			const { ctx } = options;
 			// Do any final work here...
 			// Request graceful shutdown (deferred until agent is idle)
 			ctx.shutdown();
@@ -44,11 +45,12 @@ export default function (pi: ExtensionAPI) {
 		parameters: z.object({
 			environment: z.string().describe("Target environment (e.g., production, staging)"),
 		}),
-		async execute(_toolCallId, params, _signal, onUpdate, ctx) {
-			onUpdate?.({ content: [{ type: "text", text: `Deploying to ${params.environment}...` }], details: {} });
+		async execute(input, options) {
+			const { ctx, onUpdate } = options;
+			onUpdate?.({ content: [{ type: "text", text: `Deploying to ${input.environment}...` }], details: {} });
 
 			// Example deployment logic
-			// const result = await pi.exec("npm", ["run", "deploy", params.environment], { signal });
+			// const result = await pi.exec("npm", ["run", "deploy", input.environment], { signal });
 
 			// On success, request graceful shutdown
 			onUpdate?.({ content: [{ type: "text", text: "Deployment complete, exiting..." }], details: {} });
@@ -56,7 +58,7 @@ export default function (pi: ExtensionAPI) {
 
 			return {
 				content: [{ type: "text", text: "Done! Shutdown requested." }],
-				details: { environment: params.environment },
+				details: { environment: input.environment },
 			};
 		},
 	});

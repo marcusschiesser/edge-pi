@@ -20,6 +20,7 @@ export type {
 	AgentEndEvent,
 	AgentStartEvent,
 	// Re-exports
+	AgentToolExecutionOptions,
 	AgentToolResult,
 	AgentToolUpdateCallback,
 	// App keybindings (for custom editors)

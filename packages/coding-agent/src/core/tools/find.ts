@@ -4,7 +4,7 @@ import path from "@mariozechner/pi-env/path";
 import { globSync } from "glob";
 import { z } from "zod";
 import { ensureTool } from "../../utils/tools-manager.js";
-import type { AgentTool } from "../ai-types.js";
+import type { AgentTool, AgentToolExecutionOptions } from "../ai-types.js";
 import { resolveToCwd } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
 
@@ -56,10 +56,10 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 		description: `Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} results or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).`,
 		parameters: findSchema,
 		execute: async (
-			_toolCallId: string,
 			{ pattern, path: searchDir, limit }: { pattern: string; path?: string; limit?: number },
-			signal?: AbortSignal,
+			options: AgentToolExecutionOptions,
 		) => {
+			const signal = options.abortSignal;
 			return new Promise((resolve, reject) => {
 				if (signal?.aborted) {
 					reject(new Error("Operation aborted"));

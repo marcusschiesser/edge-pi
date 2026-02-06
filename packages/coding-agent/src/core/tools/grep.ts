@@ -4,7 +4,7 @@ import { readFileSync, statSync } from "@mariozechner/pi-env/fs";
 import path from "@mariozechner/pi-env/path";
 import { z } from "zod";
 import { ensureTool } from "../../utils/tools-manager.js";
-import type { AgentTool } from "../ai-types.js";
+import type { AgentTool, AgentToolExecutionOptions } from "../ai-types.js";
 import { resolveToCwd } from "./path-utils.js";
 import {
 	DEFAULT_MAX_BYTES,
@@ -65,7 +65,6 @@ export function createGrepTool(cwd: string, options?: GrepToolOptions): AgentToo
 		description: `Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} matches or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Long lines are truncated to ${GREP_MAX_LINE_LENGTH} chars.`,
 		parameters: grepSchema,
 		execute: async (
-			_toolCallId: string,
 			{
 				pattern,
 				path: searchDir,
@@ -83,8 +82,9 @@ export function createGrepTool(cwd: string, options?: GrepToolOptions): AgentToo
 				context?: number;
 				limit?: number;
 			},
-			signal?: AbortSignal,
+			options: AgentToolExecutionOptions,
 		) => {
+			const signal = options.abortSignal;
 			return new Promise((resolve, reject) => {
 				if (signal?.aborted) {
 					reject(new Error("Operation aborted"));

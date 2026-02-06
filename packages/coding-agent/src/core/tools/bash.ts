@@ -5,7 +5,7 @@ import { tmpdir } from "@mariozechner/pi-env/os";
 import { join } from "@mariozechner/pi-env/path";
 import { z } from "zod";
 import { getShellConfig, getShellEnv, killProcessTree } from "../../utils/shell.js";
-import type { AgentTool } from "../ai-types.js";
+import type { AgentTool, AgentToolExecutionOptions } from "../ai-types.js";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateTail } from "./truncate.js";
 
 /**
@@ -174,10 +174,8 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 		description: `Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
 		parameters: bashSchema,
 		execute: async (
-			_toolCallId: string,
 			{ command, timeout }: { command: string; timeout?: number },
-			signal?: AbortSignal,
-			onUpdate?,
+			options: AgentToolExecutionOptions,
 		) => {
 			// Apply command prefix if configured (e.g., "shopt -s expand_aliases" for alias support)
 			const resolvedCommand = commandPrefix ? `${commandPrefix}\n${command}` : command;
@@ -224,11 +222,11 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 					}
 
 					// Stream partial output to callback (truncated rolling buffer)
-					if (onUpdate) {
+					if (options.onUpdate) {
 						const fullBuffer = Buffer.concat(chunks);
 						const fullText = fullBuffer.toString("utf-8");
 						const truncation = truncateTail(fullText);
-						onUpdate({
+						options.onUpdate({
 							content: [{ type: "text", text: truncation.content || "" }],
 							details: {
 								truncation: truncation.truncated ? truncation : undefined,
@@ -240,7 +238,7 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 
 				ops.exec(spawnContext.command, spawnContext.cwd, {
 					onData: handleData,
-					signal,
+					signal: options.abortSignal,
 					timeout,
 					env: spawnContext.env,
 				})

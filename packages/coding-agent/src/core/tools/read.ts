@@ -2,7 +2,7 @@ import { constants, access as fsAccess, readFile as fsReadFile } from "@mariozec
 import { z } from "zod";
 import { formatDimensionNote, resizeImage } from "../../utils/image-resize.js";
 import { detectSupportedImageMimeTypeFromFile } from "../../utils/mime.js";
-import type { AgentTool, ImageContent, TextContent } from "../ai-types.js";
+import type { AgentTool, AgentToolExecutionOptions, ImageContent, TextContent } from "../ai-types.js";
 import { resolveReadPath } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
 
@@ -54,10 +54,10 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
 		description: `Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.`,
 		parameters: readSchema,
 		execute: async (
-			_toolCallId: string,
 			{ path, offset, limit }: { path: string; offset?: number; limit?: number },
-			signal?: AbortSignal,
+			options: AgentToolExecutionOptions,
 		) => {
+			const signal = options.abortSignal;
 			const absolutePath = resolveReadPath(path, cwd);
 
 			return new Promise<{ content: (TextContent | ImageContent)[]; details: ReadToolDetails | undefined }>(

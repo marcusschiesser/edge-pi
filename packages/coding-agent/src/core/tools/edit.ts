@@ -5,7 +5,7 @@ import {
 	writeFile as fsWriteFile,
 } from "@mariozechner/pi-env/fs";
 import { z } from "zod";
-import type { AgentTool } from "../ai-types.js";
+import type { AgentTool, AgentToolExecutionOptions } from "../ai-types.js";
 import {
 	detectLineEnding,
 	fuzzyFindText,
@@ -66,10 +66,10 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 			"Edit a file by replacing exact text. The oldText must match exactly (including whitespace). Use this for precise, surgical edits.",
 		parameters: editSchema,
 		execute: async (
-			_toolCallId: string,
 			{ path, oldText, newText }: { path: string; oldText: string; newText: string },
-			signal?: AbortSignal,
+			options: AgentToolExecutionOptions,
 		) => {
+			const signal = options.abortSignal;
 			const absolutePath = resolveToCwd(path, cwd);
 
 			return new Promise<{
