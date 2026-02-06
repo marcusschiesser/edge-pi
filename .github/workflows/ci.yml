@@ -35,8 +35,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Check
-        run: npm run check
+      - name: Type check
+        run: tsgo --noEmit
 
       - name: Test
-        run: npm test
+        run: ./test.sh
