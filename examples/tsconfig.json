@@ -1,0 +1,14 @@
+{
+	"extends": "../tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"paths": {
+			"@mariozechner/pi-coding-agent": ["../packages/coding-agent/src/index.ts"],
+			"@mariozechner/pi-coding-agent/hooks": ["../packages/coding-agent/src/core/hooks/index.ts"],
+			"@mariozechner/pi-tui": ["../packages/tui/src/index.ts"]
+		},
+		"skipLibCheck": true
+	},
+	"include": ["./**/*.ts"],
+	"exclude": ["node_modules", "dist"]
+}

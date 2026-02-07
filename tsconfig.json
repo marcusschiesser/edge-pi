@@ -12,6 +12,6 @@
 			"zod": ["./packages/coding-agent-sdk/node_modules/zod/index.d.ts"]
 		}
 	},
-	"include": ["packages/*/src/**/*", "packages/*/test/**/*", "packages/coding-agent/examples/**/*"],
+	"include": ["packages/*/src/**/*", "packages/*/test/**/*", "examples/**/*"],
 	"exclude": ["**/dist/**"]
 }
