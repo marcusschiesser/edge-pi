@@ -12,7 +12,7 @@
 	],
 	"scripts": {
 		"clean": "npm run clean --workspaces",
-		"build": "cd packages/env && npm run build && cd ../coding-agent-sdk && npm run build && cd ../coding-agent && npm run build",
+		"build": "cd packages/env && npm run build && cd ../coding-agent-sdk && npm run build && cd ../coding-agent && npm run build && cd ../edge-pi && npm run build && cd ../edge-pi-cli && npm run build",
 		"dev": "concurrently --names \"coding-agent\" --prefix-colors \"cyan\" \"cd packages/coding-agent && npm run dev\"",
 		"dev:tsc": "concurrently --names \"coding-agent\" --prefix-colors \"cyan\" \"cd packages/coding-agent && npm run dev:tsc\"",
 		"check": "biome check --write --error-on-warnings . && tsgo --noEmit",
