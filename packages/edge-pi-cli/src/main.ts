@@ -12,7 +12,7 @@ import chalk from "chalk";
 import type { CodingAgentConfig, ModelMessage } from "edge-pi";
 import { CodingAgent, SessionManager } from "edge-pi";
 import { AuthStorage, anthropicOAuthProvider } from "./auth/index.js";
-import { parseArgs, printHelp } from "./cli/args.js";
+import { parseArgs, printHelp, printModels } from "./cli/args.js";
 import { createModel } from "./model-factory.js";
 import { runInteractiveMode } from "./modes/interactive-mode.js";
 import { runPrintMode } from "./modes/print-mode.js";
@@ -128,6 +128,11 @@ export async function main(args: string[]) {
 
 	if (parsed.help) {
 		printHelp();
+		return;
+	}
+
+	if (parsed.listModels) {
+		printModels();
 		return;
 	}
 

@@ -40,7 +40,7 @@ const providers: Record<string, ProviderConfig> = {
 	anthropic: {
 		name: "anthropic",
 		envVar: "ANTHROPIC_API_KEY",
-		defaultModel: "claude-sonnet-4-20250514",
+		defaultModel: "claude-opus-4-6",
 		createModel: async (modelId: string, apiKey?: string) => {
 			if (apiKey) {
 				return createAnthropicModelWithOAuth(modelId, apiKey);
@@ -53,7 +53,7 @@ const providers: Record<string, ProviderConfig> = {
 	openai: {
 		name: "openai",
 		envVar: "OPENAI_API_KEY",
-		defaultModel: "gpt-4o",
+		defaultModel: "gpt-5.3",
 		createModel: async (modelId: string, apiKey?: string) => {
 			const { createOpenAI } = await import("@ai-sdk/openai");
 			const provider = createOpenAI(apiKey ? { apiKey } : undefined);
@@ -63,7 +63,7 @@ const providers: Record<string, ProviderConfig> = {
 	google: {
 		name: "google",
 		envVar: "GEMINI_API_KEY",
-		defaultModel: "gemini-2.5-flash",
+		defaultModel: "gemini-3-flash",
 		createModel: async (modelId: string, apiKey?: string) => {
 			const { createGoogleGenerativeAI } = await import("@ai-sdk/google");
 			const provider = createGoogleGenerativeAI(apiKey ? { apiKey } : undefined);
@@ -103,6 +103,17 @@ export function getProvider(name: string): ProviderConfig | undefined {
  */
 export function listProviders(): string[] {
 	return Object.keys(providers);
+}
+
+/**
+ * Get the latest recommended models for each provider.
+ */
+export function getLatestModels(): Record<string, string[]> {
+	return {
+		anthropic: ["claude-opus-4-6", "claude-opus-4-6-20260115", "claude-sonnet-4-5", "claude-haiku-4-5"],
+		openai: ["gpt-5.3", "gpt-5.3-chat-latest", "gpt-5.3-codex", "gpt-5.3-pro"],
+		google: ["gemini-3-flash", "gemini-3-pro", "gemini-3-flash-preview", "gemini-3-pro-preview"],
+	};
 }
 
 /**

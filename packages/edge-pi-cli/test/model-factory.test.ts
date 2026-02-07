@@ -18,17 +18,17 @@ describe("model-factory", () => {
 			expect(anthropic).toBeDefined();
 			expect(anthropic?.name).toBe("anthropic");
 			expect(anthropic?.envVar).toBe("ANTHROPIC_API_KEY");
-			expect(anthropic?.defaultModel).toBe("claude-sonnet-4-20250514");
+			expect(anthropic?.defaultModel).toBe("claude-opus-4-6");
 
 			const openai = getProvider("openai");
 			expect(openai).toBeDefined();
 			expect(openai?.name).toBe("openai");
-			expect(openai?.defaultModel).toBe("gpt-4o");
+			expect(openai?.defaultModel).toBe("gpt-5.3");
 
 			const google = getProvider("google");
 			expect(google).toBeDefined();
 			expect(google?.name).toBe("google");
-			expect(google?.defaultModel).toBe("gemini-2.5-flash");
+			expect(google?.defaultModel).toBe("gemini-3-flash");
 		});
 
 		it("should return undefined for unknown providers", () => {

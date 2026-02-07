@@ -6,7 +6,7 @@
 
 import chalk from "chalk";
 import type { ThinkingLevel } from "edge-pi";
-import { listProviders } from "../model-factory.js";
+import { getLatestModels, listProviders } from "../model-factory.js";
 
 export type Mode = "text" | "json";
 
@@ -22,6 +22,7 @@ export interface Args {
 	continue?: boolean;
 	help?: boolean;
 	version?: boolean;
+	listModels?: boolean;
 	mode?: Mode;
 	noSession?: boolean;
 	session?: string;
@@ -49,6 +50,8 @@ export function parseArgs(args: string[]): Args {
 			result.help = true;
 		} else if (arg === "--version" || arg === "-v") {
 			result.version = true;
+		} else if (arg === "--list-models") {
+			result.listModels = true;
 		} else if (arg === "--mode" && i + 1 < args.length) {
 			const mode = args[++i];
 			if (mode === "text" || mode === "json") {
@@ -138,6 +141,7 @@ ${chalk.bold("Options:")}
   --no-skills                    Disable skill discovery and loading
   --max-steps <n>                Maximum agent steps per prompt (default: 50)
   --verbose                      Verbose output
+  --list-models                  List latest supported models
   --help, -h                     Show this help
   --version, -v                  Show version number
 
@@ -157,8 +161,10 @@ ${chalk.bold("Examples:")}
   # Continue previous session
   epi --continue "What did we discuss?"
 
-  # Use a specific model
-  epi --provider anthropic --model claude-sonnet-4-20250514
+  # Use specific latest models
+  epi --provider anthropic --model claude-opus-4-6
+  epi --provider openai --model gpt-5.3
+  epi --provider google --model gemini-3-flash
 
   # Read-only tools
   epi --tools readonly -p "Review the code in src/"
@@ -172,5 +178,28 @@ ${chalk.bold("Tool Sets:")}
   coding    read, bash, edit, write (default)
   readonly  read, grep, find, ls
   all       read, bash, edit, write, grep, find, ls
+`);
+}
+
+export function printModels(): void {
+	const latestModels = getLatestModels();
+
+	console.log(`${chalk.bold("Latest Supported Models:")}\n`);
+
+	for (const [provider, models] of Object.entries(latestModels)) {
+		console.log(`${chalk.bold(provider.toUpperCase())}:`);
+		for (const model of models) {
+			console.log(`  ${model}`);
+		}
+		console.log();
+	}
+
+	console.log(`${chalk.bold("Usage:")}
+  epi --provider <provider> --model <model> [message...]
+
+${chalk.bold("Examples:")}
+  epi --provider anthropic --model claude-opus-4-6 "Hello"
+  epi --provider openai --model gpt-5.3 "Hello" 
+  epi --provider google --model gemini-3-flash "Hello"
 `);
 }
