@@ -2,15 +2,16 @@
  * Main entry point for the edge-pi CLI.
  *
  * Handles argument parsing, model creation, skill loading,
- * session management, and mode dispatch.
+ * session management, auth, and mode dispatch.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import chalk from "chalk";
 import type { CodingAgentConfig, ModelMessage } from "edge-pi";
 import { CodingAgent, SessionManager } from "edge-pi";
+import { AuthStorage, anthropicOAuthProvider } from "./auth/index.js";
 import { parseArgs, printHelp } from "./cli/args.js";
 import { createModel } from "./model-factory.js";
 import { runInteractiveMode } from "./modes/interactive-mode.js";
@@ -32,6 +33,10 @@ function getAgentDir(): string {
 
 function getSessionsDir(): string {
 	return join(getAgentDir(), "sessions");
+}
+
+function getAuthPath(): string {
+	return join(getAgentDir(), "auth.json");
 }
 
 /**
@@ -78,7 +83,6 @@ function processFileArgs(fileArgs: string[]): string {
 
 /**
  * Create a session directory path based on the current working directory.
- * Mirrors how the old CLI stores sessions per-project.
  */
 function getProjectSessionDir(cwd: string): string {
 	const sanitized = cwd.replace(/\//g, "--").replace(/^--/, "");
@@ -90,7 +94,6 @@ function getProjectSessionDir(cwd: string): string {
  */
 function findRecentSession(sessionDir: string): string | undefined {
 	if (!existsSync(sessionDir)) return undefined;
-	const { readdirSync, statSync } = require("node:fs") as typeof import("node:fs");
 	try {
 		const files = readdirSync(sessionDir)
 			.filter((f: string) => f.endsWith(".jsonl"))
@@ -104,6 +107,15 @@ function findRecentSession(sessionDir: string): string | undefined {
 	} catch {
 		return undefined;
 	}
+}
+
+/**
+ * Create and configure AuthStorage with built-in OAuth providers.
+ */
+function createAuthStorage(): AuthStorage {
+	const authStorage = new AuthStorage(getAuthPath());
+	authStorage.registerProvider(anthropicOAuthProvider);
+	return authStorage;
 }
 
 export async function main(args: string[]) {
@@ -141,11 +153,20 @@ export async function main(args: string[]) {
 	const isInteractive = !parsed.print && parsed.mode === undefined;
 	const mode = parsed.mode || "text";
 
-	// Create model
-	const { model, provider, modelId } = createModel({
+	// Set up auth storage
+	const authStorage = createAuthStorage();
+
+	// Apply CLI --api-key override
+	if (parsed.apiKey && parsed.provider) {
+		authStorage.setRuntimeApiKey(parsed.provider, parsed.apiKey);
+	}
+
+	// Create model (async - may resolve OAuth tokens)
+	const { model, provider, modelId } = await createModel({
 		provider: parsed.provider,
 		model: parsed.model,
 		apiKey: parsed.apiKey,
+		authStorage,
 	});
 
 	// Load skills
@@ -246,6 +267,7 @@ export async function main(args: string[]) {
 			verbose: parsed.verbose,
 			provider,
 			modelId,
+			authStorage,
 		});
 	} else {
 		await runPrintMode(agent, {

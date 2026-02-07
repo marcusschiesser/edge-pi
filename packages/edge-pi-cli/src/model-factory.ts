@@ -1,10 +1,14 @@
 /**
  * Model factory - creates Vercel AI SDK LanguageModel instances
  * from provider name + model ID + optional API key.
+ *
+ * Supports OAuth tokens for Anthropic (Bearer auth with special headers).
  */
 
 import type { LanguageModel } from "ai";
 import chalk from "chalk";
+import { isAnthropicOAuthToken } from "./auth/anthropic-oauth.js";
+import type { AuthStorage } from "./auth/auth-storage.js";
 
 export interface ProviderConfig {
 	name: string;
@@ -13,15 +17,36 @@ export interface ProviderConfig {
 	createModel: (modelId: string, apiKey?: string) => LanguageModel;
 }
 
+function createAnthropicModelWithOAuth(modelId: string, apiKey: string): LanguageModel {
+	const { createAnthropic } = require("@ai-sdk/anthropic") as typeof import("@ai-sdk/anthropic");
+
+	if (isAnthropicOAuthToken(apiKey)) {
+		const provider = createAnthropic({
+			apiKey: undefined as unknown as string,
+			headers: {
+				Authorization: `Bearer ${apiKey}`,
+				"anthropic-beta": "claude-code-20250219,oauth-2025-04-20",
+				"user-agent": "epi/0.1.0 (external, cli)",
+			},
+		});
+		return provider(modelId);
+	}
+
+	const provider = createAnthropic({ apiKey });
+	return provider(modelId);
+}
+
 const providers: Record<string, ProviderConfig> = {
 	anthropic: {
 		name: "anthropic",
 		envVar: "ANTHROPIC_API_KEY",
 		defaultModel: "claude-sonnet-4-20250514",
 		createModel: (modelId: string, apiKey?: string) => {
-			// Dynamic import to avoid loading unused providers
+			if (apiKey) {
+				return createAnthropicModelWithOAuth(modelId, apiKey);
+			}
 			const { createAnthropic } = require("@ai-sdk/anthropic") as typeof import("@ai-sdk/anthropic");
-			const provider = createAnthropic(apiKey ? { apiKey } : undefined);
+			const provider = createAnthropic();
 			return provider(modelId);
 		},
 	},
@@ -48,10 +73,16 @@ const providers: Record<string, ProviderConfig> = {
 };
 
 /**
- * Detect which provider to use based on available environment variables.
- * Returns the first provider whose API key env var is set.
+ * Detect which provider to use based on AuthStorage or environment variables.
  */
-export function detectProvider(): ProviderConfig | undefined {
+export function detectProvider(authStorage?: AuthStorage): ProviderConfig | undefined {
+	if (authStorage) {
+		for (const config of Object.values(providers)) {
+			if (authStorage.hasAuth(config.name)) {
+				return config;
+			}
+		}
+	}
 	for (const config of Object.values(providers)) {
 		if (process.env[config.envVar]) {
 			return config;
@@ -76,15 +107,19 @@ export function listProviders(): string[] {
 
 /**
  * Create a LanguageModel from provider name, model ID, and optional API key.
- * If provider is not specified, auto-detects from env vars.
- * If model is not specified, uses the provider's default.
+ * Uses AuthStorage for credential resolution (OAuth + API key + env vars).
  */
-export function createModel(options: { provider?: string; model?: string; apiKey?: string }): {
+export async function createModel(options: {
+	provider?: string;
+	model?: string;
+	apiKey?: string;
+	authStorage?: AuthStorage;
+}): Promise<{
 	model: LanguageModel;
 	provider: string;
 	modelId: string;
-} {
-	const { provider: providerName, model: modelId, apiKey } = options;
+}> {
+	const { provider: providerName, model: modelId, apiKey, authStorage } = options;
 
 	let config: ProviderConfig | undefined;
 
@@ -96,20 +131,27 @@ export function createModel(options: { provider?: string; model?: string; apiKey
 			process.exit(1);
 		}
 	} else {
-		config = detectProvider();
+		config = detectProvider(authStorage);
 		if (!config) {
 			console.error(chalk.red("No API key found. Set one of:"));
 			for (const p of Object.values(providers)) {
 				console.error(`  ${p.envVar} (for ${p.name})`);
 			}
+			console.error("Or use: epi /login");
 			process.exit(1);
 		}
 	}
 
 	const resolvedModelId = modelId ?? config.defaultModel;
 
+	// Resolve API key: explicit > AuthStorage > env var
+	let resolvedApiKey = apiKey;
+	if (!resolvedApiKey && authStorage) {
+		resolvedApiKey = await authStorage.getApiKey(config.name);
+	}
+
 	try {
-		const model = config.createModel(resolvedModelId, apiKey);
+		const model = config.createModel(resolvedModelId, resolvedApiKey);
 		return { model, provider: config.name, modelId: resolvedModelId };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error";

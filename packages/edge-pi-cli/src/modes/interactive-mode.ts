@@ -2,12 +2,13 @@
  * Interactive mode: Streaming readline REPL.
  *
  * Simple terminal-based interactive loop that streams responses
- * and shows tool usage inline.
+ * and shows tool usage inline. Supports /login and /logout commands.
  */
 
 import { createInterface } from "node:readline";
 import chalk from "chalk";
 import type { CodingAgent, ModelMessage, SessionManager } from "edge-pi";
+import type { AuthStorage } from "../auth/auth-storage.js";
 import type { Skill } from "../skills.js";
 
 export interface InteractiveModeOptions {
@@ -18,13 +19,23 @@ export interface InteractiveModeOptions {
 	verbose?: boolean;
 	provider: string;
 	modelId: string;
+	authStorage?: AuthStorage;
 }
 
 /**
  * Run the interactive REPL mode with streaming output.
  */
 export async function runInteractiveMode(agent: CodingAgent, options: InteractiveModeOptions): Promise<void> {
-	const { initialMessage, initialMessages = [], sessionManager, skills = [], verbose, provider, modelId } = options;
+	const {
+		initialMessage,
+		initialMessages = [],
+		sessionManager,
+		skills = [],
+		verbose,
+		provider,
+		modelId,
+		authStorage,
+	} = options;
 
 	console.log(chalk.bold("epi") + chalk.dim(` - ${provider}/${modelId}`));
 	if (skills.length > 0 && verbose) {
@@ -35,7 +46,7 @@ export async function runInteractiveMode(agent: CodingAgent, options: Interactiv
 			console.log(chalk.dim(`Session: ${sessionManager.getSessionFile()}`));
 		}
 	}
-	console.log(chalk.dim('Type your message. Press Ctrl+C to exit. Type "/skills" to list skills.\n'));
+	console.log(chalk.dim('Type your message. Press Ctrl+C to exit. Type "/help" for commands.\n'));
 
 	// Process initial messages first (non-interactive)
 	const initialMsgs: string[] = [];
@@ -65,6 +76,14 @@ export async function runInteractiveMode(agent: CodingAgent, options: Interactiv
 		});
 	};
 
+	const askQuestion = (question: string): Promise<string> => {
+		return new Promise((resolve) => {
+			rl.question(question, (answer) => {
+				resolve(answer);
+			});
+		});
+	};
+
 	try {
 		while (true) {
 			const input = await promptForInput();
@@ -78,6 +97,17 @@ export async function runInteractiveMode(agent: CodingAgent, options: Interactiv
 			if (!trimmed) continue;
 
 			// Handle commands
+			if (trimmed === "/help") {
+				console.log(chalk.bold("Commands:"));
+				console.log("  /login              Login to an OAuth provider");
+				console.log("  /logout             Logout from an OAuth provider");
+				console.log("  /skills             List loaded skills");
+				console.log("  /skill:<name>       Invoke a skill by name");
+				console.log("  /quit, /exit        Exit the CLI");
+				console.log();
+				continue;
+			}
+
 			if (trimmed === "/skills") {
 				if (skills.length === 0) {
 					console.log(chalk.dim("No skills loaded."));
@@ -95,6 +125,18 @@ export async function runInteractiveMode(agent: CodingAgent, options: Interactiv
 
 			if (trimmed === "/quit" || trimmed === "/exit") {
 				break;
+			}
+
+			if (trimmed === "/login") {
+				await handleLogin(authStorage, rl, askQuestion);
+				console.log();
+				continue;
+			}
+
+			if (trimmed === "/logout") {
+				await handleLogout(authStorage, rl, askQuestion);
+				console.log();
+				continue;
 			}
 
 			if (trimmed.startsWith("/skill:")) {
@@ -120,6 +162,135 @@ export async function runInteractiveMode(agent: CodingAgent, options: Interactiv
 	}
 
 	console.log(chalk.dim("\nGoodbye."));
+}
+
+/**
+ * Handle /login command - text-based OAuth login flow.
+ */
+async function handleLogin(
+	authStorage: AuthStorage | undefined,
+	_rl: ReturnType<typeof createInterface>,
+	askQuestion: (q: string) => Promise<string>,
+): Promise<void> {
+	if (!authStorage) {
+		console.log(chalk.red("Auth storage not available."));
+		return;
+	}
+
+	const providers = authStorage.getProviders();
+	if (providers.length === 0) {
+		console.log(chalk.dim("No OAuth providers registered."));
+		return;
+	}
+
+	// Show provider selection
+	console.log(chalk.bold("Available OAuth providers:"));
+	for (let i = 0; i < providers.length; i++) {
+		const p = providers[i];
+		const loggedIn = authStorage.get(p.id)?.type === "oauth" ? chalk.green(" (logged in)") : "";
+		console.log(`  ${i + 1}. ${p.name}${loggedIn}`);
+	}
+
+	const choice = await askQuestion(chalk.dim("Select provider (number): "));
+	const index = parseInt(choice.trim(), 10) - 1;
+
+	if (Number.isNaN(index) || index < 0 || index >= providers.length) {
+		console.log(chalk.dim("Cancelled."));
+		return;
+	}
+
+	const provider = providers[index];
+	console.log(chalk.dim(`\nLogging in to ${provider.name}...\n`));
+
+	try {
+		await authStorage.login(provider.id, {
+			onAuth: (info) => {
+				console.log(chalk.bold("Open this URL in your browser:"));
+				console.log(chalk.cyan(info.url));
+				if (info.instructions) {
+					console.log(chalk.dim(info.instructions));
+				}
+				console.log();
+
+				// Try to open browser
+				try {
+					const { execSync } = require("node:child_process") as typeof import("node:child_process");
+					const platform = process.platform;
+					if (platform === "darwin") {
+						execSync(`open "${info.url}"`, { stdio: "ignore" });
+					} else if (platform === "linux") {
+						execSync(`xdg-open "${info.url}" 2>/dev/null || sensible-browser "${info.url}" 2>/dev/null`, {
+							stdio: "ignore",
+						});
+					} else if (platform === "win32") {
+						execSync(`start "" "${info.url}"`, { stdio: "ignore" });
+					}
+				} catch {
+					// Silently fail - user can open manually
+				}
+			},
+			onPrompt: async (prompt) => {
+				const answer = await askQuestion(chalk.dim(`${prompt.message} `));
+				return answer.trim();
+			},
+			onProgress: (message) => {
+				console.log(chalk.dim(message));
+			},
+		});
+
+		console.log(chalk.green(`\nLogged in to ${provider.name}. Credentials saved.`));
+	} catch (error) {
+		const msg = error instanceof Error ? error.message : String(error);
+		if (msg !== "Login cancelled") {
+			console.log(chalk.red(`Login failed: ${msg}`));
+		} else {
+			console.log(chalk.dim("Login cancelled."));
+		}
+	}
+}
+
+/**
+ * Handle /logout command.
+ */
+async function handleLogout(
+	authStorage: AuthStorage | undefined,
+	_rl: ReturnType<typeof createInterface>,
+	askQuestion: (q: string) => Promise<string>,
+): Promise<void> {
+	if (!authStorage) {
+		console.log(chalk.red("Auth storage not available."));
+		return;
+	}
+
+	const loggedIn = authStorage
+		.list()
+		.filter((id) => authStorage.get(id)?.type === "oauth")
+		.map((id) => {
+			const provider = authStorage.getProvider(id);
+			return { id, name: provider?.name ?? id };
+		});
+
+	if (loggedIn.length === 0) {
+		console.log(chalk.dim("No OAuth providers logged in. Use /login first."));
+		return;
+	}
+
+	console.log(chalk.bold("Logged in providers:"));
+	for (let i = 0; i < loggedIn.length; i++) {
+		console.log(`  ${i + 1}. ${loggedIn[i].name}`);
+	}
+
+	const choice = await askQuestion(chalk.dim("Select provider to logout (number): "));
+	const index = parseInt(choice.trim(), 10) - 1;
+
+	if (Number.isNaN(index) || index < 0 || index >= loggedIn.length) {
+		console.log(chalk.dim("Cancelled."));
+		return;
+	}
+
+	const entry = loggedIn[index];
+	authStorage.logout(entry.id);
+	console.log(chalk.green(`Logged out of ${entry.name}.`));
 }
 
 /**
