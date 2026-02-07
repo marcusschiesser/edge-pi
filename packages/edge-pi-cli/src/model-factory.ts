@@ -14,11 +14,11 @@ export interface ProviderConfig {
 	name: string;
 	envVar: string;
 	defaultModel: string;
-	createModel: (modelId: string, apiKey?: string) => LanguageModel;
+	createModel: (modelId: string, apiKey?: string) => Promise<LanguageModel>;
 }
 
-function createAnthropicModelWithOAuth(modelId: string, apiKey: string): LanguageModel {
-	const { createAnthropic } = require("@ai-sdk/anthropic") as typeof import("@ai-sdk/anthropic");
+async function createAnthropicModelWithOAuth(modelId: string, apiKey: string): Promise<LanguageModel> {
+	const { createAnthropic } = await import("@ai-sdk/anthropic");
 
 	if (isAnthropicOAuthToken(apiKey)) {
 		const provider = createAnthropic({
@@ -41,11 +41,11 @@ const providers: Record<string, ProviderConfig> = {
 		name: "anthropic",
 		envVar: "ANTHROPIC_API_KEY",
 		defaultModel: "claude-sonnet-4-20250514",
-		createModel: (modelId: string, apiKey?: string) => {
+		createModel: async (modelId: string, apiKey?: string) => {
 			if (apiKey) {
 				return createAnthropicModelWithOAuth(modelId, apiKey);
 			}
-			const { createAnthropic } = require("@ai-sdk/anthropic") as typeof import("@ai-sdk/anthropic");
+			const { createAnthropic } = await import("@ai-sdk/anthropic");
 			const provider = createAnthropic();
 			return provider(modelId);
 		},
@@ -54,8 +54,8 @@ const providers: Record<string, ProviderConfig> = {
 		name: "openai",
 		envVar: "OPENAI_API_KEY",
 		defaultModel: "gpt-4o",
-		createModel: (modelId: string, apiKey?: string) => {
-			const { createOpenAI } = require("@ai-sdk/openai") as typeof import("@ai-sdk/openai");
+		createModel: async (modelId: string, apiKey?: string) => {
+			const { createOpenAI } = await import("@ai-sdk/openai");
 			const provider = createOpenAI(apiKey ? { apiKey } : undefined);
 			return provider(modelId);
 		},
@@ -64,8 +64,8 @@ const providers: Record<string, ProviderConfig> = {
 		name: "google",
 		envVar: "GEMINI_API_KEY",
 		defaultModel: "gemini-2.5-flash",
-		createModel: (modelId: string, apiKey?: string) => {
-			const { createGoogleGenerativeAI } = require("@ai-sdk/google") as typeof import("@ai-sdk/google");
+		createModel: async (modelId: string, apiKey?: string) => {
+			const { createGoogleGenerativeAI } = await import("@ai-sdk/google");
 			const provider = createGoogleGenerativeAI(apiKey ? { apiKey } : undefined);
 			return provider(modelId);
 		},
@@ -151,7 +151,7 @@ export async function createModel(options: {
 	}
 
 	try {
-		const model = config.createModel(resolvedModelId, resolvedApiKey);
+		const model = await config.createModel(resolvedModelId, resolvedApiKey);
 		return { model, provider: config.name, modelId: resolvedModelId };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error";
