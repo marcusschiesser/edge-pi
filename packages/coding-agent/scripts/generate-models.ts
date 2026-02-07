@@ -211,6 +211,7 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 				if (id.startsWith("anthropic.claude-haiku-4-5") ||
 						id.startsWith("anthropic.claude-sonnet-4") ||
 						id.startsWith("anthropic.claude-opus-4-5") ||
+						id.startsWith("anthropic.claude-opus-4-6") ||
 						id.startsWith("amazon.nova-2-lite") ||
 						id.startsWith("cohere.embed-v4") ||
 						id.startsWith("twelvelabs.pegasus-1-2")) {
@@ -254,7 +255,8 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 				// Add EU cross-region inference variants for Claude models
 				if (modelId.startsWith("anthropic.claude-haiku-4-5") ||
 						modelId.startsWith("anthropic.claude-sonnet-4-5") ||
-						modelId.startsWith("anthropic.claude-opus-4-5")) {
+						modelId.startsWith("anthropic.claude-opus-4-5") ||
+						modelId.startsWith("anthropic.claude-opus-4-6")) {
 					models.push({
 						...bedrockModel,
 						id: "eu." + modelId,
@@ -688,6 +690,102 @@ async function generateModels() {
 		opus45.cost.cacheWrite = 6.25;
 	}
 
+	// Add Claude Opus 4.6 models (if not already fetched from models.dev)
+	if (!allModels.some(m => m.provider === "anthropic" && m.id === "claude-opus-4-6")) {
+		allModels.push({
+			id: "claude-opus-4-6",
+			name: "Claude Opus 4.6 (latest)",
+			api: "anthropic-messages",
+			baseUrl: "https://api.anthropic.com",
+			provider: "anthropic",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: {
+				input: 5,
+				output: 25,
+				cacheRead: 0.5,
+				cacheWrite: 6.25,
+			},
+			contextWindow: 200000,
+			maxTokens: 64000,
+		});
+	}
+
+	if (!allModels.some(m => m.provider === "anthropic" && m.id === "claude-opus-4-6-20260115")) {
+		allModels.push({
+			id: "claude-opus-4-6-20260115",
+			name: "Claude Opus 4.6",
+			api: "anthropic-messages",
+			baseUrl: "https://api.anthropic.com",
+			provider: "anthropic",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: {
+				input: 5,
+				output: 25,
+				cacheRead: 0.5,
+				cacheWrite: 6.25,
+			},
+			contextWindow: 200000,
+			maxTokens: 64000,
+		});
+	}
+
+	// Add Claude Opus 4.6 Bedrock variants
+	if (!allModels.some(m => m.provider === "amazon-bedrock" && m.id === "global.anthropic.claude-opus-4-6-20260115-v1:0")) {
+		allModels.push({
+			id: "global.anthropic.claude-opus-4-6-20260115-v1:0",
+			name: "Claude Opus 4.6",
+			api: "bedrock-converse-stream",
+			provider: "amazon-bedrock",
+			baseUrl: "https://bedrock-runtime.us-east-1.amazonaws.com",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: {
+				input: 5,
+				output: 25,
+				cacheRead: 0.5,
+				cacheWrite: 6.25,
+			},
+			contextWindow: 200000,
+			maxTokens: 64000,
+		});
+		allModels.push({
+			id: "eu.anthropic.claude-opus-4-6-20260115-v1:0",
+			name: "Claude Opus 4.6 (EU)",
+			api: "bedrock-converse-stream",
+			provider: "amazon-bedrock",
+			baseUrl: "https://bedrock-runtime.us-east-1.amazonaws.com",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: {
+				input: 5,
+				output: 25,
+				cacheRead: 0.5,
+				cacheWrite: 6.25,
+			},
+			contextWindow: 200000,
+			maxTokens: 64000,
+		});
+		allModels.push({
+			id: "us.anthropic.claude-opus-4-6-20260115-v1:0",
+			name: "Claude Opus 4.6 (US)",
+			api: "bedrock-converse-stream",
+			provider: "amazon-bedrock",
+			baseUrl: "https://bedrock-runtime.us-east-1.amazonaws.com",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: {
+				input: 5,
+				output: 25,
+				cacheRead: 0.5,
+				cacheWrite: 6.25,
+			},
+			contextWindow: 200000,
+			maxTokens: 64000,
+		});
+	}
+
 	// Add missing gpt models
 	if (!allModels.some(m => m.provider === "openai" && m.id === "gpt-5-chat-latest")) {
 		allModels.push({
@@ -746,6 +844,87 @@ async function generateModels() {
 			},
 			contextWindow: 400000,
 			maxTokens: 128000,
+		});
+	}
+
+	// Add GPT-5.3 models (if not already fetched from models.dev)
+	if (!allModels.some(m => m.provider === "openai" && m.id === "gpt-5.3")) {
+		allModels.push({
+			id: "gpt-5.3",
+			name: "GPT-5.3",
+			api: "openai-responses",
+			baseUrl: "https://api.openai.com/v1",
+			provider: "openai",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: {
+				input: 2,
+				output: 16,
+				cacheRead: 0.2,
+				cacheWrite: 0,
+			},
+			contextWindow: 400000,
+			maxTokens: 128000,
+		});
+	}
+
+	if (!allModels.some(m => m.provider === "openai" && m.id === "gpt-5.3-codex")) {
+		allModels.push({
+			id: "gpt-5.3-codex",
+			name: "GPT-5.3 Codex",
+			api: "openai-responses",
+			baseUrl: "https://api.openai.com/v1",
+			provider: "openai",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: {
+				input: 2,
+				output: 16,
+				cacheRead: 0.2,
+				cacheWrite: 0,
+			},
+			contextWindow: 400000,
+			maxTokens: 128000,
+		});
+	}
+
+	if (!allModels.some(m => m.provider === "openai" && m.id === "gpt-5.3-pro")) {
+		allModels.push({
+			id: "gpt-5.3-pro",
+			name: "GPT-5.3 Pro",
+			api: "openai-responses",
+			baseUrl: "https://api.openai.com/v1",
+			provider: "openai",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: {
+				input: 24,
+				output: 192,
+				cacheRead: 0,
+				cacheWrite: 0,
+			},
+			contextWindow: 400000,
+			maxTokens: 128000,
+		});
+	}
+
+	if (!allModels.some(m => m.provider === "openai" && m.id === "gpt-5.3-chat-latest")) {
+		allModels.push({
+			id: "gpt-5.3-chat-latest",
+			name: "GPT-5.3 Chat",
+			api: "openai-responses",
+			baseUrl: "https://api.openai.com/v1",
+			provider: "openai",
+			reasoning: true,
+			input: ["text", "image"],
+			cost: {
+				input: 2,
+				output: 16,
+				cacheRead: 0.2,
+				cacheWrite: 0,
+			},
+			contextWindow: 128000,
+			maxTokens: 16384,
 		});
 	}
 
@@ -813,6 +992,30 @@ async function generateModels() {
 			reasoning: true,
 			input: ["text", "image"],
 			cost: { input: 1.75, output: 14, cacheRead: 0.175, cacheWrite: 0 },
+			contextWindow: CODEX_CONTEXT,
+			maxTokens: CODEX_MAX_TOKENS,
+		},
+		{
+			id: "gpt-5.3",
+			name: "GPT-5.3",
+			api: "openai-codex-responses",
+			provider: "openai-codex",
+			baseUrl: CODEX_BASE_URL,
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 2, output: 16, cacheRead: 0.2, cacheWrite: 0 },
+			contextWindow: CODEX_CONTEXT,
+			maxTokens: CODEX_MAX_TOKENS,
+		},
+		{
+			id: "gpt-5.3-codex",
+			name: "GPT-5.3 Codex",
+			api: "openai-codex-responses",
+			provider: "openai-codex",
+			baseUrl: CODEX_BASE_URL,
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 2, output: 16, cacheRead: 0.2, cacheWrite: 0 },
 			contextWindow: CODEX_CONTEXT,
 			maxTokens: CODEX_MAX_TOKENS,
 		},
@@ -999,6 +1202,18 @@ async function generateModels() {
 		{
 			id: "claude-opus-4-5-thinking",
 			name: "Claude Opus 4.5 Thinking (Antigravity)",
+			api: "google-gemini-cli",
+			provider: "google-antigravity",
+			baseUrl: ANTIGRAVITY_ENDPOINT,
+			reasoning: true,
+			input: ["text", "image"],
+			cost: { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
+			contextWindow: 200000,
+			maxTokens: 64000,
+		},
+		{
+			id: "claude-opus-4-6-thinking",
+			name: "Claude Opus 4.6 Thinking (Antigravity)",
 			api: "google-gemini-cli",
 			provider: "google-antigravity",
 			baseUrl: ANTIGRAVITY_ENDPOINT,
