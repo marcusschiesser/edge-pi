@@ -1,0 +1,36 @@
+{
+	"name": "edge-pi-cli",
+	"version": "0.1.0",
+	"description": "CLI for the edge-pi coding agent SDK",
+	"type": "module",
+	"bin": {
+		"epi": "dist/cli.js"
+	},
+	"main": "./dist/main.js",
+	"types": "./dist/main.d.ts",
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsgo -p tsconfig.build.json && shx chmod +x dist/cli.js",
+		"clean": "shx rm -rf dist",
+		"dev": "tsgo -p tsconfig.build.json --watch --preserveWatchOutput",
+		"test": "vitest --run"
+	},
+	"dependencies": {
+		"edge-pi": "^0.1.0",
+		"@ai-sdk/anthropic": "^3.0.36",
+		"@ai-sdk/openai": "^3.0.25",
+		"@ai-sdk/google": "^3.0.21",
+		"chalk": "^5.5.0",
+		"yaml": "^2.7.1"
+	},
+	"devDependencies": {
+		"@types/node": "^24.3.0",
+		"shx": "^0.4.0",
+		"vitest": "^4.0.18"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
+}
