@@ -197,11 +197,12 @@ async function runLoop(
 
 			// Add tool results to context
 			for (const result of toolResults) {
+				currentContext.messages.push(result);
 				newMessages.push(result);
 			}
 
-			// Check if there are more tool calls
-			hasMoreToolCalls = toolResults.length > 0;
+			// Check if the model wants to make more tool calls
+			hasMoreToolCalls = assistantMessage.stopReason === "toolUse";
 			steeringAfterTools = steeringMessages ?? null;
 
 			stream.push({ type: "turn_end", message: assistantMessage, toolResults });
