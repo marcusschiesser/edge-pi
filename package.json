@@ -4,11 +4,7 @@
 	"type": "module",
 	"workspaces": [
 		"packages/*",
-		"examples",
-		"examples/extensions/with-deps",
-		"examples/extensions/custom-provider-anthropic",
-		"examples/extensions/custom-provider-gitlab-duo",
-		"examples/extensions/custom-provider-qwen-cli"
+		"examples"
 	],
 	"scripts": {
 		"clean": "npm run clean --workspaces",
@@ -44,8 +40,6 @@
 	},
 	"version": "0.0.3",
 	"dependencies": {
-		"@mariozechner/jiti": "^2.6.5",
-		"@mariozechner/pi-coding-agent": "^0.30.2",
 		"get-east-asian-width": "^1.4.0"
 	},
 	"overrides": {
