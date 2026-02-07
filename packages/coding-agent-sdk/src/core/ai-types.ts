@@ -387,7 +387,14 @@ export function modelsAreEqual(a: ModelInfo | null | undefined, b: ModelInfo | n
 }
 
 /** Models that support xhigh thinking level */
-const XHIGH_MODELS = new Set(["gpt-5.1-codex-max", "gpt-5.2", "gpt-5.2-codex"]);
+const XHIGH_MODELS = new Set([
+	"gpt-5.1-codex-max",
+	"gpt-5.2",
+	"gpt-5.2-codex",
+	"gpt-5.3",
+	"gpt-5.3-codex",
+	"gpt-5.3-pro",
+]);
 
 /** Check if a model supports xhigh thinking level */
 export function supportsXhigh(model: ModelInfo): boolean {

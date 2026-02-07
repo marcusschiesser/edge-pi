@@ -10,18 +10,18 @@ import type { ModelRegistry } from "./model-registry.js";
 
 /** Default model IDs for each known provider */
 export const defaultModelPerProvider: Record<KnownProvider, string> = {
-	"amazon-bedrock": "us.anthropic.claude-opus-4-20250514-v1:0",
-	anthropic: "claude-opus-4-5",
-	openai: "gpt-5.1-codex",
-	"azure-openai-responses": "gpt-5.2",
-	"openai-codex": "gpt-5.2-codex",
+	"amazon-bedrock": "global.anthropic.claude-opus-4-6-20260115-v1:0",
+	anthropic: "claude-opus-4-6",
+	openai: "gpt-5.3-codex",
+	"azure-openai-responses": "gpt-5.3",
+	"openai-codex": "gpt-5.3-codex",
 	google: "gemini-2.5-pro",
 	"google-gemini-cli": "gemini-2.5-pro",
 	"google-antigravity": "gemini-3-pro-high",
 	"google-vertex": "gemini-3-pro-preview",
 	"github-copilot": "gpt-4o",
-	openrouter: "openai/gpt-5.1-codex",
-	"vercel-ai-gateway": "anthropic/claude-opus-4.5",
+	openrouter: "openai/gpt-5.3-codex",
+	"vercel-ai-gateway": "anthropic/claude-opus-4.6",
 	xai: "grok-4-fast-non-reasoning",
 	groq: "openai/gpt-oss-120b",
 	cerebras: "zai-glm-4.6",
@@ -30,7 +30,7 @@ export const defaultModelPerProvider: Record<KnownProvider, string> = {
 	minimax: "MiniMax-M2.1",
 	"minimax-cn": "MiniMax-M2.1",
 	huggingface: "moonshotai/Kimi-K2.5",
-	opencode: "claude-opus-4-5",
+	opencode: "claude-opus-4-6",
 	"kimi-coding": "kimi-k2-thinking",
 };
 
