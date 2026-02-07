@@ -11,7 +11,7 @@ For each PR URL, do the following in order:
    - Entry uses correct section (`### Breaking Changes`, `### Added`, `### Fixed`, etc.)
    - External contributions include PR link and author: `Fixed foo ([#123](https://github.com/badlogic/pi-mono/pull/123) by [@user](https://github.com/user))`
    - Breaking changes are in `### Breaking Changes`, not just `### Fixed`
-5. Check if packages/coding-agent/README.md, packages/coding-agent/docs/*.md, packages/coding-agent/examples/**/*.md require modification. This is usually the case when existing features have been changed, or new features have been added.
+5. Check if packages/coding-agent/README.md, packages/coding-agent/docs/*.md, examples/**/*.md require modification. This is usually the case when existing features have been changed, or new features have been added.
 6. Provide a structured review with these sections:
    - Good: solid choices or improvements
    - Bad: concrete issues, regressions, missing tests, or risks

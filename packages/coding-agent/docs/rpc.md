@@ -1267,7 +1267,7 @@ for event in read_events():
 
 See [`test/rpc-example.ts`](../test/rpc-example.ts) for a complete interactive example, or [`src/modes/rpc/rpc-client.ts`](../src/modes/rpc/rpc-client.ts) for a typed client implementation.
 
-For a complete example of handling the extension UI protocol, see [`examples/rpc-extension-ui.ts`](../examples/rpc-extension-ui.ts) which pairs with the [`examples/extensions/rpc-demo.ts`](../examples/extensions/rpc-demo.ts) extension.
+For a complete example of handling the extension UI protocol, see [`examples/rpc-extension-ui.ts`](../../../examples/rpc-extension-ui.ts) which pairs with the [`examples/extensions/rpc-demo.ts`](../../../examples/extensions/rpc-demo.ts) extension.
 
 ```javascript
 const { spawn } = require("child_process");

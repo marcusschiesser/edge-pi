@@ -223,7 +223,7 @@ Read the fully revamped docs in `README.md`, or have your clanker read them for 
 
 ### SDK Migration Guide
 
-There are multiple SDK breaking changes since v0.49.3. For the quickest migration, point your agent at `packages/coding-agent/docs/sdk.md`, the SDK examples in `packages/coding-agent/examples/sdk`, and the SDK source in `packages/coding-agent/src/core/sdk.ts` and related modules.
+There are multiple SDK breaking changes since v0.49.3. For the quickest migration, point your agent at `packages/coding-agent/docs/sdk.md`, the SDK examples in `examples/sdk`, and the SDK source in `packages/coding-agent/src/core/sdk.ts` and related modules.
 
 ### Breaking Changes
 

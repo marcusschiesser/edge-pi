@@ -334,7 +334,7 @@ pi.on("session_before_compact", async (event, ctx) => {
 });
 ```
 
-See [custom-compaction.ts](../examples/extensions/custom-compaction.ts) for a complete example using a different model.
+See [custom-compaction.ts](../../../examples/extensions/custom-compaction.ts) for a complete example using a different model.
 
 ### session_before_tree
 
