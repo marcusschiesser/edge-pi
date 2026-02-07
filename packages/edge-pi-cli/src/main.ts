@@ -268,6 +268,17 @@ export async function main(args: string[]) {
 			provider,
 			modelId,
 			authStorage,
+			onModelChange: async (newProvider: string, newModelId: string) => {
+				const { model: newModel } = await createModel({
+					provider: newProvider,
+					model: newModelId,
+					authStorage,
+				});
+				return new CodingAgent({
+					...agentConfig,
+					model: newModel,
+				});
+			},
 		});
 	} else {
 		await runPrintMode(agent, {
