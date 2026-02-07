@@ -2,6 +2,36 @@
 
 Example code for pi-coding-agent SDK and extensions.
 
+## Running Examples
+
+All examples can be run from the repo root. Build the packages first:
+
+```bash
+npm install
+npm run build
+```
+
+### SDK Examples
+
+SDK examples are standalone scripts. Run them with `tsx`:
+
+```bash
+npx tsx examples/sdk/01-minimal.ts
+npx tsx examples/sdk/05-tools.ts
+```
+
+### Extensions
+
+Extensions are plugins loaded into the pi agent via the `--extension` flag:
+
+```bash
+# Using pi-test.sh (runs pi from sources)
+./pi-test.sh --extension examples/extensions/hello.ts
+
+# Load multiple extensions
+./pi-test.sh --extension examples/extensions/hello.ts --extension examples/extensions/pirate.ts
+```
+
 ## Directories
 
 ### [sdk/](sdk/)

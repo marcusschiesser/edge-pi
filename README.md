@@ -22,6 +22,10 @@ Tools for building AI agents and managing LLM deployments.
 | **[@mariozechner/pi-coding-agent-sdk](packages/coding-agent-sdk)** | Coding agent SDK with tools, extensions, session management, and model registry |
 | **[@mariozechner/pi-coding-agent](packages/coding-agent)** | Interactive coding agent CLI |
 
+## Examples
+
+See [examples/](examples/) for SDK usage and extension examples.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and [AGENTS.md](AGENTS.md) for project-specific rules (for both humans and agents).
