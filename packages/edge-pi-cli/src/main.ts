@@ -13,10 +13,13 @@ import type { CodingAgentConfig, ModelMessage } from "edge-pi";
 import { CodingAgent, SessionManager } from "edge-pi";
 import { AuthStorage, anthropicOAuthProvider } from "./auth/index.js";
 import { parseArgs, printHelp, printModels } from "./cli/args.js";
+import { loadContextFiles } from "./context.js";
 import { createModel } from "./model-factory.js";
 import { runInteractiveMode } from "./modes/interactive-mode.js";
 import { runPrintMode } from "./modes/print-mode.js";
+import { loadPrompts } from "./prompts.js";
 import { formatSkillsForPrompt, loadSkills, type Skill } from "./skills.js";
+import { findFd } from "./utils/find-fd.js";
 
 const VERSION = "0.1.0";
 const CONFIG_DIR_NAME = ".pi";
@@ -191,6 +194,24 @@ export async function main(args: string[]) {
 		}
 	}
 
+	// Load context files (AGENTS.md)
+	const contextFiles = loadContextFiles(cwd);
+	if (parsed.verbose && contextFiles.length > 0) {
+		console.log(chalk.dim(`Loaded ${contextFiles.length} context file(s).`));
+	}
+
+	// Load prompt templates
+	const promptsResult = loadPrompts({ cwd });
+	const prompts = promptsResult.prompts;
+	if (parsed.verbose && promptsResult.diagnostics.length > 0) {
+		for (const d of promptsResult.diagnostics) {
+			console.error(chalk.yellow(`Prompt warning: ${d.message} (${d.path})`));
+		}
+	}
+
+	// Find fd binary for @ file autocomplete
+	const fdPath = findFd();
+
 	// Build system prompt additions
 	const skillsPrompt = formatSkillsForPrompt(skills);
 	const appendParts: string[] = [];
@@ -248,6 +269,7 @@ export async function main(args: string[]) {
 	} else {
 		agentConfig.systemPromptOptions = {
 			appendSystemPrompt,
+			contextFiles,
 		};
 	}
 
@@ -269,10 +291,13 @@ export async function main(args: string[]) {
 			initialMessages: parsed.messages,
 			sessionManager,
 			skills,
+			contextFiles,
+			prompts,
 			verbose: parsed.verbose,
 			provider,
 			modelId,
 			authStorage,
+			fdPath,
 			onModelChange: async (newProvider: string, newModelId: string) => {
 				const { model: newModel } = await createModel({
 					provider: newProvider,

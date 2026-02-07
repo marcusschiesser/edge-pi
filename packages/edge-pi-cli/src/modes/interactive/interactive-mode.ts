@@ -28,6 +28,9 @@ import {
 import chalk from "chalk";
 import type { CodingAgent, ModelMessage, SessionManager } from "edge-pi";
 import type { AuthStorage } from "../../auth/auth-storage.js";
+import type { ContextFile } from "../../context.js";
+import type { PromptTemplate } from "../../prompts.js";
+import { expandPromptTemplate } from "../../prompts.js";
 import type { Skill } from "../../skills.js";
 import { AssistantMessageComponent } from "./components/assistant-message.js";
 import { FooterComponent } from "./components/footer.js";
@@ -40,10 +43,14 @@ export interface InteractiveModeOptions {
 	initialMessages?: string[];
 	sessionManager?: SessionManager;
 	skills?: Skill[];
+	contextFiles?: ContextFile[];
+	prompts?: PromptTemplate[];
 	verbose?: boolean;
 	provider: string;
 	modelId: string;
 	authStorage?: AuthStorage;
+	/** Path to the `fd` binary for @ file autocomplete, or undefined if unavailable. */
+	fdPath?: string;
 	/** Called when the user switches model via Ctrl+L. Returns a new agent for the new model. */
 	onModelChange?: (provider: string, modelId: string) => Promise<CodingAgent>;
 }
@@ -125,7 +132,7 @@ class InteractiveMode {
 	// ========================================================================
 
 	private initUI(): void {
-		const { provider, modelId, skills = [], verbose, sessionManager } = this.options;
+		const { provider, modelId, skills = [], contextFiles = [], prompts = [], verbose, sessionManager } = this.options;
 
 		this.ui = new TUI(new ProcessTerminal());
 
@@ -138,6 +145,7 @@ class InteractiveMode {
 			`${chalk.dim("Ctrl+D")} to exit (empty)`,
 			`${chalk.dim("Ctrl+E")} to expand tools`,
 			`${chalk.dim("Ctrl+L")} to switch model`,
+			`${chalk.dim("@")} for file references`,
 			`${chalk.dim("/")} for commands`,
 		].join("\n");
 
@@ -145,12 +153,12 @@ class InteractiveMode {
 		this.headerContainer.addChild(new Text(`${logo}\n${hints}`, 1, 0));
 		this.headerContainer.addChild(new Spacer(1));
 
-		if (verbose && skills.length > 0) {
-			this.headerContainer.addChild(new Text(chalk.dim(`Skills: ${skills.map((s) => s.name).join(", ")}`), 1, 0));
-		}
 		if (verbose && sessionManager?.getSessionFile()) {
 			this.headerContainer.addChild(new Text(chalk.dim(`Session: ${sessionManager.getSessionFile()}`), 1, 0));
 		}
+
+		// Show loaded context, skills, and prompts at startup
+		this.showLoadedResources(contextFiles, skills, prompts);
 
 		// Chat area
 		this.chatContainer = new Container();
@@ -282,10 +290,14 @@ class InteractiveMode {
 			return;
 		}
 
-		// Regular message
-		this.chatContainer.addChild(new UserMessageComponent(input, getMarkdownTheme()));
+		// Try expanding prompt templates
+		const { prompts = [] } = this.options;
+		const expanded = expandPromptTemplate(input, prompts);
+
+		// Regular message (use expanded text if a prompt template was matched)
+		this.chatContainer.addChild(new UserMessageComponent(expanded, getMarkdownTheme()));
 		this.ui.requestRender();
-		await this.streamPrompt(input);
+		await this.streamPrompt(expanded);
 	}
 
 	// ========================================================================
@@ -293,7 +305,7 @@ class InteractiveMode {
 	// ========================================================================
 
 	private buildAutocompleteProvider(): CombinedAutocompleteProvider {
-		const { skills = [] } = this.options;
+		const { skills = [], prompts = [], fdPath } = this.options;
 
 		const commands: SlashCommand[] = [
 			{ name: "help", description: "Show available commands" },
@@ -312,7 +324,15 @@ class InteractiveMode {
 			});
 		}
 
-		return new CombinedAutocompleteProvider(commands);
+		// Add prompt templates as slash commands
+		for (const prompt of prompts) {
+			commands.push({
+				name: prompt.name,
+				description: prompt.description,
+			});
+		}
+
+		return new CombinedAutocompleteProvider(commands, process.cwd(), fdPath ?? null);
 	}
 
 	// ========================================================================
@@ -532,6 +552,45 @@ class InteractiveMode {
 			if (child instanceof ToolExecutionComponent) {
 				fn(child);
 			}
+		}
+	}
+
+	// ========================================================================
+	// Startup Resource Display
+	// ========================================================================
+
+	private formatDisplayPath(p: string): string {
+		const home = process.env.HOME || process.env.USERPROFILE || "";
+		if (home && p.startsWith(home)) {
+			return `~${p.slice(home.length)}`;
+		}
+		return p;
+	}
+
+	private showLoadedResources(contextFiles: ContextFile[], skills: Skill[], prompts: PromptTemplate[]): void {
+		const sectionHeader = (name: string) => chalk.cyan(`[${name}]`);
+
+		if (contextFiles.length > 0) {
+			const contextList = contextFiles.map((f) => chalk.dim(`  ${this.formatDisplayPath(f.path)}`)).join("\n");
+			this.headerContainer.addChild(new Text(`${sectionHeader("Context")}\n${contextList}`, 0, 0));
+			this.headerContainer.addChild(new Spacer(1));
+		}
+
+		if (skills.length > 0) {
+			const skillList = skills.map((s) => chalk.dim(`  ${this.formatDisplayPath(s.filePath)}`)).join("\n");
+			this.headerContainer.addChild(new Text(`${sectionHeader("Skills")}\n${skillList}`, 0, 0));
+			this.headerContainer.addChild(new Spacer(1));
+		}
+
+		if (prompts.length > 0) {
+			const promptList = prompts
+				.map((p) => {
+					const sourceLabel = chalk.cyan(p.source);
+					return chalk.dim(`  ${sourceLabel}  /${p.name}`);
+				})
+				.join("\n");
+			this.headerContainer.addChild(new Text(`${sectionHeader("Prompts")}\n${promptList}`, 0, 0));
+			this.headerContainer.addChild(new Spacer(1));
 		}
 	}
 
