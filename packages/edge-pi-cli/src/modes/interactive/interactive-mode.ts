@@ -87,6 +87,7 @@ class InteractiveMode {
 	// Streaming state
 	private streamingComponent: AssistantMessageComponent | undefined = undefined;
 	private streamingText = "";
+	private hadToolResults = false;
 
 	// Tool execution tracking: toolCallId → component
 	private pendingTools = new Map<string, ToolExecutionComponent>();
@@ -411,6 +412,7 @@ class InteractiveMode {
 		// Create assistant message component
 		this.streamingComponent = new AssistantMessageComponent(getMarkdownTheme());
 		this.streamingText = "";
+		this.hadToolResults = false;
 
 		try {
 			const result = await this.agent.stream({ prompt });
@@ -425,6 +427,14 @@ class InteractiveMode {
 			for await (const part of result.fullStream) {
 				switch (part.type) {
 					case "text-delta":
+						// After tool results, start a new assistant message component
+						// so each agent step gets its own message bubble
+						if (this.hadToolResults) {
+							this.streamingComponent = new AssistantMessageComponent(getMarkdownTheme());
+							this.streamingText = "";
+							this.hadToolResults = false;
+							this.chatContainer.addChild(this.streamingComponent);
+						}
 						this.streamingText += part.text;
 						this.streamingComponent!.updateText(this.streamingText);
 						this.ui.requestRender();
@@ -453,6 +463,7 @@ class InteractiveMode {
 							const outputStr = typeof part.output === "string" ? part.output : JSON.stringify(part.output);
 							toolComponent.updateResult(outputStr, /* isError */ false, /* isPartial */ false);
 							this.pendingTools.delete(part.toolCallId);
+							this.hadToolResults = true;
 							this.ui.requestRender();
 						}
 						break;
@@ -500,6 +511,7 @@ class InteractiveMode {
 		} finally {
 			this.streamingComponent = undefined;
 			this.streamingText = "";
+			this.hadToolResults = false;
 			this.pendingTools.clear();
 			this.ui.requestRender();
 		}
