@@ -320,8 +320,6 @@ class InteractiveMode {
 	// ========================================================================
 
 	private async handleModelSelect(): Promise<void> {
-		const { authStorage } = this.options;
-
 		const modelOptions: { provider: string; modelId: string; label: string }[] = [
 			{ provider: "anthropic", modelId: "claude-sonnet-4-20250514", label: "anthropic/claude-sonnet-4" },
 			{ provider: "anthropic", modelId: "claude-haiku-3-5-20241022", label: "anthropic/claude-haiku-3.5" },
