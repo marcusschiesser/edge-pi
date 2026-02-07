@@ -11,6 +11,7 @@
  */
 
 import {
+	CombinedAutocompleteProvider,
 	Container,
 	Editor,
 	Key,
@@ -19,13 +20,15 @@ import {
 	ProcessTerminal,
 	type SelectItem,
 	SelectList,
+	type SlashCommand,
 	Spacer,
 	Text,
 	TUI,
 } from "@mariozechner/pi-tui";
 import chalk from "chalk";
-import type { CodingAgent, ModelMessage, SessionManager } from "edge-pi";
+import type { CodingAgent, LanguageModel, ModelMessage, SessionManager } from "edge-pi";
 import type { AuthStorage } from "../../auth/auth-storage.js";
+import { createModel, listProviders } from "../../model-factory.js";
 import type { Skill } from "../../skills.js";
 import { AssistantMessageComponent } from "./components/assistant-message.js";
 import { FooterComponent } from "./components/footer.js";
@@ -42,6 +45,8 @@ export interface InteractiveModeOptions {
 	provider: string;
 	modelId: string;
 	authStorage?: AuthStorage;
+	/** Called when the user switches model via Ctrl+L. Returns a new agent for the new model. */
+	onModelChange?: (provider: string, modelId: string) => Promise<CodingAgent>;
 }
 
 /**
@@ -59,6 +64,8 @@ export async function runInteractiveMode(agent: CodingAgent, options: Interactiv
 class InteractiveMode {
 	private agent: CodingAgent;
 	private options: InteractiveModeOptions;
+	private currentProvider: string;
+	private currentModelId: string;
 
 	private ui!: TUI;
 	private headerContainer!: Container;
@@ -87,6 +94,8 @@ class InteractiveMode {
 	constructor(agent: CodingAgent, options: InteractiveModeOptions) {
 		this.agent = agent;
 		this.options = options;
+		this.currentProvider = options.provider;
+		this.currentModelId = options.modelId;
 	}
 
 	async run(): Promise<void> {
@@ -129,6 +138,7 @@ class InteractiveMode {
 			`${chalk.dim("Escape")} to abort`,
 			`${chalk.dim("Ctrl+D")} to exit (empty)`,
 			`${chalk.dim("Ctrl+E")} to expand tools`,
+			`${chalk.dim("Ctrl+L")} to switch model`,
 			`${chalk.dim("/")} for commands`,
 		].join("\n");
 
@@ -149,13 +159,14 @@ class InteractiveMode {
 		// Pending messages (loading animations, status)
 		this.pendingContainer = new Container();
 
-		// Editor
+		// Editor with slash command autocomplete
 		this.editor = new Editor(this.ui, getEditorTheme());
+		this.editor.setAutocompleteProvider(this.buildAutocompleteProvider());
 		this.editorContainer = new Container();
 		this.editorContainer.addChild(this.editor);
 
 		// Footer
-		this.footer = new FooterComponent(provider, modelId);
+		this.footer = new FooterComponent(this.currentProvider, this.currentModelId);
 
 		// Assemble layout
 		this.ui.addChild(this.headerContainer);
@@ -211,6 +222,12 @@ class InteractiveMode {
 				return;
 			}
 
+			// Ctrl+L: select model
+			if (matchesKey(data, Key.ctrl("l"))) {
+				this.handleModelSelect();
+				return;
+			}
+
 			origHandleInput(data);
 		};
 	}
@@ -245,6 +262,11 @@ class InteractiveMode {
 			return;
 		}
 
+		if (input === "/model") {
+			await this.handleModelSelect();
+			return;
+		}
+
 		if (input === "/login") {
 			await this.handleLogin();
 			return;
@@ -265,6 +287,104 @@ class InteractiveMode {
 		this.chatContainer.addChild(new UserMessageComponent(input, getMarkdownTheme()));
 		this.ui.requestRender();
 		await this.streamPrompt(input);
+	}
+
+	// ========================================================================
+	// Autocomplete
+	// ========================================================================
+
+	private buildAutocompleteProvider(): CombinedAutocompleteProvider {
+		const { skills = [] } = this.options;
+
+		const commands: SlashCommand[] = [
+			{ name: "help", description: "Show available commands" },
+			{ name: "login", description: "Login to an OAuth provider" },
+			{ name: "logout", description: "Logout from an OAuth provider" },
+			{ name: "skills", description: "List loaded skills" },
+			{ name: "model", description: "Switch model (Ctrl+L)" },
+			{ name: "quit", description: "Exit the CLI" },
+			{ name: "exit", description: "Exit the CLI" },
+		];
+
+		for (const skill of skills) {
+			commands.push({
+				name: `skill:${skill.name}`,
+				description: skill.description,
+			});
+		}
+
+		return new CombinedAutocompleteProvider(commands);
+	}
+
+	// ========================================================================
+	// Model Selection
+	// ========================================================================
+
+	private async handleModelSelect(): Promise<void> {
+		const { authStorage } = this.options;
+
+		const modelOptions: { provider: string; modelId: string; label: string }[] = [
+			{ provider: "anthropic", modelId: "claude-sonnet-4-20250514", label: "anthropic/claude-sonnet-4" },
+			{ provider: "anthropic", modelId: "claude-haiku-3-5-20241022", label: "anthropic/claude-haiku-3.5" },
+			{ provider: "anthropic", modelId: "claude-opus-4-20250514", label: "anthropic/claude-opus-4" },
+			{ provider: "openai", modelId: "gpt-4o", label: "openai/gpt-4o" },
+			{ provider: "openai", modelId: "gpt-4o-mini", label: "openai/gpt-4o-mini" },
+			{ provider: "openai", modelId: "o3-mini", label: "openai/o3-mini" },
+			{ provider: "google", modelId: "gemini-2.5-flash", label: "google/gemini-2.5-flash" },
+			{ provider: "google", modelId: "gemini-2.5-pro", label: "google/gemini-2.5-pro" },
+		];
+
+		const items: SelectItem[] = modelOptions.map((m) => {
+			const current = m.provider === this.currentProvider && m.modelId === this.currentModelId;
+			return {
+				value: `${m.provider}/${m.modelId}`,
+				label: current ? `${m.label} (current)` : m.label,
+			};
+		});
+
+		const selected = await this.showSelectList("Switch model", items);
+		if (!selected) return;
+
+		const [newProvider, ...modelParts] = selected.split("/");
+		const newModelId = modelParts.join("/");
+
+		if (newProvider === this.currentProvider && newModelId === this.currentModelId) {
+			return;
+		}
+
+		this.showStatus(chalk.dim(`Switching to ${newProvider}/${newModelId}...`));
+
+		try {
+			if (this.options.onModelChange) {
+				const newAgent = await this.options.onModelChange(newProvider, newModelId);
+				// Preserve conversation history
+				newAgent.setMessages([...this.agent.messages]);
+				this.agent = newAgent;
+			} else {
+				// Fallback: create model directly
+				const { model } = await createModel({
+					provider: newProvider,
+					model: newModelId,
+					authStorage,
+				});
+				// We can't replace the model on an existing CodingAgent, so we inform the user
+				this.showStatus(chalk.yellow("Model switch requires onModelChange callback. Using current model."));
+				return;
+			}
+
+			this.currentProvider = newProvider;
+			this.currentModelId = newModelId;
+			this.footer = new FooterComponent(this.currentProvider, this.currentModelId);
+
+			// Replace footer in UI
+			const children = this.ui.children;
+			children[children.length - 1] = this.footer;
+
+			this.showStatus(chalk.green(`Switched to ${newProvider}/${newModelId}`));
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : String(error);
+			this.showStatus(chalk.red(`Failed to switch model: ${msg}`));
+		}
 	}
 
 	// ========================================================================
@@ -432,6 +552,7 @@ class InteractiveMode {
 	private showHelp(): void {
 		const helpText = [
 			chalk.bold("Commands:"),
+			"  /model              Switch model (Ctrl+L)",
 			"  /login              Login to an OAuth provider",
 			"  /logout             Logout from an OAuth provider",
 			"  /skills             List loaded skills",
