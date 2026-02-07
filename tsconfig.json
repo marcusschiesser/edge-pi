@@ -8,6 +8,8 @@
 			"@mariozechner/pi-coding-agent-sdk/*": ["./packages/coding-agent-sdk/src/*"],
 			"@mariozechner/pi-coding-agent": ["./packages/coding-agent/src/index.ts"],
 			"@mariozechner/pi-coding-agent/*": ["./packages/coding-agent/src/*"],
+			"edge-pi": ["./packages/edge-pi/src/index.ts"],
+			"edge-pi/*": ["./packages/edge-pi/src/*"],
 			"@sinclair/typebox": ["./node_modules/@sinclair/typebox"],
 			"zod": ["./packages/coding-agent-sdk/node_modules/zod/index.d.ts"]
 		}
