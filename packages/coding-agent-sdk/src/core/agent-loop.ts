@@ -195,10 +195,14 @@ async function runLoop(
 				return;
 			}
 
-			// Add tool results to context
+			// Add tool results to context and emit deferred message_end events.
+			// This must happen after the assistant message_end (emitted inside
+			// streamAssistantWithTools) so that _state.messages maintains the
+			// correct assistant → toolResult ordering.
 			for (const result of toolResults) {
 				currentContext.messages.push(result);
 				newMessages.push(result);
+				stream.push({ type: "message_end", message: result });
 			}
 
 			// Check if the model wants to make more tool calls
@@ -328,8 +332,11 @@ async function streamAssistantWithTools(
 
 				toolResultsMap.set(toolCallId, toolResultMessage);
 
+				// Only emit message_start here for streaming UI updates.
+				// message_end is deferred to runLoop so that tool results are appended
+				// to _state.messages AFTER the assistant message, preserving the
+				// assistant → toolResult ordering required by the Vercel AI SDK.
 				stream.push({ type: "message_start", message: toolResultMessage });
-				stream.push({ type: "message_end", message: toolResultMessage });
 
 				// Check for steering messages after tool execution
 				if (config.getSteeringMessages) {
