@@ -16,8 +16,8 @@ Audit changelog entries for all commits since the last release.
    ```
 
 3. **Read each package's [Unreleased] section:**
-   - packages/ai/CHANGELOG.md
-   - packages/tui/CHANGELOG.md
+   - packages/env/CHANGELOG.md
+   - packages/coding-agent-sdk/CHANGELOG.md
    - packages/coding-agent/CHANGELOG.md
 
 4. **For each commit, check:**
@@ -27,7 +27,7 @@ Audit changelog entries for all commits since the last release.
    - For external contributions (PRs), verify format: `Description ([#N](url) by [@user](url))`
 
 5. **Cross-package duplication rule:**
-   Changes in `ai`, `agent` or `tui` that affect end users should be duplicated to `coding-agent` changelog, since coding-agent is the user-facing package that depends on them.
+   Changes in `env` or `coding-agent-sdk` that affect end users should be duplicated to `coding-agent` changelog, since coding-agent is the user-facing package that depends on them.
 
 6. **Add New Features section after changelog fixes:**
    - Insert a `### New Features` section at the start of `## [Unreleased]` in `packages/coding-agent/CHANGELOG.md`.
