@@ -26,9 +26,8 @@ import {
 	TUI,
 } from "@mariozechner/pi-tui";
 import chalk from "chalk";
-import type { CodingAgent, LanguageModel, ModelMessage, SessionManager } from "edge-pi";
+import type { CodingAgent, ModelMessage, SessionManager } from "edge-pi";
 import type { AuthStorage } from "../../auth/auth-storage.js";
-import { createModel, listProviders } from "../../model-factory.js";
 import type { Skill } from "../../skills.js";
 import { AssistantMessageComponent } from "./components/assistant-message.js";
 import { FooterComponent } from "./components/footer.js";
@@ -354,23 +353,16 @@ class InteractiveMode {
 
 		this.showStatus(chalk.dim(`Switching to ${newProvider}/${newModelId}...`));
 
+		if (!this.options.onModelChange) {
+			this.showStatus(chalk.yellow("Model switching is not available."));
+			return;
+		}
+
 		try {
-			if (this.options.onModelChange) {
-				const newAgent = await this.options.onModelChange(newProvider, newModelId);
-				// Preserve conversation history
-				newAgent.setMessages([...this.agent.messages]);
-				this.agent = newAgent;
-			} else {
-				// Fallback: create model directly
-				const { model } = await createModel({
-					provider: newProvider,
-					model: newModelId,
-					authStorage,
-				});
-				// We can't replace the model on an existing CodingAgent, so we inform the user
-				this.showStatus(chalk.yellow("Model switch requires onModelChange callback. Using current model."));
-				return;
-			}
+			const newAgent = await this.options.onModelChange(newProvider, newModelId);
+			// Preserve conversation history
+			newAgent.setMessages([...this.agent.messages]);
+			this.agent = newAgent;
 
 			this.currentProvider = newProvider;
 			this.currentModelId = newModelId;
