@@ -18,10 +18,9 @@ Tools for building AI agents and managing LLM deployments.
 
 | Package | Description |
 |---------|-------------|
-| **[@mariozechner/pi-ai](packages/ai)** | Unified multi-provider LLM API (OpenAI, Anthropic, Google, etc.) |
-| **[@mariozechner/pi-agent-core](packages/agent)** | Agent runtime with tool calling and state management |
+| **[@mariozechner/pi-env](packages/env)** | Environment abstraction layer for Node.js, Bun, and browser runtimes |
+| **[@mariozechner/pi-coding-agent-sdk](packages/coding-agent-sdk)** | Coding agent SDK with tools, extensions, session management, and model registry |
 | **[@mariozechner/pi-coding-agent](packages/coding-agent)** | Interactive coding agent CLI |
-| **[@mariozechner/pi-tui](packages/tui)** | Terminal UI library with differential rendering |
 
 ## Contributing
 

@@ -3,9 +3,8 @@
 ## First Message
 If the user did not give you a concrete task in their first message,
 read README.md, then ask which module(s) to work on. Based on the answer, read the relevant README.md files in parallel.
-- packages/ai/README.md
-- packages/tui/README.md
-- packages/agent/README.md
+- packages/env/package.json
+- packages/coding-agent-sdk/package.json
 - packages/coding-agent/README.md
 
 ## Code Quality
@@ -34,7 +33,7 @@ When reading issues:
 
 When creating issues:
 - Add `pkg:*` labels to indicate which package(s) the issue affects
-  - Available labels: `pkg:agent`, `pkg:ai`, `pkg:coding-agent`, `pkg:mom`, `pkg:pods`, `pkg:tui`, `pkg:web-ui`
+  - Available labels: `pkg:env`, `pkg:coding-agent-sdk`, `pkg:coding-agent`
 - If an issue spans multiple packages, add all relevant labels
 
 When closing issues via commit:
@@ -48,7 +47,7 @@ When closing issues via commit:
 
 ## Tools
 - GitHub CLI for issues/PRs
-- Add package labels to issues/PRs: pkg:agent, pkg:ai, pkg:coding-agent, pkg:mom, pkg:pods, pkg:tui, pkg:web-ui
+- Add package labels to issues/PRs: pkg:env, pkg:coding-agent-sdk, pkg:coding-agent
 
 ## Testing pi Interactive Mode with tmux
 
@@ -103,47 +102,21 @@ Use these sections under `## [Unreleased]`:
 - **Internal changes (from issues)**: `Fixed foo bar ([#123](https://github.com/badlogic/pi-mono/issues/123))`
 - **External contributions**: `Added feature X ([#456](https://github.com/badlogic/pi-mono/pull/456) by [@username](https://github.com/username))`
 
-## Adding a New LLM Provider (packages/ai)
+## Adding a New LLM Provider
 
-Adding a new provider requires changes across multiple files:
+Adding a new provider requires changes in `packages/coding-agent-sdk` and `packages/coding-agent`:
 
-### 1. Core Types (`packages/ai/src/types.ts`)
-- Add API identifier to `Api` type union (e.g., `"bedrock-converse-stream"`)
-- Create options interface extending `StreamOptions`
-- Add mapping to `ApiOptionsMap`
-- Add provider name to `KnownProvider` type union
+### 1. Model Registry (`packages/coding-agent-sdk/src/core/model-registry.ts`)
+- Add the provider to the model registry
+- Map to the standardized `Model` interface
 
-### 2. Provider Implementation (`packages/ai/src/providers/`)
-Create provider file exporting:
-- `stream<Provider>()` function returning `AssistantMessageEventStream`
-- Message/tool conversion functions
-- Response parsing emitting standardized events (`text`, `tool_call`, `thinking`, `usage`, `stop`)
-
-### 3. Stream Integration (`packages/ai/src/stream.ts`)
-- Import provider's stream function and options type
-- Add credential detection in `getEnvApiKey()`
-- Add case in `mapOptionsForApi()` for `SimpleStreamOptions` mapping
-- Add provider to `streamFunctions` map
-
-### 4. Model Generation (`packages/ai/scripts/generate-models.ts`)
+### 2. Model Generation (`packages/coding-agent/scripts/generate-models.ts`)
 - Add logic to fetch/parse models from provider source
-- Map to standardized `Model` interface
+- Generate model definitions
 
-### 5. Tests (`packages/ai/test/`)
-Add provider to: `stream.test.ts`, `tokens.test.ts`, `abort.test.ts`, `empty.test.ts`, `context-overflow.test.ts`, `image-limits.test.ts`, `unicode-surrogate.test.ts`, `tool-call-without-result.test.ts`, `image-tool-result.test.ts`, `total-tokens.test.ts`, `cross-provider-handoff.test.ts`.
-
-For `cross-provider-handoff.test.ts`, add at least one provider/model pair. If the provider exposes multiple model families (for example GPT and Claude), add at least one pair per family.
-
-For non-standard auth, create utility (e.g., `bedrock-utils.ts`) with credential detection.
-
-### 6. Coding Agent (`packages/coding-agent/`)
-- `src/core/model-resolver.ts`: Add default model ID to `DEFAULT_MODELS`
-- `src/cli/args.ts`: Add env var documentation
-- `README.md`: Add provider setup instructions
-
-### 7. Documentation
-- `packages/ai/README.md`: Add to providers table, document options/auth, add env vars
-- `packages/ai/CHANGELOG.md`: Add entry under `## [Unreleased]`
+### 3. Coding Agent (`packages/coding-agent/`)
+- `README.md` and `docs/providers.md`: Add provider setup instructions
+- `CHANGELOG.md`: Add entry under `## [Unreleased]`
 
 ## Releasing
 
@@ -194,8 +167,8 @@ These commands can destroy other agents' work:
 git status
 
 # 2. Add ONLY your specific files
-git add packages/ai/src/providers/transform-messages.ts
-git add packages/ai/CHANGELOG.md
+git add packages/coding-agent-sdk/src/core/ai-types.ts
+git add packages/coding-agent-sdk/CHANGELOG.md
 
 # 3. Commit
 git commit -m "fix(ai): description"

@@ -31,7 +31,7 @@ npm run check  # must pass with no errors
 
 Do not edit `CHANGELOG.md`. Changelog entries are added by maintainers.
 
-If you're adding a new provider to `packages/ai`, see `AGENTS.md` for required tests.
+If you're adding a new provider, see `AGENTS.md` for the required steps.
 
 ## Philosophy
 

@@ -62,8 +62,7 @@ npm test -- test/specific.test.ts # Run specific test
 
 ```
 packages/
-  ai/           # LLM provider abstraction
-  agent/        # Agent loop and message types  
-  tui/          # Terminal UI components
-  coding-agent/ # CLI and interactive mode
+  env/              # Environment abstraction (Node.js, Bun, browser)
+  coding-agent-sdk/ # Agent SDK: tools, extensions, sessions, model registry
+  coding-agent/     # CLI and interactive mode
 ```

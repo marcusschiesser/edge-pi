@@ -29,9 +29,9 @@ Existing sessions are automatically migrated to the current version (v3) when lo
 ## Source Files
 
 Source on GitHub ([pi-mono](https://github.com/badlogic/pi-mono)):
-- [`packages/coding-agent/src/core/session-manager.ts`](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/src/core/session-manager.ts) - Session entry types and SessionManager
-- [`packages/coding-agent/src/core/messages.ts`](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/src/core/messages.ts) - Extended message types (BashExecutionMessage, CustomMessage, etc.)
-- [`packages/coding-agent/src/core/ai-types.ts`](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/src/core/ai-types.ts) - Base message types (UserMessage, AssistantMessage, ToolResultMessage, AgentMessage)
+- [`packages/coding-agent-sdk/src/core/session-manager.ts`](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent-sdk/src/core/session-manager.ts) - Session entry types and SessionManager
+- [`packages/coding-agent-sdk/src/core/messages.ts`](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent-sdk/src/core/messages.ts) - Extended message types (BashExecutionMessage, CustomMessage, etc.)
+- [`packages/coding-agent-sdk/src/core/ai-types.ts`](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent-sdk/src/core/ai-types.ts) - Base message types (UserMessage, AssistantMessage, ToolResultMessage, AgentMessage)
 
 For TypeScript definitions in your project, inspect `node_modules/@mariozechner/pi-coding-agent/dist/`.
 
