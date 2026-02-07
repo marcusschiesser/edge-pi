@@ -1,15 +1,9 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import type { ModelMessage } from "ai";
+import { beforeEach, describe, expect, it } from "vitest";
 import { findCutPoint, prepareCompaction } from "../src/compaction/compaction.js";
 import { estimateContextTokens, estimateTokens, shouldCompact } from "../src/compaction/token-estimation.js";
 import type { MessageEntry, SessionEntry } from "../src/session/types.js";
-import {
-	assistantMsg,
-	createCompactionEntry,
-	createMessageEntry,
-	resetEntryCounter,
-	userMsg,
-} from "./utilities.js";
+import { assistantMsg, createCompactionEntry, createMessageEntry, resetEntryCounter, userMsg } from "./utilities.js";
 
 beforeEach(() => {
 	resetEntryCounter();
@@ -38,7 +32,7 @@ describe("estimateTokens", () => {
 					type: "tool-result",
 					toolCallId: "tc1",
 					toolName: "read",
-					output: "x".repeat(400), // 400 chars -> 100
+					output: "x".repeat(400) as any, // 400 chars -> 100
 				},
 			],
 		};

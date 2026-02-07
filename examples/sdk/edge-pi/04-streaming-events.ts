@@ -62,40 +62,34 @@ for await (const event of result.fullStream) {
 	switch (event.type) {
 		// ── Lifecycle ────────────────────────────────────────────────
 		case "start":
-			console.log(cyan("[start]") + dim(" Stream started"));
+			console.log(`${cyan("[start]")}${dim(" Stream started")}`);
 			break;
 
 		case "finish":
 			console.log(
-				cyan("[finish]") +
-					` reason=${event.finishReason}` +
-					dim(` total_input=${event.totalUsage.inputTokens} total_output=${event.totalUsage.outputTokens}`),
+				`${cyan("[finish]")} reason=${event.finishReason}${dim(` total_input=${event.totalUsage.inputTokens} total_output=${event.totalUsage.outputTokens}`)}`,
 			);
 			break;
 
 		case "abort":
-			console.log(red("[abort]") + ` reason=${event.reason ?? "unknown"}`);
+			console.log(`${red("[abort]")} reason=${event.reason ?? "unknown"}`);
 			break;
 
 		case "error":
-			console.log(red("[error]") + ` ${event.error}`);
+			console.log(`${red("[error]")} ${event.error}`);
 			break;
 
 		// ── Step boundaries ──────────────────────────────────────────
 		case "start-step":
 			stepNumber++;
 			console.log(
-				"\n" +
-					bold(yellow(`── Step ${stepNumber} ──`)) +
-					(event.warnings.length > 0 ? dim(` warnings: ${JSON.stringify(event.warnings)}`) : ""),
+				`\n${bold(yellow(`── Step ${stepNumber} ──`))}${event.warnings.length > 0 ? dim(` warnings: ${JSON.stringify(event.warnings)}`) : ""}`,
 			);
 			break;
 
 		case "finish-step":
 			console.log(
-				yellow(`── Step ${stepNumber} done ──`) +
-					` reason=${event.finishReason}` +
-					dim(` input=${event.usage.inputTokens} output=${event.usage.outputTokens}`),
+				`${yellow(`── Step ${stepNumber} done ──`)} reason=${event.finishReason}${dim(` input=${event.usage.inputTokens} output=${event.usage.outputTokens}`)}`,
 			);
 			break;
 
@@ -128,7 +122,7 @@ for await (const event of result.fullStream) {
 		// ── Tool input streaming ─────────────────────────────────────
 		case "tool-input-start":
 			toolCallCount++;
-			process.stdout.write(cyan(`[tool:${event.toolName}] `) + dim("input: "));
+			process.stdout.write(`${cyan(`[tool:${event.toolName}] `)}${dim("input: ")}`);
 			break;
 
 		case "tool-input-delta":
@@ -141,30 +135,30 @@ for await (const event of result.fullStream) {
 
 		// ── Tool execution ───────────────────────────────────────────
 		case "tool-call":
-			console.log(cyan(`[tool-call]`) + ` ${event.toolName}(${truncate(JSON.stringify(event.input))})`);
+			console.log(`${cyan("[tool-call]")} ${event.toolName}(${truncate(JSON.stringify(event.input))})`);
 			break;
 
 		case "tool-result": {
 			const output = typeof event.output === "string" ? event.output : JSON.stringify(event.output);
-			console.log(green(`[tool-result]`) + ` ${event.toolName} → ${truncate(output)}`);
+			console.log(`${green("[tool-result]")} ${event.toolName} → ${truncate(output)}`);
 			break;
 		}
 
 		case "tool-error":
-			console.log(red(`[tool-error]`) + ` ${event.toolName}: ${event.error}`);
+			console.log(`${red("[tool-error]")} ${event.toolName}: ${event.error}`);
 			break;
 
 		case "tool-output-denied":
-			console.log(red(`[tool-denied]`) + ` ${event.toolName}: output denied`);
+			console.log(`${red("[tool-denied]")} ${event.toolName}: output denied`);
 			break;
 
 		// ── Other events ─────────────────────────────────────────────
 		case "source":
-			console.log(dim(`[source] ${event.url ?? "unknown"}`));
+			console.log(dim(`[source] ${(event as any).url ?? "unknown"}`));
 			break;
 
 		case "file":
-			console.log(dim(`[file] ${event.file.name ?? "unnamed"} (${event.file.mediaType})`));
+			console.log(dim(`[file] (${event.file.mediaType})`));
 			break;
 
 		default:

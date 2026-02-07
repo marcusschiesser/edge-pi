@@ -2,12 +2,7 @@
  * Shared test utilities for edge-pi tests.
  */
 
-import type {
-	AssistantModelMessage,
-	ModelMessage,
-	ToolModelMessage,
-	UserModelMessage,
-} from "ai";
+import type { AssistantModelMessage, ModelMessage, ToolModelMessage, UserModelMessage } from "ai";
 import type { MessageEntry, SessionEntry } from "../src/session/types.js";
 
 /**
@@ -54,11 +49,7 @@ export function assistantToolCallMsg(
 /**
  * Create a tool result message.
  */
-export function toolResultMsg(
-	toolCallId: string,
-	toolName: string,
-	output: string,
-): ToolModelMessage {
+export function toolResultMsg(toolCallId: string, toolName: string, output: string): ToolModelMessage {
 	return {
 		role: "tool",
 		content: [
@@ -66,7 +57,7 @@ export function toolResultMsg(
 				type: "tool-result",
 				toolCallId,
 				toolName,
-				output,
+				output: { type: "text", value: output },
 			},
 		],
 	};
@@ -97,11 +88,7 @@ export function createMessageEntry(message: ModelMessage): MessageEntry {
 	return entry;
 }
 
-export function createCompactionEntry(
-	summary: string,
-	firstKeptEntryId: string,
-	tokensBefore = 10000,
-): SessionEntry {
+export function createCompactionEntry(summary: string, firstKeptEntryId: string, tokensBefore = 10000): SessionEntry {
 	const id = `test-id-${entryCounter++}`;
 	const entry: SessionEntry = {
 		type: "compaction",
@@ -116,10 +103,7 @@ export function createCompactionEntry(
 	return entry;
 }
 
-export function createModelChangeEntry(
-	provider: string,
-	modelId: string,
-): SessionEntry {
+export function createModelChangeEntry(provider: string, modelId: string): SessionEntry {
 	const id = `test-id-${entryCounter++}`;
 	const entry: SessionEntry = {
 		type: "model_change",
@@ -133,10 +117,7 @@ export function createModelChangeEntry(
 	return entry;
 }
 
-export function createBranchSummaryEntry(
-	summary: string,
-	fromId: string,
-): SessionEntry {
+export function createBranchSummaryEntry(summary: string, fromId: string): SessionEntry {
 	const id = `test-id-${entryCounter++}`;
 	const entry: SessionEntry = {
 		type: "branch_summary",
@@ -154,12 +135,7 @@ export function createBranchSummaryEntry(
  * Helper function to create a session entry with explicit id/parentId.
  * Useful for build-context tests where you need exact tree structure.
  */
-export function msg(
-	id: string,
-	parentId: string | null,
-	role: "user" | "assistant",
-	text: string,
-): MessageEntry {
+export function msg(id: string, parentId: string | null, role: "user" | "assistant", text: string): MessageEntry {
 	if (role === "user") {
 		return {
 			type: "message",

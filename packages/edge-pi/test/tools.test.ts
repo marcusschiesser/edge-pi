@@ -9,7 +9,8 @@ const ctx = () => ({ abortSignal: new AbortController().signal });
 
 describe("Coding Agent Tools", () => {
 	let testDir: string;
-	let tools: ReturnType<typeof createAllTools>;
+	// ToolSet = Record<string, Tool> makes execute possibly undefined; use any for test ergonomics
+	let tools: any;
 
 	beforeEach(() => {
 		testDir = join(tmpdir(), `edge-pi-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -132,10 +133,7 @@ describe("Coding Agent Tools", () => {
 			const testFile = join(testDir, "edit-test.txt");
 			writeFileSync(testFile, "Hello, world!");
 
-			const result = await tools.edit.execute(
-				{ path: testFile, oldText: "world", newText: "testing" },
-				ctx(),
-			);
+			const result = await tools.edit.execute({ path: testFile, oldText: "world", newText: "testing" }, ctx());
 
 			expect(result).toContain("Successfully");
 			const content = readFileSync(testFile, "utf-8");
@@ -147,10 +145,7 @@ describe("Coding Agent Tools", () => {
 			writeFileSync(testFile, "Hello, world!");
 
 			await expect(
-				tools.edit.execute(
-					{ path: testFile, oldText: "nonexistent", newText: "testing" },
-					ctx(),
-				),
+				tools.edit.execute({ path: testFile, oldText: "nonexistent", newText: "testing" }, ctx()),
 			).rejects.toThrow(/Could not find/);
 		});
 
@@ -158,9 +153,9 @@ describe("Coding Agent Tools", () => {
 			const testFile = join(testDir, "edit-test.txt");
 			writeFileSync(testFile, "foo foo foo");
 
-			await expect(
-				tools.edit.execute({ path: testFile, oldText: "foo", newText: "bar" }, ctx()),
-			).rejects.toThrow(/Found 3 occurrences/);
+			await expect(tools.edit.execute({ path: testFile, oldText: "foo", newText: "bar" }, ctx())).rejects.toThrow(
+				/Found 3 occurrences/,
+			);
 		});
 
 		it("should match text with trailing whitespace stripped (fuzzy)", async () => {
@@ -207,10 +202,7 @@ describe("Coding Agent Tools", () => {
 			const testFile = join(testDir, "crlf-preserve.txt");
 			writeFileSync(testFile, "first\r\nsecond\r\nthird\r\n");
 
-			await tools.edit.execute(
-				{ path: testFile, oldText: "second\n", newText: "REPLACED\n" },
-				ctx(),
-			);
+			await tools.edit.execute({ path: testFile, oldText: "second\n", newText: "REPLACED\n" }, ctx());
 
 			const content = readFileSync(testFile, "utf-8");
 			expect(content).toBe("first\r\nREPLACED\r\nthird\r\n");
@@ -220,10 +212,7 @@ describe("Coding Agent Tools", () => {
 			const testFile = join(testDir, "bom-test.txt");
 			writeFileSync(testFile, "\uFEFFfirst\r\nsecond\r\nthird\r\n");
 
-			await tools.edit.execute(
-				{ path: testFile, oldText: "second\n", newText: "REPLACED\n" },
-				ctx(),
-			);
+			await tools.edit.execute({ path: testFile, oldText: "second\n", newText: "REPLACED\n" }, ctx());
 
 			const content = readFileSync(testFile, "utf-8");
 			expect(content).toBe("\uFEFFfirst\r\nREPLACED\r\nthird\r\n");
@@ -237,15 +226,11 @@ describe("Coding Agent Tools", () => {
 		});
 
 		it("should handle command errors", async () => {
-			await expect(
-				tools.bash.execute({ command: "exit 1" }, ctx()),
-			).rejects.toThrow(/(failed|code 1)/i);
+			await expect(tools.bash.execute({ command: "exit 1" }, ctx())).rejects.toThrow(/(failed|code 1)/i);
 		});
 
 		it("should respect timeout", async () => {
-			await expect(
-				tools.bash.execute({ command: "sleep 5", timeout: 1 }, ctx()),
-			).rejects.toThrow(/timed out/i);
+			await expect(tools.bash.execute({ command: "sleep 5", timeout: 1 }, ctx())).rejects.toThrow(/timed out/i);
 		});
 	});
 
@@ -254,10 +239,7 @@ describe("Coding Agent Tools", () => {
 			const testFile = join(testDir, "example.txt");
 			writeFileSync(testFile, "first line\nmatch line\nlast line");
 
-			const result = await tools.grep.execute(
-				{ pattern: "match", path: testFile },
-				ctx(),
-			);
+			const result = await tools.grep.execute({ pattern: "match", path: testFile }, ctx());
 
 			expect(result).toContain("match line");
 		});
@@ -266,10 +248,7 @@ describe("Coding Agent Tools", () => {
 			const testFile = join(testDir, "context.txt");
 			writeFileSync(testFile, "before\nmatch one\nafter\nmiddle\nmatch two\nafter two");
 
-			const result = await tools.grep.execute(
-				{ pattern: "match", path: testFile, limit: 1, context: 1 },
-				ctx(),
-			);
+			const result = await tools.grep.execute({ pattern: "match", path: testFile, limit: 1, context: 1 }, ctx());
 
 			expect(result).toContain("before");
 			expect(result).toContain("match one");
@@ -285,10 +264,7 @@ describe("Coding Agent Tools", () => {
 			mkdirSync(join(testDir, "sub"));
 			writeFileSync(join(testDir, "sub", "file3.txt"), "content");
 
-			const result = await tools.find.execute(
-				{ pattern: "**/*.txt", path: testDir },
-				ctx(),
-			);
+			const result = await tools.find.execute({ pattern: "**/*.txt", path: testDir }, ctx());
 
 			expect(result).toContain("file1.txt");
 			expect(result).toContain("file2.txt");

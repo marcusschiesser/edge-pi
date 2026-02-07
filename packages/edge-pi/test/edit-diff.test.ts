@@ -124,10 +124,7 @@ describe("stripBom", () => {
 
 describe("generateDiffString", () => {
 	it("generates diff for simple replacement", () => {
-		const { diff, firstChangedLine } = generateDiffString(
-			"line 1\nline 2\nline 3",
-			"line 1\nline CHANGED\nline 3",
-		);
+		const { diff, firstChangedLine } = generateDiffString("line 1\nline 2\nline 3", "line 1\nline CHANGED\nline 3");
 
 		expect(diff).toContain("-");
 		expect(diff).toContain("+");

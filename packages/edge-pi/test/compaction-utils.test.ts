@@ -1,5 +1,5 @@
+import type { AssistantModelMessage, ModelMessage, UserModelMessage } from "ai";
 import { describe, expect, it } from "vitest";
-import type { AssistantModelMessage, ModelMessage, ToolModelMessage, UserModelMessage } from "ai";
 import {
 	computeFileLists,
 	createFileOps,
@@ -149,9 +149,7 @@ describe("File operation tracking", () => {
 
 describe("serializeModelMessages", () => {
 	it("serializes user message", () => {
-		const messages: ModelMessage[] = [
-			{ role: "user", content: [{ type: "text", text: "hello world" }] },
-		];
+		const messages: ModelMessage[] = [{ role: "user", content: [{ type: "text", text: "hello world" }] }];
 		const result = serializeModelMessages(messages);
 		expect(result).toContain("[User]: hello world");
 	});
@@ -193,7 +191,7 @@ describe("serializeModelMessages", () => {
 						type: "tool-result",
 						toolCallId: "tc1",
 						toolName: "read",
-						output: "file contents here",
+						output: "file contents here" as any,
 					},
 				],
 			},
@@ -223,7 +221,7 @@ describe("serializeModelMessages", () => {
 						type: "tool-result",
 						toolCallId: "tc1",
 						toolName: "read",
-						output: "const x = 1;",
+						output: "const x = 1;" as any,
 					},
 				],
 			},

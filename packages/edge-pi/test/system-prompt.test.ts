@@ -127,9 +127,7 @@ describe("buildSystemPrompt", () => {
 	describe("context files", () => {
 		it("includes context file content", () => {
 			const prompt = buildSystemPrompt({
-				contextFiles: [
-					{ path: "AGENTS.md", content: "This is the agent config." },
-				],
+				contextFiles: [{ path: "AGENTS.md", content: "This is the agent config." }],
 			});
 			expect(prompt).toContain("# Project Context");
 			expect(prompt).toContain("## AGENTS.md");

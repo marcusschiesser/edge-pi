@@ -347,7 +347,7 @@ describe("SessionManager file persistence", () => {
 
 	it("open() loads an existing session", () => {
 		const session1 = SessionManager.create(tempDir, tempDir);
-		const id1 = session1.appendMessage(userMsg("hello"));
+		session1.appendMessage(userMsg("hello"));
 		session1.appendMessage(assistantMsg("hi"));
 		const sessionFile = session1.getSessionFile()!;
 
