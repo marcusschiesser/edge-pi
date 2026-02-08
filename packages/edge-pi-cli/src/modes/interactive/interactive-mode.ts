@@ -143,7 +143,7 @@ class InteractiveMode {
 
 		const hints = [
 			`${chalk.dim("Escape")} to abort`,
-			`${chalk.dim("Ctrl+D")} to exit (empty)`,
+			`${chalk.dim("Ctrl+C")} to exit`,
 			`${chalk.dim("Ctrl+E")} to expand tools`,
 			`${chalk.dim("Ctrl+L")} to switch model`,
 			`${chalk.dim("↑/↓")} to browse history`,
@@ -216,6 +216,12 @@ class InteractiveMode {
 					this.stopLoading();
 					return;
 				}
+			}
+
+			// Ctrl+C: exit
+			if (matchesKey(data, Key.ctrl("c"))) {
+				this.shutdown();
+				return;
 			}
 
 			// Ctrl+D: exit if editor is empty
