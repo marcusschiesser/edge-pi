@@ -146,6 +146,7 @@ class InteractiveMode {
 			`${chalk.dim("Ctrl+D")} to exit (empty)`,
 			`${chalk.dim("Ctrl+E")} to expand tools`,
 			`${chalk.dim("Ctrl+L")} to switch model`,
+			`${chalk.dim("↑/↓")} to browse history`,
 			`${chalk.dim("@")} for file references`,
 			`${chalk.dim("/")} for commands`,
 		].join("\n");
@@ -198,6 +199,7 @@ class InteractiveMode {
 			text = text.trim();
 			if (!text) return;
 
+			this.editor.addToHistory(text);
 			this.editor.setText("");
 
 			if (this.onInputCallback) {
