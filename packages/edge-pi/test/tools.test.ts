@@ -28,10 +28,10 @@ describe("Coding Agent Tools", () => {
 			writeFileSync(testFile, "Hello, world!\nLine 2\nLine 3");
 
 			const result = await tools.read.execute({ path: testFile }, ctx());
-			expect(result).toContain("Hello, world!");
-			expect(result).toContain("Line 2");
-			expect(result).toContain("Line 3");
-			expect(result).not.toContain("Use offset=");
+			expect(result.text).toContain("Hello, world!");
+			expect(result.text).toContain("Line 2");
+			expect(result.text).toContain("Line 3");
+			expect(result.text).not.toContain("Use offset=");
 		});
 
 		it("should handle non-existent files", async () => {
@@ -45,10 +45,10 @@ describe("Coding Agent Tools", () => {
 			writeFileSync(testFile, lines.join("\n"));
 
 			const result = await tools.read.execute({ path: testFile }, ctx());
-			expect(result).toContain("Line 1");
-			expect(result).toContain("Line 2000");
-			expect(result).not.toContain("Line 2001");
-			expect(result).toContain("Use offset=");
+			expect(result.text).toContain("Line 1");
+			expect(result.text).toContain("Line 2000");
+			expect(result.text).not.toContain("Line 2001");
+			expect(result.text).toContain("Use offset=");
 		});
 
 		it("should handle offset parameter", async () => {
@@ -57,9 +57,9 @@ describe("Coding Agent Tools", () => {
 			writeFileSync(testFile, lines.join("\n"));
 
 			const result = await tools.read.execute({ path: testFile, offset: 51 }, ctx());
-			expect(result).not.toContain("Line 50\n");
-			expect(result).toContain("Line 51");
-			expect(result).toContain("Line 100");
+			expect(result.text).not.toContain("Line 50\n");
+			expect(result.text).toContain("Line 51");
+			expect(result.text).toContain("Line 100");
 		});
 
 		it("should handle limit parameter", async () => {
@@ -68,10 +68,10 @@ describe("Coding Agent Tools", () => {
 			writeFileSync(testFile, lines.join("\n"));
 
 			const result = await tools.read.execute({ path: testFile, limit: 10 }, ctx());
-			expect(result).toContain("Line 1");
-			expect(result).toContain("Line 10");
-			expect(result).not.toContain("Line 11\n");
-			expect(result).toContain("Use offset=");
+			expect(result.text).toContain("Line 1");
+			expect(result.text).toContain("Line 10");
+			expect(result.text).not.toContain("Line 11\n");
+			expect(result.text).toContain("Use offset=");
 		});
 
 		it("should handle offset + limit together", async () => {
@@ -80,10 +80,10 @@ describe("Coding Agent Tools", () => {
 			writeFileSync(testFile, lines.join("\n"));
 
 			const result = await tools.read.execute({ path: testFile, offset: 41, limit: 20 }, ctx());
-			expect(result).not.toContain("Line 40\n");
-			expect(result).toContain("Line 41");
-			expect(result).toContain("Line 60");
-			expect(result).not.toContain("Line 61\n");
+			expect(result.text).not.toContain("Line 40\n");
+			expect(result.text).toContain("Line 41");
+			expect(result.text).toContain("Line 60");
+			expect(result.text).not.toContain("Line 61\n");
 		});
 
 		it("should show error when offset is beyond file length", async () => {
@@ -102,7 +102,10 @@ describe("Coding Agent Tools", () => {
 			writeFileSync(testFile, pngBuffer);
 
 			const result = await tools.read.execute({ path: testFile }, ctx());
-			expect(result).toContain("image");
+			expect(result.text).toContain("image");
+			expect(result.image).toBeDefined();
+			expect(result.image.mimeType).toBe("image/png");
+			expect(result.image.base64).toBe(png1x1Base64);
 		});
 	});
 

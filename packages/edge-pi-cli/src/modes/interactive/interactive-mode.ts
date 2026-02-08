@@ -28,6 +28,7 @@ import {
 	Text,
 	TUI,
 } from "@mariozechner/pi-tui";
+import type { ImagePart } from "ai";
 import chalk from "chalk";
 import type { CodingAgent, CodingAgentConfig, ModelMessage, SessionManager } from "edge-pi";
 import {
@@ -46,7 +47,7 @@ import { getLatestModels } from "../../model-factory.js";
 import type { PromptTemplate } from "../../prompts.js";
 import { expandPromptTemplate } from "../../prompts.js";
 import type { Skill } from "../../skills.js";
-import { readClipboardImageToFile } from "../../utils/clipboard-image.js";
+import { type ClipboardImage, extensionForImageMimeType, readClipboardImage } from "../../utils/clipboard-image.js";
 import { AssistantMessageComponent } from "./components/assistant-message.js";
 import { CompactionSummaryComponent } from "./components/compaction-summary.js";
 import { FooterComponent } from "./components/footer.js";
@@ -124,6 +125,9 @@ class InteractiveMode {
 
 	// Callback for resolving user input promise
 	private onInputCallback?: (text: string) => void;
+
+	// Pending clipboard images to attach to the next message
+	private pendingImages: ClipboardImage[] = [];
 
 	// Compaction state
 	private contextWindow: number;
@@ -373,10 +377,15 @@ class InteractiveMode {
 		const { prompts = [] } = this.options;
 		const expanded = expandPromptTemplate(input, prompts);
 
+		// Capture and clear pending images
+		const images = this.pendingImages.length > 0 ? [...this.pendingImages] : undefined;
+		this.pendingImages = [];
+
 		// Regular message (use expanded text if a prompt template was matched)
-		this.chatContainer.addChild(new UserMessageComponent(expanded, getMarkdownTheme()));
+		const imageLabel = images ? chalk.dim(` (${images.length} image${images.length > 1 ? "s" : ""})`) : "";
+		this.chatContainer.addChild(new UserMessageComponent(`${expanded}${imageLabel}`, getMarkdownTheme()));
 		this.ui.requestRender();
-		await this.streamPrompt(expanded);
+		await this.streamPrompt(expanded, images);
 	}
 
 	// ========================================================================
@@ -476,9 +485,16 @@ class InteractiveMode {
 	// Streaming
 	// ========================================================================
 
-	private async streamPrompt(prompt: string): Promise<void> {
+	private async streamPrompt(prompt: string, images?: ClipboardImage[]): Promise<void> {
 		const { sessionManager } = this.options;
 		const messagesBefore = this.agent.messages.length;
+
+		// Build image parts from clipboard images
+		const imageParts: ImagePart[] = (images ?? []).map((img) => ({
+			type: "image" as const,
+			image: Buffer.from(img.bytes).toString("base64"),
+			mediaType: img.mimeType,
+		}));
 
 		// Start loading animation
 		this.startLoading();
@@ -489,7 +505,17 @@ class InteractiveMode {
 		this.hadToolResults = false;
 
 		try {
-			const result = await this.agent.stream({ prompt });
+			const result =
+				imageParts.length > 0
+					? await this.agent.stream({
+							messages: [
+								{
+									role: "user" as const,
+									content: [{ type: "text" as const, text: prompt }, ...imageParts],
+								},
+							],
+						})
+					: await this.agent.stream({ prompt });
 
 			// Stop loading animation once streaming starts
 			this.stopLoading();
@@ -550,7 +576,7 @@ class InteractiveMode {
 			const responseMessages = response.messages as ModelMessage[];
 			this.agent.setMessages([
 				...this.agent.messages.slice(0, messagesBefore),
-				...buildUserMessage(prompt),
+				...buildUserMessage(prompt, imageParts),
 				...responseMessages,
 			]);
 
@@ -558,7 +584,7 @@ class InteractiveMode {
 			if (sessionManager) {
 				const userMsg: ModelMessage = {
 					role: "user",
-					content: [{ type: "text", text: prompt }],
+					content: [{ type: "text", text: prompt }, ...imageParts],
 				};
 				sessionManager.appendMessage(userMsg);
 				for (const msg of responseMessages) {
@@ -649,9 +675,12 @@ class InteractiveMode {
 
 	private handleClipboardImagePaste(): void {
 		try {
-			const filePath = readClipboardImageToFile();
-			if (!filePath) return;
-			this.editor.insertTextAtCursor(filePath);
+			const image = readClipboardImage();
+			if (!image) return;
+			this.pendingImages.push(image);
+			const ext = extensionForImageMimeType(image.mimeType) ?? "image";
+			const label = `[image ${this.pendingImages.length}: ${ext}]`;
+			this.editor.insertTextAtCursor(label);
 			this.ui.requestRender();
 		} catch {
 			// Silently ignore clipboard errors (may not have permission, etc.)
@@ -1367,8 +1396,12 @@ class InteractiveMode {
 // Helpers
 // ============================================================================
 
-function buildUserMessage(text: string): ModelMessage[] {
-	return [{ role: "user" as const, content: [{ type: "text" as const, text }] }];
+function buildUserMessage(text: string, imageParts?: ImagePart[]): ModelMessage[] {
+	const content: Array<{ type: "text"; text: string } | ImagePart> = [{ type: "text" as const, text }];
+	if (imageParts && imageParts.length > 0) {
+		content.push(...imageParts);
+	}
+	return [{ role: "user" as const, content }];
 }
 
 function extractTextFromMessage(msg: ModelMessage): string {

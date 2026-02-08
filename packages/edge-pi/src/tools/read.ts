@@ -1,5 +1,7 @@
 /**
  * Read tool - reads file contents as Vercel AI tool().
+ * Supports text files and images (jpg, png, gif, webp).
+ * Images are returned as content parts that the model can see.
  */
 
 import { constants, promises as fs } from "node:fs";
@@ -14,11 +16,27 @@ const readSchema = z.object({
 	limit: z.number().describe("Maximum number of lines to read").optional(),
 });
 
+const IMAGE_EXTENSIONS: Record<string, string> = {
+	jpg: "image/jpeg",
+	jpeg: "image/jpeg",
+	png: "image/png",
+	gif: "image/gif",
+	webp: "image/webp",
+};
+
+interface ReadResult {
+	text: string;
+	image?: {
+		base64: string;
+		mimeType: string;
+	};
+}
+
 export function createReadTool(cwd: string) {
 	return tool({
-		description: `Read the contents of a file. Output is truncated to ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.`,
+		description: `Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.`,
 		inputSchema: readSchema,
-		execute: async ({ path, offset, limit }, { abortSignal }) => {
+		execute: async ({ path, offset, limit }, { abortSignal }): Promise<ReadResult> => {
 			const absolutePath = resolveReadPath(path, cwd);
 
 			// Check abort
@@ -32,11 +50,15 @@ export function createReadTool(cwd: string) {
 			// Read the file
 			const buffer = await fs.readFile(absolutePath);
 
-			// Simple image detection by extension
+			// Image detection by extension
 			const ext = path.toLowerCase().split(".").pop() ?? "";
-			const imageExts = ["jpg", "jpeg", "png", "gif", "webp"];
-			if (imageExts.includes(ext)) {
-				return `[Image file: ${path}. Use a dedicated image viewer to inspect.]`;
+			const mimeType = IMAGE_EXTENSIONS[ext];
+			if (mimeType) {
+				const base64 = buffer.toString("base64");
+				return {
+					text: `Read image file [${mimeType}]`,
+					image: { base64, mimeType },
+				};
 			}
 
 			// Read as text
@@ -97,7 +119,19 @@ export function createReadTool(cwd: string) {
 				outputText = truncation.content;
 			}
 
-			return outputText;
+			return { text: outputText };
+		},
+		toModelOutput: ({ output }) => {
+			if (output.image) {
+				return {
+					type: "content",
+					value: [
+						{ type: "text", text: output.text },
+						{ type: "file-data", data: output.image.base64, mediaType: output.image.mimeType },
+					],
+				};
+			}
+			return { type: "text", value: output.text };
 		},
 	});
 }
