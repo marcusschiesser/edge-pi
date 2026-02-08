@@ -499,8 +499,7 @@ class InteractiveMode {
 		// Start loading animation
 		this.startLoading();
 
-		// Create assistant message component
-		this.streamingComponent = new AssistantMessageComponent(getMarkdownTheme());
+		this.streamingComponent = undefined;
 		this.streamingText = "";
 		this.hadToolResults = false;
 
@@ -517,19 +516,12 @@ class InteractiveMode {
 						})
 					: await this.agent.stream({ prompt });
 
-			// Stop loading animation once streaming starts
-			this.stopLoading();
-
-			// Add the streaming component to chat
-			this.chatContainer.addChild(this.streamingComponent);
-			this.ui.requestRender();
-
 			for await (const part of result.fullStream) {
 				switch (part.type) {
 					case "text-delta":
-						// After tool results, start a new assistant message component
+						// After tool results, or for the very first text part, start a new assistant message component
 						// so each agent step gets its own message bubble
-						if (this.hadToolResults) {
+						if (this.hadToolResults || !this.streamingComponent) {
 							this.streamingComponent = new AssistantMessageComponent(getMarkdownTheme());
 							this.streamingText = "";
 							this.hadToolResults = false;
@@ -598,8 +590,6 @@ class InteractiveMode {
 			// Check for auto-compaction after successful response
 			await this.checkAutoCompaction();
 		} catch (error) {
-			this.stopLoading();
-
 			if ((error as Error).name === "AbortError") {
 				if (this.streamingComponent) {
 					this.streamingComponent.setAborted();
@@ -615,6 +605,7 @@ class InteractiveMode {
 				}
 			}
 		} finally {
+			this.stopLoading();
 			this.streamingComponent = undefined;
 			this.streamingText = "";
 			this.hadToolResults = false;
