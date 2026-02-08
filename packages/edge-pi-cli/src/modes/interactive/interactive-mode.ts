@@ -46,6 +46,7 @@ import { getLatestModels } from "../../model-factory.js";
 import type { PromptTemplate } from "../../prompts.js";
 import { expandPromptTemplate } from "../../prompts.js";
 import type { Skill } from "../../skills.js";
+import { readClipboardImageToFile } from "../../utils/clipboard-image.js";
 import { AssistantMessageComponent } from "./components/assistant-message.js";
 import { CompactionSummaryComponent } from "./components/compaction-summary.js";
 import { FooterComponent } from "./components/footer.js";
@@ -187,6 +188,7 @@ class InteractiveMode {
 			`${chalk.dim("Ctrl+C")} to exit`,
 			`${chalk.dim("Ctrl+E")} to expand tools`,
 			`${chalk.dim("Ctrl+L")} to switch model`,
+			`${chalk.dim("Ctrl+V")} to paste image`,
 			`${chalk.dim("↑/↓")} to browse history`,
 			`${chalk.dim("@")} for file references`,
 			`${chalk.dim("/")} for commands`,
@@ -287,6 +289,12 @@ class InteractiveMode {
 			// Ctrl+L: select model
 			if (matchesKey(data, Key.ctrl("l"))) {
 				this.handleModelSelect();
+				return;
+			}
+
+			// Ctrl+V: paste image from clipboard
+			if (matchesKey(data, Key.ctrl("v"))) {
+				this.handleClipboardImagePaste();
 				return;
 			}
 
@@ -633,6 +641,21 @@ class InteractiveMode {
 		}
 
 		this.ui.requestRender();
+	}
+
+	// ========================================================================
+	// Clipboard Image Paste
+	// ========================================================================
+
+	private handleClipboardImagePaste(): void {
+		try {
+			const filePath = readClipboardImageToFile();
+			if (!filePath) return;
+			this.editor.insertTextAtCursor(filePath);
+			this.ui.requestRender();
+		} catch {
+			// Silently ignore clipboard errors (may not have permission, etc.)
+		}
 	}
 
 	// ========================================================================
