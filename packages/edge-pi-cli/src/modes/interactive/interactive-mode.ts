@@ -503,6 +503,7 @@ class InteractiveMode {
 		this.streamingText = "";
 		this.hadToolResults = false;
 
+		let errorDisplayed = false;
 		try {
 			const result =
 				imageParts.length > 0
@@ -560,8 +561,21 @@ class InteractiveMode {
 						}
 						break;
 					}
+
+					case "error": {
+						const errorMessage = (part.error as any)?.message || String(part.error);
+						if (this.streamingComponent) {
+							this.streamingComponent.setError(errorMessage);
+						} else {
+							this.showStatus(chalk.red(`Error: ${errorMessage}`));
+						}
+						errorDisplayed = true;
+						break;
+					}
 				}
 			}
+
+			if (errorDisplayed) return;
 
 			// Get final response and update messages
 			const response = await result.response;
@@ -590,6 +604,8 @@ class InteractiveMode {
 			// Check for auto-compaction after successful response
 			await this.checkAutoCompaction();
 		} catch (error) {
+			if (errorDisplayed) return;
+
 			if ((error as Error).name === "AbortError") {
 				if (this.streamingComponent) {
 					this.streamingComponent.setAborted();
