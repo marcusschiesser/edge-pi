@@ -22,13 +22,13 @@ export const colors = {
 	warning: chalk.yellow,
 	success: chalk.green,
 
-	// Tool status backgrounds
-	toolPendingBg: chalk.bgGray,
-	toolSuccessBg: chalk.bgGray,
-	toolErrorBg: chalk.bgRed,
+	// Tool status backgrounds (distinct from user message bg)
+	toolPendingBg: (text: string) => chalk.bgHex("#282832")(text),
+	toolSuccessBg: (text: string) => chalk.bgHex("#283228")(text),
+	toolErrorBg: (text: string) => chalk.bgHex("#3c2828")(text),
 
-	// User message
-	userMessageBg: (text: string) => chalk.bgGray(text),
+	// User message (visually distinct from tool calls)
+	userMessageBg: (text: string) => chalk.bgHex("#343541")(text),
 	userMessageText: (text: string) => chalk.white(text),
 };
 

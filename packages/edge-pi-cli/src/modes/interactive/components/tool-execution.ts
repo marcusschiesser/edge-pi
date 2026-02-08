@@ -6,6 +6,7 @@
 import { homedir } from "node:os";
 import { Box, Container, Spacer, Text } from "@mariozechner/pi-tui";
 import chalk from "chalk";
+import { colors } from "../theme.js";
 
 /** Preview line limit for bash output when collapsed */
 const BASH_PREVIEW_LINES = 5;
@@ -38,7 +39,7 @@ export class ToolExecutionComponent extends Container {
 		this.args = args;
 
 		this.addChild(new Spacer(1));
-		this.contentBox = new Box(1, 1, (text: string) => chalk.bgGray(text));
+		this.contentBox = new Box(1, 1, colors.toolPendingBg);
 		this.addChild(this.contentBox);
 
 		this.updateDisplay();
@@ -68,10 +69,10 @@ export class ToolExecutionComponent extends Container {
 	private updateDisplay(): void {
 		// Set background based on state
 		const bgFn = this.isPartial
-			? (text: string) => chalk.bgGray(text)
+			? colors.toolPendingBg
 			: this.result?.isError
-				? (text: string) => chalk.bgRed(text)
-				: (text: string) => chalk.bgGray(text);
+				? colors.toolErrorBg
+				: colors.toolSuccessBg;
 
 		this.contentBox.setBgFn(bgFn);
 		this.contentBox.clear();
