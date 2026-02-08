@@ -42,6 +42,7 @@ import {
 } from "edge-pi";
 import type { AuthStorage } from "../../auth/auth-storage.js";
 import type { ContextFile } from "../../context.js";
+import { getLatestModels } from "../../model-factory.js";
 import type { PromptTemplate } from "../../prompts.js";
 import { expandPromptTemplate } from "../../prompts.js";
 import type { Skill } from "../../skills.js";
@@ -413,16 +414,13 @@ class InteractiveMode {
 	// ========================================================================
 
 	private async handleModelSelect(): Promise<void> {
-		const modelOptions: { provider: string; modelId: string; label: string }[] = [
-			{ provider: "anthropic", modelId: "claude-sonnet-4-20250514", label: "anthropic/claude-sonnet-4" },
-			{ provider: "anthropic", modelId: "claude-haiku-3-5-20241022", label: "anthropic/claude-haiku-3.5" },
-			{ provider: "anthropic", modelId: "claude-opus-4-20250514", label: "anthropic/claude-opus-4" },
-			{ provider: "openai", modelId: "gpt-4o", label: "openai/gpt-4o" },
-			{ provider: "openai", modelId: "gpt-4o-mini", label: "openai/gpt-4o-mini" },
-			{ provider: "openai", modelId: "o3-mini", label: "openai/o3-mini" },
-			{ provider: "google", modelId: "gemini-2.5-flash", label: "google/gemini-2.5-flash" },
-			{ provider: "google", modelId: "gemini-2.5-pro", label: "google/gemini-2.5-pro" },
-		];
+		const latestModels = getLatestModels();
+		const modelOptions: { provider: string; modelId: string; label: string }[] = [];
+		for (const [provider, models] of Object.entries(latestModels)) {
+			for (const modelId of models) {
+				modelOptions.push({ provider, modelId, label: `${provider}/${modelId}` });
+			}
+		}
 
 		const items: SelectItem[] = modelOptions.map((m) => {
 			const current = m.provider === this.currentProvider && m.modelId === this.currentModelId;
