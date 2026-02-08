@@ -224,13 +224,16 @@ export async function main(args: string[]) {
 	const appendSystemPrompt = appendParts.length > 0 ? appendParts.join("\n\n") : undefined;
 
 	// Set up session manager
+	const sessionDir = parsed.sessionDir ?? getProjectSessionDir(cwd);
 	let sessionManager: SessionManager | undefined;
 	if (parsed.noSession) {
 		sessionManager = SessionManager.inMemory(cwd);
 	} else if (parsed.session) {
 		sessionManager = SessionManager.open(parsed.session, parsed.sessionDir);
+	} else if (parsed.resume) {
+		// Start a new session; the TUI will show the session picker on startup
+		sessionManager = SessionManager.create(cwd, sessionDir);
 	} else if (parsed.continue) {
-		const sessionDir = parsed.sessionDir ?? getProjectSessionDir(cwd);
 		const recentFile = findRecentSession(sessionDir);
 		if (recentFile) {
 			sessionManager = SessionManager.open(recentFile, sessionDir);
@@ -241,7 +244,6 @@ export async function main(args: string[]) {
 			sessionManager = SessionManager.create(cwd, sessionDir);
 		}
 	} else {
-		const sessionDir = parsed.sessionDir ?? getProjectSessionDir(cwd);
 		sessionManager = SessionManager.create(cwd, sessionDir);
 	}
 
@@ -289,6 +291,9 @@ export async function main(args: string[]) {
 			initialMessage,
 			initialMessages: parsed.messages,
 			sessionManager,
+			sessionDir,
+			agentConfig,
+			resumeOnStart: parsed.resume,
 			skills,
 			contextFiles,
 			prompts,

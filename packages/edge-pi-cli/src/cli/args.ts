@@ -20,6 +20,7 @@ export interface Args {
 	appendSystemPrompt?: string;
 	thinking?: ThinkingLevel;
 	continue?: boolean;
+	resume?: boolean;
 	help?: boolean;
 	version?: boolean;
 	listModels?: boolean;
@@ -58,6 +59,8 @@ export function parseArgs(args: string[]): Args {
 			}
 		} else if (arg === "--continue" || arg === "-c") {
 			result.continue = true;
+		} else if (arg === "--resume" || arg === "-r") {
+			result.resume = true;
 		} else if (arg === "--provider" && i + 1 < args.length) {
 			result.provider = args[++i];
 		} else if (arg === "--model" && i + 1 < args.length) {
@@ -126,6 +129,7 @@ ${chalk.bold("Options:")}
   --mode <mode>                  Output mode: text (default) or json
   --print, -p                    Non-interactive mode: process prompt and exit
   --continue, -c                 Continue previous session
+  --resume, -r                   Select and resume a previous session
   --session <path>               Use specific session file
   --session-dir <dir>            Directory for session storage
   --no-session                   Don't save session (ephemeral)
@@ -153,6 +157,9 @@ ${chalk.bold("Examples:")}
 
   # Continue previous session
   epi --continue "What did we discuss?"
+
+  # Resume a previous session (interactive picker)
+  epi --resume
 
   # Use specific latest models
   epi --provider anthropic --model claude-opus-4-6

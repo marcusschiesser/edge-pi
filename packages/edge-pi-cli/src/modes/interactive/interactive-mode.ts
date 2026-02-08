@@ -11,6 +11,8 @@
  * - Context compaction (manual /compact + auto mode)
  */
 
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import {
 	CombinedAutocompleteProvider,
 	Container,
@@ -27,7 +29,7 @@ import {
 	TUI,
 } from "@mariozechner/pi-tui";
 import chalk from "chalk";
-import type { CodingAgent, ModelMessage, SessionManager } from "edge-pi";
+import type { CodingAgent, CodingAgentConfig, ModelMessage, SessionManager } from "edge-pi";
 import {
 	type CompactionResult,
 	type CompactionSettings,
@@ -35,6 +37,7 @@ import {
 	DEFAULT_COMPACTION_SETTINGS,
 	estimateContextTokens,
 	prepareCompaction,
+	SessionManager as SessionManagerClass,
 	shouldCompact,
 } from "edge-pi";
 import type { AuthStorage } from "../../auth/auth-storage.js";
@@ -69,6 +72,12 @@ export interface InteractiveModeOptions {
 	onModelChange?: (provider: string, modelId: string) => Promise<CodingAgent>;
 	/** Context window size for the model. Defaults to 200k. */
 	contextWindow?: number;
+	/** Directory where session files are stored. Required for /resume. */
+	sessionDir?: string;
+	/** Agent config used to recreate agents when resuming sessions. */
+	agentConfig?: CodingAgentConfig;
+	/** When true, show the session picker immediately on startup. */
+	resumeOnStart?: boolean;
 }
 
 /**
@@ -133,6 +142,11 @@ class InteractiveMode {
 	async run(): Promise<void> {
 		this.initUI();
 		this.updateFooterTokens();
+
+		// Show session picker immediately if --resume was passed
+		if (this.options.resumeOnStart) {
+			await this.handleResume();
+		}
 
 		// Process initial messages
 		const { initialMessage, initialMessages = [] } = this.options;
@@ -335,6 +349,11 @@ class InteractiveMode {
 			return;
 		}
 
+		if (input === "/resume") {
+			await this.handleResume();
+			return;
+		}
+
 		if (input.startsWith("/skill:")) {
 			const skillName = input.slice("/skill:".length).trim();
 			await this.handleSkillInvocation(skillName);
@@ -360,6 +379,7 @@ class InteractiveMode {
 
 		const commands: SlashCommand[] = [
 			{ name: "help", description: "Show available commands" },
+			{ name: "resume", description: "Resume a previous session" },
 			{ name: "compact", description: "Manually compact the session context" },
 			{ name: "auto-compact", description: "Toggle automatic context compaction" },
 			{ name: "login", description: "Login to an OAuth provider" },
@@ -953,6 +973,7 @@ class InteractiveMode {
 	private showHelp(): void {
 		const helpText = [
 			chalk.bold("Commands:"),
+			"  /resume             Resume a previous session",
 			"  /compact [text]     Compact the session context (optional instructions)",
 			"  /auto-compact       Toggle automatic context compaction",
 			"  /model              Switch model (Ctrl+L)",
@@ -1118,6 +1139,150 @@ class InteractiveMode {
 
 		authStorage.logout(entry.id);
 		this.showStatus(chalk.green(`Logged out of ${entry.name}.`));
+	}
+
+	// ========================================================================
+	// Resume Session
+	// ========================================================================
+
+	/**
+	 * List session files from the session directory, sorted by modification time (newest first).
+	 * Returns metadata for each session including the first user message as a preview.
+	 */
+	private listAvailableSessions(): { path: string; mtime: number; preview: string; timestamp: string }[] {
+		const { sessionDir } = this.options;
+		if (!sessionDir || !existsSync(sessionDir)) return [];
+
+		try {
+			const files = readdirSync(sessionDir)
+				.filter((f: string) => f.endsWith(".jsonl"))
+				.map((f: string) => {
+					const filePath = join(sessionDir, f);
+					const mtime = statSync(filePath).mtime.getTime();
+					return { name: f, path: filePath, mtime };
+				})
+				.sort((a, b) => b.mtime - a.mtime);
+
+			const sessions: { path: string; mtime: number; preview: string; timestamp: string }[] = [];
+			for (const file of files) {
+				// Skip the current session file
+				if (this.options.sessionManager?.getSessionFile() === file.path) continue;
+
+				const preview = this.getSessionPreview(file.path);
+				const timestamp = new Date(file.mtime).toLocaleString();
+				sessions.push({ path: file.path, mtime: file.mtime, preview, timestamp });
+			}
+			return sessions;
+		} catch {
+			return [];
+		}
+	}
+
+	/**
+	 * Extract the first user message from a session file for preview.
+	 */
+	private getSessionPreview(filePath: string): string {
+		try {
+			const content = readFileSync(filePath, "utf-8");
+			const lines = content.trim().split("\n");
+			for (const line of lines) {
+				if (!line.trim()) continue;
+				try {
+					const entry = JSON.parse(line);
+					if (entry.type === "message" && entry.message?.role === "user") {
+						const msg = entry.message;
+						let text = "";
+						if (typeof msg.content === "string") {
+							text = msg.content;
+						} else if (Array.isArray(msg.content)) {
+							for (const block of msg.content) {
+								if (block.type === "text" && block.text) {
+									text = block.text;
+									break;
+								}
+							}
+						}
+						// Truncate and clean up for display
+						text = text.replace(/\n/g, " ").trim();
+						if (text.length > 80) {
+							text = `${text.slice(0, 77)}...`;
+						}
+						return text || "(empty message)";
+					}
+				} catch {
+					// Skip malformed lines
+				}
+			}
+			return "(no messages)";
+		} catch {
+			return "(unreadable)";
+		}
+	}
+
+	/**
+	 * Format a relative time string (e.g. "2 hours ago", "3 days ago").
+	 */
+	private formatRelativeTime(mtime: number): string {
+		const now = Date.now();
+		const diffMs = now - mtime;
+		const diffSec = Math.floor(diffMs / 1000);
+		const diffMin = Math.floor(diffSec / 60);
+		const diffHour = Math.floor(diffMin / 60);
+		const diffDay = Math.floor(diffHour / 24);
+
+		if (diffMin < 1) return "just now";
+		if (diffMin < 60) return `${diffMin}m ago`;
+		if (diffHour < 24) return `${diffHour}h ago`;
+		if (diffDay < 30) return `${diffDay}d ago`;
+		return new Date(mtime).toLocaleDateString();
+	}
+
+	/**
+	 * Handle the /resume command: show a list of previous sessions and load the selected one.
+	 */
+	private async handleResume(): Promise<void> {
+		const sessions = this.listAvailableSessions();
+		if (sessions.length === 0) {
+			this.showStatus(chalk.yellow("No previous sessions found."));
+			return;
+		}
+
+		const items: SelectItem[] = sessions.map((s) => ({
+			value: s.path,
+			label: `${chalk.dim(this.formatRelativeTime(s.mtime))} ${s.preview}`,
+		}));
+
+		const selected = await this.showSelectList("Resume session", items);
+		if (!selected) return;
+
+		const session = sessions.find((s) => s.path === selected);
+		if (!session) return;
+
+		try {
+			// Open the selected session
+			const sessionDir = this.options.sessionDir!;
+			const newSessionManager = SessionManagerClass.open(selected, sessionDir);
+
+			// Rebuild agent messages from session context
+			const context = newSessionManager.buildSessionContext();
+			this.agent.setMessages(context.messages);
+
+			// Update session manager reference
+			this.options.sessionManager = newSessionManager;
+
+			// Rebuild the chat UI
+			this.chatContainer.clear();
+			this.rebuildChatFromSession();
+
+			// Update footer tokens
+			this.updateFooterTokens();
+
+			const msgCount = context.messages.length;
+			this.showStatus(chalk.green(`Resumed session (${msgCount} messages)`));
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : String(error);
+			this.showStatus(chalk.red(`Failed to resume session: ${msg}`));
+		}
 	}
 
 	// ========================================================================
