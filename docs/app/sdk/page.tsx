@@ -35,11 +35,12 @@ export default function SdkOverview() {
 			<h3>Constructor</h3>
 			<pre>
 				<code>{`import { CodingAgent } from "edge-pi";
+import { stepCountIs } from "ai";
 
 const agent = new CodingAgent({
   model,              // Required: Vercel AI LanguageModel
   cwd,                // Working directory (default: process.cwd())
-  maxSteps,           // Max steps per loop (default: 10)
+  stopWhen,           // Optional: StopCondition or array (default: run until model stops)
   systemPrompt,       // Override the full system prompt
   systemPromptOptions,// Or configure the prompt builder
   toolSet,            // "coding" | "readonly" | "all" (default: "coding")
@@ -83,15 +84,17 @@ const agent = new CodingAgent({
 					</tr>
 					<tr>
 						<td>
-							<code>maxSteps</code>
+							<code>stopWhen</code>
 						</td>
 						<td>
-							<code>number</code>
+							<code>{`StopCondition | StopCondition[]`}</code>
 						</td>
+						<td>&mdash;</td>
 						<td>
-							<code>10</code>
+							Stop condition(s) for the agent loop. Use helpers like{" "}
+							<code>stepCountIs(n)</code> or <code>hasToolCall(name)</code> from{" "}
+							<code>ai</code>. When omitted, runs until the model stops.
 						</td>
-						<td>Maximum tool steps per execution loop.</td>
 					</tr>
 					<tr>
 						<td>
@@ -325,6 +328,7 @@ import type {
   LanguageModel,
   ModelMessage,
   GenerateTextResult,
+  StopCondition,
   StreamTextResult,
   ThinkingLevel,
   Tool,

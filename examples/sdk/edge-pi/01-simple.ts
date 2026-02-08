@@ -7,6 +7,7 @@
  */
 
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { stepCountIs } from "ai";
 import { CodingAgent } from "edge-pi";
 
 const anthropic = createAnthropic();
@@ -14,7 +15,7 @@ const model = anthropic("claude-sonnet-4-5-20250929");
 
 const agent = new CodingAgent({
 	model,
-	maxSteps: 5,
+	stopWhen: stepCountIs(5),
 	toolSet: "coding",
 });
 

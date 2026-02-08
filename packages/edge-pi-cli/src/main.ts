@@ -256,7 +256,6 @@ export async function main(args: string[]) {
 	const agentConfig: CodingAgentConfig = {
 		model,
 		cwd,
-		maxSteps: parsed.maxSteps ?? 50,
 		toolSet: parsed.toolSet ?? "coding",
 		thinkingLevel: parsed.thinking,
 	};

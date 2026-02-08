@@ -2,37 +2,40 @@
  * CodingAgent - wraps Vercel AI SDK's ToolLoopAgent.
  *
  * Takes a LanguageModel directly (no model factory).
- * Uses streamText/generateText with stepCountIs as the core agent loop.
+ * Uses streamText/generateText as the core agent loop.
+ *
+ * The agent runs without an artificial step limit — it continues
+ * until the model naturally stops (no more tool calls). This matches
+ * the behavior of the coding-agent-sdk, which loops indefinitely
+ * as long as the model wants to make tool calls.
  */
 
-import {
-	type GenerateTextResult,
-	type ModelMessage,
-	type StreamTextResult,
-	stepCountIs,
-	ToolLoopAgent,
-	type ToolSet,
-} from "ai";
+import { type GenerateTextResult, type ModelMessage, type StreamTextResult, ToolLoopAgent, type ToolSet } from "ai";
 import { type BuildSystemPromptOptions, buildSystemPrompt } from "./system-prompt.js";
 import { createAllTools, createCodingTools, createReadOnlyTools } from "./tools/index.js";
 import type { CodingAgentConfig, PromptOptions, PromptResult } from "./types.js";
+
+/**
+ * A stop condition that never triggers, allowing the agent to run
+ * until the model naturally stops making tool calls.
+ */
+function neverStop(_options: { steps: unknown[] }): boolean {
+	return false;
+}
 
 /**
  * CodingAgent wraps ToolLoopAgent and provides a simple interface
  * for running coding tasks with tools.
  */
 export class CodingAgent {
-	private config: Required<Pick<CodingAgentConfig, "model" | "maxSteps">> & CodingAgentConfig;
+	private config: CodingAgentConfig;
 	private _messages: ModelMessage[] = [];
 	private steeringQueue: ModelMessage[] = [];
 	private followUpQueue: ModelMessage[] = [];
 	private abortController: AbortController | null = null;
 
 	constructor(config: CodingAgentConfig) {
-		this.config = {
-			...config,
-			maxSteps: config.maxSteps ?? 10,
-		};
+		this.config = { ...config };
 	}
 
 	/** Current conversation messages */
@@ -139,7 +142,7 @@ export class CodingAgent {
 			model: this.config.model,
 			instructions,
 			tools,
-			stopWhen: stepCountIs(this.config.maxSteps),
+			stopWhen: this.config.stopWhen ?? neverStop,
 			providerOptions: this.getProviderOptions(),
 			prepareStep: ({ steps }) => {
 				// Drain steering queue

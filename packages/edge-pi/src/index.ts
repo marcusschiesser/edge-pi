@@ -63,6 +63,7 @@ export type {
 	PromptOptions,
 	PromptResult,
 	StepResult,
+	StopCondition,
 	StreamTextResult,
 	SystemModelMessage,
 	ThinkingLevel,

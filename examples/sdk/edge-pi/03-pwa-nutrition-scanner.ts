@@ -6,6 +6,7 @@
  */
 
 import { createOpenAI } from "@ai-sdk/openai";
+import { stepCountIs } from "ai";
 import { CodingAgent } from "edge-pi";
 
 const openai = createOpenAI();
@@ -16,7 +17,7 @@ const OUTPUT_DIR = "examples/sdk/pwa-nutrition-scanner";
 
 const agent = new CodingAgent({
 	model,
-	maxSteps: 30,
+	stopWhen: stepCountIs(30),
 	toolSet: "coding",
 });
 

@@ -101,16 +101,6 @@ describe("parseArgs", () => {
 		expect(parseArgs(["--no-skills"]).noSkills).toBe(true);
 	});
 
-	it("should parse --max-steps with valid number", () => {
-		expect(parseArgs(["--max-steps", "100"]).maxSteps).toBe(100);
-	});
-
-	it("should not set maxSteps for invalid values", () => {
-		expect(parseArgs(["--max-steps", "abc"]).maxSteps).toBeUndefined();
-		expect(parseArgs(["--max-steps", "0"]).maxSteps).toBeUndefined();
-		expect(parseArgs(["--max-steps", "-5"]).maxSteps).toBeUndefined();
-	});
-
 	it("should parse --verbose", () => {
 		expect(parseArgs(["--verbose"]).verbose).toBe(true);
 	});

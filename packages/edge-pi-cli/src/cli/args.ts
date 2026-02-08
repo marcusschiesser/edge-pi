@@ -32,7 +32,6 @@ export interface Args {
 	skills?: string[];
 	print?: boolean;
 	verbose?: boolean;
-	maxSteps?: number;
 	messages: string[];
 	fileArgs: string[];
 }
@@ -100,11 +99,6 @@ export function parseArgs(args: string[]): Args {
 			result.skills.push(args[++i]);
 		} else if (arg === "--no-skills") {
 			result.noSkills = true;
-		} else if (arg === "--max-steps" && i + 1 < args.length) {
-			const n = parseInt(args[++i], 10);
-			if (!Number.isNaN(n) && n > 0) {
-				result.maxSteps = n;
-			}
 		} else if (arg === "--verbose") {
 			result.verbose = true;
 		} else if (arg.startsWith("@")) {
@@ -139,7 +133,6 @@ ${chalk.bold("Options:")}
   --thinking <level>             Thinking level: off, minimal, low, medium, high
   --skill <path>                 Load a skill file or directory (repeatable)
   --no-skills                    Disable skill discovery and loading
-  --max-steps <n>                Maximum agent steps per prompt (default: 50)
   --verbose                      Verbose output
   --list-models                  List latest supported models
   --help, -h                     Show this help

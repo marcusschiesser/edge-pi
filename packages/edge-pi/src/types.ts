@@ -4,8 +4,7 @@
  * Re-exports Vercel AI types and defines package-specific types.
  */
 
-// Re-export Vercel AI types consumers need
-export type {
+import type {
 	AssistantModelMessage,
 	FilePart,
 	GenerateTextResult,
@@ -13,6 +12,7 @@ export type {
 	LanguageModelUsage,
 	ModelMessage,
 	StepResult,
+	StopCondition,
 	StreamTextResult,
 	SystemModelMessage,
 	TextPart,
@@ -23,6 +23,28 @@ export type {
 	ToolSet,
 	UserModelMessage,
 } from "ai";
+import type { BuildSystemPromptOptions } from "./system-prompt.js";
+
+// Re-export Vercel AI types consumers need
+export type {
+	AssistantModelMessage,
+	FilePart,
+	GenerateTextResult,
+	LanguageModel,
+	LanguageModelUsage,
+	ModelMessage,
+	StepResult,
+	StopCondition,
+	StreamTextResult,
+	SystemModelMessage,
+	TextPart,
+	Tool,
+	ToolCallPart,
+	ToolModelMessage,
+	ToolResultPart,
+	ToolSet,
+	UserModelMessage,
+};
 export { generateId, tool } from "ai";
 
 /**
@@ -35,19 +57,32 @@ export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high";
  */
 export interface CodingAgentConfig {
 	/** Vercel AI LanguageModel passed directly by consumer */
-	model: import("ai").LanguageModel;
+	model: LanguageModel;
 	/** Working directory. Default: process.cwd() */
 	cwd?: string;
-	/** Maximum steps per agent loop. Default: 10 */
-	maxSteps?: number;
+	/**
+	 * Optional stop condition(s) for the agent loop.
+	 * When provided, the agent stops when any condition returns true.
+	 * When omitted, the agent runs until the model naturally stops making tool calls.
+	 *
+	 * Use the Vercel AI SDK helpers like `stepCountIs()` and `hasToolCall()`,
+	 * or provide a custom `StopCondition<ToolSet>` function.
+	 *
+	 * @example
+	 * ```ts
+	 * import { stepCountIs } from "ai";
+	 * const agent = new CodingAgent({ model, stopWhen: stepCountIs(10) });
+	 * ```
+	 */
+	stopWhen?: StopCondition<ToolSet> | Array<StopCondition<ToolSet>>;
 	/** Override full system prompt */
 	systemPrompt?: string;
 	/** Or configure the system prompt builder */
-	systemPromptOptions?: import("./system-prompt.js").BuildSystemPromptOptions;
+	systemPromptOptions?: BuildSystemPromptOptions;
 	/** Which tool set to use. Default: "coding" */
 	toolSet?: "coding" | "readonly" | "all";
 	/** Extra tools to merge in */
-	extraTools?: import("ai").ToolSet;
+	extraTools?: ToolSet;
 	/** Thinking level for reasoning models */
 	thinkingLevel?: ThinkingLevel;
 }
@@ -59,7 +94,7 @@ export interface PromptOptions {
 	/** Simple text prompt (creates a UserModelMessage) */
 	prompt?: string;
 	/** Or provide full messages */
-	messages?: import("ai").ModelMessage[];
+	messages?: ModelMessage[];
 	/** Abort signal for cancellation */
 	abortSignal?: AbortSignal;
 }
@@ -71,9 +106,9 @@ export interface PromptResult {
 	/** Generated text from the assistant */
 	text: string;
 	/** All messages (input + generated) */
-	messages: import("ai").ModelMessage[];
+	messages: ModelMessage[];
 	/** Total usage across all steps */
-	totalUsage: import("ai").LanguageModelUsage;
+	totalUsage: LanguageModelUsage;
 	/** Number of steps executed */
 	stepCount: number;
 }

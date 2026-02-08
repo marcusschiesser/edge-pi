@@ -16,6 +16,7 @@
  */
 
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { stepCountIs } from "ai";
 import { CodingAgent } from "edge-pi";
 
 // --- Helpers for colored terminal output ---
@@ -40,7 +41,7 @@ const model = anthropic("claude-sonnet-4-5-20250929");
 
 const agent = new CodingAgent({
 	model,
-	maxSteps: 10,
+	stopWhen: stepCountIs(10),
 	toolSet: "all",
 });
 
