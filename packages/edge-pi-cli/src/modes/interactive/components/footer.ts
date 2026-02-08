@@ -1,18 +1,36 @@
 /**
- * Footer component showing provider/model info, cwd, and status.
+ * Footer component showing provider/model info, cwd, token stats, and status.
  * Mirrors the UX from @mariozechner/pi-coding-agent's FooterComponent.
  */
 
 import { type Component, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
 import chalk from "chalk";
 
+function formatTokens(n: number): string {
+	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+	return String(n);
+}
+
 export class FooterComponent implements Component {
 	private provider: string;
 	private modelId: string;
+	private contextTokens = 0;
+	private contextWindow = 0;
+	private autoCompaction = false;
 
 	constructor(provider: string, modelId: string) {
 		this.provider = provider;
 		this.modelId = modelId;
+	}
+
+	setTokenInfo(contextTokens: number, contextWindow: number): void {
+		this.contextTokens = contextTokens;
+		this.contextWindow = contextWindow;
+	}
+
+	setAutoCompaction(enabled: boolean): void {
+		this.autoCompaction = enabled;
 	}
 
 	invalidate(): void {
@@ -39,8 +57,19 @@ export class FooterComponent implements Component {
 			}
 		}
 
-		// Model info on the right
-		const rightSide = `${this.provider}/${this.modelId}`;
+		// Build right side: token info + model
+		const modelLabel = `${this.provider}/${this.modelId}`;
+		const rightParts: string[] = [];
+
+		if (this.contextWindow > 0) {
+			const pct = Math.round((this.contextTokens / this.contextWindow) * 100);
+			const autoIndicator = this.autoCompaction ? "*" : "";
+			rightParts.push(`${pct}%/${formatTokens(this.contextWindow)}${autoIndicator}`);
+		}
+
+		rightParts.push(modelLabel);
+		const rightSide = rightParts.join("  ");
+
 		const pwdWidth = visibleWidth(pwd);
 		const rightWidth = visibleWidth(rightSide);
 		const minPadding = 2;

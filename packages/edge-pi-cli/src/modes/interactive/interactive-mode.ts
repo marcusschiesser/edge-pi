@@ -6,8 +6,9 @@
  * - Editor component for input with submit/escape handling
  * - Markdown rendering for assistant responses
  * - Tool execution components with collapsible output
- * - Footer with model/provider info
+ * - Footer with model/provider info and token stats
  * - Container-based layout (header → chat → pending → editor → footer)
+ * - Context compaction (manual /compact + auto mode)
  */
 
 import {
@@ -27,16 +28,29 @@ import {
 } from "@mariozechner/pi-tui";
 import chalk from "chalk";
 import type { CodingAgent, ModelMessage, SessionManager } from "edge-pi";
+import {
+	type CompactionResult,
+	type CompactionSettings,
+	compact,
+	DEFAULT_COMPACTION_SETTINGS,
+	estimateContextTokens,
+	prepareCompaction,
+	shouldCompact,
+} from "edge-pi";
 import type { AuthStorage } from "../../auth/auth-storage.js";
 import type { ContextFile } from "../../context.js";
 import type { PromptTemplate } from "../../prompts.js";
 import { expandPromptTemplate } from "../../prompts.js";
 import type { Skill } from "../../skills.js";
 import { AssistantMessageComponent } from "./components/assistant-message.js";
+import { CompactionSummaryComponent } from "./components/compaction-summary.js";
 import { FooterComponent } from "./components/footer.js";
 import { ToolExecutionComponent } from "./components/tool-execution.js";
 import { UserMessageComponent } from "./components/user-message.js";
 import { getEditorTheme, getMarkdownTheme, getSelectListTheme } from "./theme.js";
+
+/** Default context window size (used when model doesn't report one). */
+const DEFAULT_CONTEXT_WINDOW = 200_000;
 
 export interface InteractiveModeOptions {
 	initialMessage?: string;
@@ -53,6 +67,8 @@ export interface InteractiveModeOptions {
 	fdPath?: string;
 	/** Called when the user switches model via Ctrl+L. Returns a new agent for the new model. */
 	onModelChange?: (provider: string, modelId: string) => Promise<CodingAgent>;
+	/** Context window size for the model. Defaults to 200k. */
+	contextWindow?: number;
 }
 
 /**
@@ -98,15 +114,25 @@ class InteractiveMode {
 	// Callback for resolving user input promise
 	private onInputCallback?: (text: string) => void;
 
+	// Compaction state
+	private contextWindow: number;
+	private compactionSettings: CompactionSettings;
+	private autoCompaction = true;
+	private isCompacting = false;
+	private compactionAbortController: AbortController | null = null;
+
 	constructor(agent: CodingAgent, options: InteractiveModeOptions) {
 		this.agent = agent;
 		this.options = options;
 		this.currentProvider = options.provider;
 		this.currentModelId = options.modelId;
+		this.contextWindow = options.contextWindow ?? DEFAULT_CONTEXT_WINDOW;
+		this.compactionSettings = { ...DEFAULT_COMPACTION_SETTINGS };
 	}
 
 	async run(): Promise<void> {
 		this.initUI();
+		this.updateFooterTokens();
 
 		// Process initial messages
 		const { initialMessage, initialMessages = [] } = this.options;
@@ -176,6 +202,7 @@ class InteractiveMode {
 
 		// Footer
 		this.footer = new FooterComponent(this.currentProvider, this.currentModelId);
+		this.footer.setAutoCompaction(this.autoCompaction);
 
 		// Assemble layout
 		this.ui.addChild(this.headerContainer);
@@ -209,8 +236,12 @@ class InteractiveMode {
 
 		const origHandleInput = this.editor.handleInput.bind(this.editor);
 		this.editor.handleInput = (data: string) => {
-			// Escape: abort if agent is running
+			// Escape: abort if agent is running or compacting
 			if (matchesKey(data, Key.escape)) {
+				if (this.isCompacting && this.compactionAbortController) {
+					this.compactionAbortController.abort();
+					return;
+				}
 				if (this.loadingAnimation) {
 					this.agent.abort();
 					this.stopLoading();
@@ -293,6 +324,17 @@ class InteractiveMode {
 			return;
 		}
 
+		if (input === "/compact" || input.startsWith("/compact ")) {
+			const customInstructions = input.startsWith("/compact ") ? input.slice(9).trim() : undefined;
+			await this.handleCompactCommand(customInstructions);
+			return;
+		}
+
+		if (input === "/auto-compact") {
+			this.toggleAutoCompaction();
+			return;
+		}
+
 		if (input.startsWith("/skill:")) {
 			const skillName = input.slice("/skill:".length).trim();
 			await this.handleSkillInvocation(skillName);
@@ -318,6 +360,8 @@ class InteractiveMode {
 
 		const commands: SlashCommand[] = [
 			{ name: "help", description: "Show available commands" },
+			{ name: "compact", description: "Manually compact the session context" },
+			{ name: "auto-compact", description: "Toggle automatic context compaction" },
 			{ name: "login", description: "Login to an OAuth provider" },
 			{ name: "logout", description: "Logout from an OAuth provider" },
 			{ name: "skills", description: "List loaded skills" },
@@ -393,11 +437,7 @@ class InteractiveMode {
 
 			this.currentProvider = newProvider;
 			this.currentModelId = newModelId;
-			this.footer = new FooterComponent(this.currentProvider, this.currentModelId);
-
-			// Replace footer in UI
-			const children = this.ui.children;
-			children[children.length - 1] = this.footer;
+			this.updateFooter();
 
 			this.showStatus(chalk.green(`Switched to ${newProvider}/${newModelId}`));
 		} catch (error) {
@@ -499,6 +539,12 @@ class InteractiveMode {
 					sessionManager.appendMessage(msg);
 				}
 			}
+
+			// Update footer token stats
+			this.updateFooterTokens();
+
+			// Check for auto-compaction after successful response
+			await this.checkAutoCompaction();
 		} catch (error) {
 			this.stopLoading();
 
@@ -559,20 +605,306 @@ class InteractiveMode {
 	private toggleToolExpansion(): void {
 		this.toolOutputExpanded = !this.toolOutputExpanded;
 
-		// Update all tool components in the chat
-		this.applyToAllToolComponents((comp) => {
-			comp.setExpanded(this.toolOutputExpanded);
-		});
+		// Update all tool components and compaction components in the chat
+		for (const child of this.chatContainer.children) {
+			if (child instanceof ToolExecutionComponent) {
+				child.setExpanded(this.toolOutputExpanded);
+			} else if (child instanceof CompactionSummaryComponent) {
+				child.setExpanded(this.toolOutputExpanded);
+			}
+		}
 
 		this.ui.requestRender();
 	}
 
-	private applyToAllToolComponents(fn: (comp: ToolExecutionComponent) => void): void {
-		for (const child of this.chatContainer.children) {
-			if (child instanceof ToolExecutionComponent) {
-				fn(child);
-			}
+	// ========================================================================
+	// Compaction
+	// ========================================================================
+
+	/**
+	 * Handle the /compact command.
+	 */
+	private async handleCompactCommand(_customInstructions?: string): Promise<void> {
+		const messages = this.agent.messages;
+		if (messages.length < 2) {
+			this.showStatus(chalk.yellow("Nothing to compact (not enough messages)."));
+			return;
 		}
+
+		await this.executeCompaction(false);
+	}
+
+	/**
+	 * Toggle auto-compaction on/off.
+	 */
+	private toggleAutoCompaction(): void {
+		this.autoCompaction = !this.autoCompaction;
+		this.footer.setAutoCompaction(this.autoCompaction);
+		this.showStatus(
+			this.autoCompaction ? chalk.green("Auto-compaction enabled") : chalk.dim("Auto-compaction disabled"),
+		);
+		this.ui.requestRender();
+	}
+
+	/**
+	 * Check if auto-compaction should trigger after an agent response.
+	 */
+	private async checkAutoCompaction(): Promise<void> {
+		if (!this.autoCompaction) return;
+
+		const contextTokens = estimateContextTokens([...this.agent.messages]);
+		if (!shouldCompact(contextTokens, this.contextWindow, this.compactionSettings)) return;
+
+		await this.executeCompaction(true);
+	}
+
+	/**
+	 * Execute compaction (used by both manual /compact and auto mode).
+	 */
+	private async executeCompaction(isAuto: boolean): Promise<CompactionResult | undefined> {
+		if (this.isCompacting) return undefined;
+
+		const { sessionManager } = this.options;
+
+		// Build path entries from session if available, otherwise from agent messages
+		const pathEntries = sessionManager ? sessionManager.getBranch() : this.buildSessionEntriesFromMessages();
+
+		if (pathEntries.length < 2) {
+			if (!isAuto) {
+				this.showStatus(chalk.yellow("Nothing to compact (not enough messages)."));
+			}
+			return undefined;
+		}
+
+		// Prepare compaction
+		const preparation = prepareCompaction(pathEntries, this.compactionSettings);
+		if (!preparation) {
+			if (!isAuto) {
+				this.showStatus(chalk.yellow("Nothing to compact (already compacted or insufficient history)."));
+			}
+			return undefined;
+		}
+
+		if (preparation.messagesToSummarize.length === 0) {
+			if (!isAuto) {
+				this.showStatus(chalk.yellow("Nothing to compact (no messages to summarize)."));
+			}
+			return undefined;
+		}
+
+		this.isCompacting = true;
+		this.compactionAbortController = new AbortController();
+
+		// Show compaction indicator
+		const label = isAuto
+			? "Auto-compacting context... (Escape to cancel)"
+			: "Compacting context... (Escape to cancel)";
+		const compactingLoader = new Loader(
+			this.ui,
+			(s: string) => chalk.cyan(s),
+			(s: string) => chalk.dim(s),
+			label,
+		);
+		compactingLoader.start();
+		this.pendingContainer.clear();
+		this.pendingContainer.addChild(new Spacer(1));
+		this.pendingContainer.addChild(compactingLoader);
+		this.ui.requestRender();
+
+		let result: CompactionResult | undefined;
+
+		try {
+			// We need a LanguageModel for summarization. Use the agent's model
+			// by extracting it from the config. The model is accessible through
+			// the onModelChange callback pattern, but for simplicity we create
+			// a model via the same factory used at startup.
+			const { model } = await this.getCompactionModel();
+
+			result = await compact(preparation, model, this.compactionAbortController.signal);
+
+			// Record compaction in session
+			if (sessionManager) {
+				sessionManager.appendCompaction(
+					result.summary,
+					result.firstKeptEntryId,
+					result.tokensBefore,
+					result.details,
+				);
+			}
+
+			// Rebuild agent messages from the session context
+			if (sessionManager) {
+				const context = sessionManager.buildSessionContext();
+				this.agent.setMessages(context.messages);
+			}
+
+			// Rebuild the chat UI
+			this.rebuildChatFromSession();
+
+			// Add compaction summary component so user sees it
+			const summaryComponent = new CompactionSummaryComponent(result.tokensBefore, result.summary);
+			if (this.toolOutputExpanded) {
+				summaryComponent.setExpanded(true);
+			}
+			this.chatContainer.addChild(summaryComponent);
+
+			// Update footer tokens
+			this.updateFooterTokens();
+
+			if (this.options.verbose) {
+				const tokensAfter = estimateContextTokens([...this.agent.messages]);
+				this.showStatus(
+					chalk.dim(
+						`Compacted: ${result.tokensBefore.toLocaleString()} -> ${tokensAfter.toLocaleString()} tokens`,
+					),
+				);
+			}
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			if (
+				this.compactionAbortController.signal.aborted ||
+				message === "Compaction cancelled" ||
+				(error instanceof Error && error.name === "AbortError")
+			) {
+				this.showStatus(chalk.dim("Compaction cancelled."));
+			} else {
+				this.showStatus(chalk.red(`Compaction failed: ${message}`));
+			}
+		} finally {
+			compactingLoader.stop();
+			this.pendingContainer.clear();
+			this.isCompacting = false;
+			this.compactionAbortController = null;
+			this.ui.requestRender();
+		}
+
+		return result;
+	}
+
+	/**
+	 * Get the language model for compaction summarization.
+	 * Uses the same model creation path as the main agent.
+	 */
+	private async getCompactionModel(): Promise<{ model: import("ai").LanguageModel }> {
+		const { createModel } = await import("../../model-factory.js");
+		return createModel({
+			provider: this.currentProvider,
+			model: this.currentModelId,
+			authStorage: this.options.authStorage,
+		});
+	}
+
+	/**
+	 * Build session entries from agent messages (when no session manager).
+	 * Creates synthetic SessionEntry objects for the compaction algorithm.
+	 */
+	private buildSessionEntriesFromMessages(): import("edge-pi").SessionEntry[] {
+		const messages = this.agent.messages;
+		const entries: import("edge-pi").SessionEntry[] = [];
+		let parentId: string | null = null;
+
+		for (let i = 0; i < messages.length; i++) {
+			const id = `msg-${i}`;
+			entries.push({
+				type: "message",
+				id,
+				parentId,
+				timestamp: new Date().toISOString(),
+				message: messages[i],
+			});
+			parentId = id;
+		}
+
+		return entries;
+	}
+
+	/**
+	 * Rebuild the chat UI from session context after compaction.
+	 */
+	private rebuildChatFromSession(): void {
+		this.chatContainer.clear();
+
+		const messages = this.agent.messages;
+		for (const msg of messages) {
+			if (msg.role === "user") {
+				// Check if this is a compaction summary
+				const content = msg.content;
+				if (Array.isArray(content) && content.length > 0) {
+					const textBlock = content[0] as { type: string; text?: string };
+					if (textBlock.type === "text" && textBlock.text?.startsWith('<summary type="compaction"')) {
+						// Skip compaction summaries in rebuild (they are injected by buildSessionContext)
+						continue;
+					}
+					if (textBlock.type === "text" && textBlock.text?.startsWith('<summary type="branch"')) {
+						continue;
+					}
+				}
+				const text = extractTextFromMessage(msg);
+				if (text) {
+					this.chatContainer.addChild(new UserMessageComponent(text, getMarkdownTheme()));
+				}
+			} else if (msg.role === "assistant") {
+				const assistantMsg = msg as import("edge-pi").AssistantModelMessage;
+				const textParts: string[] = [];
+				for (const block of assistantMsg.content) {
+					const b = block as {
+						type: string;
+						text?: string;
+						toolName?: string;
+						input?: unknown;
+						toolCallId?: string;
+					};
+					if (b.type === "text" && b.text) {
+						textParts.push(b.text);
+					} else if (b.type === "tool-call" && b.toolName) {
+						const args =
+							typeof b.input === "object" && b.input !== null ? (b.input as Record<string, unknown>) : {};
+						const toolComp = new ToolExecutionComponent(b.toolName, args);
+						if (this.toolOutputExpanded) {
+							toolComp.setExpanded(true);
+						}
+						// Mark as completed (we don't have the result here, just show collapsed)
+						toolComp.updateResult("(from history)", false, false);
+						this.chatContainer.addChild(toolComp);
+					}
+				}
+				if (textParts.length > 0) {
+					const comp = new AssistantMessageComponent(getMarkdownTheme());
+					comp.updateText(textParts.join(""));
+					this.chatContainer.addChild(comp);
+				}
+			}
+			// Skip tool messages in UI rebuild - they are consumed by tool-call components
+		}
+
+		this.ui.requestRender();
+	}
+
+	// ========================================================================
+	// Footer Token Tracking
+	// ========================================================================
+
+	/**
+	 * Update the footer with current token count information.
+	 */
+	private updateFooterTokens(): void {
+		const contextTokens = estimateContextTokens([...this.agent.messages]);
+		this.footer.setTokenInfo(contextTokens, this.contextWindow);
+		this.footer.setAutoCompaction(this.autoCompaction);
+		this.ui?.requestRender();
+	}
+
+	/**
+	 * Replace the footer component and update token info.
+	 */
+	private updateFooter(): void {
+		this.footer = new FooterComponent(this.currentProvider, this.currentModelId);
+		this.updateFooterTokens();
+
+		// Replace footer in UI
+		const children = this.ui.children;
+		children[children.length - 1] = this.footer;
+		this.ui.requestRender();
 	}
 
 	// ========================================================================
@@ -621,6 +953,8 @@ class InteractiveMode {
 	private showHelp(): void {
 		const helpText = [
 			chalk.bold("Commands:"),
+			"  /compact [text]     Compact the session context (optional instructions)",
+			"  /auto-compact       Toggle automatic context compaction",
 			"  /model              Switch model (Ctrl+L)",
 			"  /login              Login to an OAuth provider",
 			"  /logout             Logout from an OAuth provider",
@@ -849,4 +1183,18 @@ class InteractiveMode {
 
 function buildUserMessage(text: string): ModelMessage[] {
 	return [{ role: "user" as const, content: [{ type: "text" as const, text }] }];
+}
+
+function extractTextFromMessage(msg: ModelMessage): string {
+	if (msg.role === "user") {
+		const content = (msg as import("edge-pi").UserModelMessage).content;
+		if (typeof content === "string") return content;
+		if (Array.isArray(content)) {
+			return content
+				.filter((c): c is { type: "text"; text: string } => (c as { type: string }).type === "text")
+				.map((c) => c.text)
+				.join("");
+		}
+	}
+	return "";
 }
