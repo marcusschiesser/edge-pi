@@ -563,7 +563,11 @@ class InteractiveMode {
 					}
 
 					case "error": {
-						const errorMessage = (part.error as any)?.message || String(part.error);
+						const errorMessage =
+							(part.error as any)?.message ??
+							(typeof part.error === "object" && part.error !== null
+								? JSON.stringify(part.error)
+								: String(part.error));
 						if (this.streamingComponent) {
 							this.streamingComponent.setError(errorMessage);
 						} else {
@@ -613,7 +617,12 @@ class InteractiveMode {
 					this.showStatus(chalk.dim("[aborted]"));
 				}
 			} else {
-				const msg = (error as Error).message;
+				const msg =
+					error instanceof Error
+						? error.message
+						: typeof error === "object" && error !== null
+							? JSON.stringify(error)
+							: String(error);
 				if (this.streamingComponent) {
 					this.streamingComponent.setError(msg);
 				} else {

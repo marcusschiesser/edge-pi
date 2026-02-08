@@ -22,9 +22,8 @@ async function createAnthropicModelWithOAuth(modelId: string, apiKey: string): P
 
 	if (isAnthropicOAuthToken(apiKey)) {
 		const provider = createAnthropic({
-			apiKey: undefined as unknown as string,
+			authToken: apiKey,
 			headers: {
-				Authorization: `Bearer ${apiKey}`,
 				"anthropic-beta": "claude-code-20250219,oauth-2025-04-20",
 				"user-agent": "epi/0.1.0 (external, cli)",
 			},
@@ -110,9 +109,9 @@ export function listProviders(): string[] {
  */
 export function getLatestModels(): Record<string, string[]> {
 	return {
-		anthropic: ["claude-opus-4-6", "claude-opus-4-6-20260115", "claude-sonnet-4-5", "claude-haiku-4-5"],
-		openai: ["gpt-5.3", "gpt-5.3-chat-latest", "gpt-5.3-codex", "gpt-5.3-pro"],
-		google: ["gemini-3-flash", "gemini-3-pro", "gemini-3-flash-preview", "gemini-3-pro-preview"],
+		anthropic: ["claude-opus-4-6", "claude-sonnet-4-5", "claude-haiku-4-5"],
+		openai: ["gpt-5.2-codex", "gpt-5.3-codex"],
+		google: ["gemini-3-flash-preview", "gemini-3-pro-preview"],
 	};
 }
 
