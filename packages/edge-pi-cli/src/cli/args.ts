@@ -165,14 +165,16 @@ ${chalk.bold("Examples:")}
   epi --provider anthropic --model claude-opus-4-6
   epi --provider openai --model gpt-5.3
   epi --provider google --model gemini-3-flash
+  epi --provider github-copilot --model claude-sonnet-4.5
 
   # Read-only tools
   epi --tools readonly -p "Review the code in src/"
 
 ${chalk.bold("Environment Variables:")}
-  ANTHROPIC_API_KEY    Anthropic Claude API key
-  OPENAI_API_KEY       OpenAI GPT API key
-  GEMINI_API_KEY       Google Gemini API key
+  ANTHROPIC_API_KEY       Anthropic Claude API key
+  OPENAI_API_KEY          OpenAI GPT API key
+  GEMINI_API_KEY          Google Gemini API key
+  COPILOT_GITHUB_TOKEN    GitHub Copilot token (or GH_TOKEN / GITHUB_TOKEN)
 
 ${chalk.bold("Tool Sets:")}
   coding    read, bash, edit, write (default)
@@ -199,7 +201,8 @@ export function printModels(): void {
 
 ${chalk.bold("Examples:")}
   epi --provider anthropic --model claude-opus-4-6 "Hello"
-  epi --provider openai --model gpt-5.3 "Hello" 
+  epi --provider openai --model gpt-5.3 "Hello"
   epi --provider google --model gemini-3-flash "Hello"
+  epi --provider github-copilot --model claude-sonnet-4.5 "Hello"
 `);
 }

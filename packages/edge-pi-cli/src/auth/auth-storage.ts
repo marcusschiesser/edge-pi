@@ -25,6 +25,10 @@ function getEnvApiKey(provider: string): string | undefined {
 	if (provider === "anthropic") {
 		return process.env.ANTHROPIC_OAUTH_TOKEN || process.env.ANTHROPIC_API_KEY;
 	}
+	// GitHub Copilot: check multiple env vars
+	if (provider === "github-copilot") {
+		return process.env.COPILOT_GITHUB_TOKEN || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+	}
 	const envVar = ENV_KEY_MAP[provider];
 	return envVar ? process.env[envVar] : undefined;
 }

@@ -18,10 +18,15 @@ export class FooterComponent implements Component {
 	private contextTokens = 0;
 	private contextWindow = 0;
 	private autoCompaction = false;
+	private isSubscription = false;
 
 	constructor(provider: string, modelId: string) {
 		this.provider = provider;
 		this.modelId = modelId;
+	}
+
+	setSubscription(isSubscription: boolean): void {
+		this.isSubscription = isSubscription;
 	}
 
 	setTokenInfo(contextTokens: number, contextWindow: number): void {
@@ -58,7 +63,8 @@ export class FooterComponent implements Component {
 		}
 
 		// Build right side: token info + model
-		const modelLabel = `${this.provider}/${this.modelId}`;
+		const subIndicator = this.isSubscription ? " (sub)" : "";
+		const modelLabel = `${this.provider}/${this.modelId}${subIndicator}`;
 		const rightParts: string[] = [];
 
 		if (this.contextWindow > 0) {

@@ -224,6 +224,7 @@ class InteractiveMode {
 		// Footer
 		this.footer = new FooterComponent(this.currentProvider, this.currentModelId);
 		this.footer.setAutoCompaction(this.autoCompaction);
+		this.footer.setSubscription(this.isSubscriptionProvider());
 
 		// Assemble layout
 		this.ui.addChild(this.headerContainer);
@@ -981,10 +982,21 @@ class InteractiveMode {
 	}
 
 	/**
+	 * Check if the current provider is using an OAuth subscription credential.
+	 */
+	private isSubscriptionProvider(): boolean {
+		const { authStorage } = this.options;
+		if (!authStorage) return false;
+		const cred = authStorage.get(this.currentProvider);
+		return cred?.type === "oauth";
+	}
+
+	/**
 	 * Replace the footer component and update token info.
 	 */
 	private updateFooter(): void {
 		this.footer = new FooterComponent(this.currentProvider, this.currentModelId);
+		this.footer.setSubscription(this.isSubscriptionProvider());
 		this.updateFooterTokens();
 
 		// Replace footer in UI
@@ -1161,6 +1173,8 @@ class InteractiveMode {
 				},
 			});
 
+			this.footer.setSubscription(this.isSubscriptionProvider());
+			this.ui.requestRender();
 			this.showStatus(chalk.green(`Logged in to ${provider.name}. Credentials saved.`));
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
