@@ -47,8 +47,11 @@ import { getLatestModels } from "../../model-factory.js";
 import type { PromptTemplate } from "../../prompts.js";
 import { expandPromptTemplate } from "../../prompts.js";
 import type { Skill } from "../../skills.js";
+import { executeBashCommand } from "../../utils/bash-executor.js";
 import { type ClipboardImage, extensionForImageMimeType, readClipboardImage } from "../../utils/clipboard-image.js";
+import { formatPendingMessages, parseBashInput } from "./bash-helpers.js";
 import { AssistantMessageComponent } from "./components/assistant-message.js";
+import { BashExecutionComponent } from "./components/bash-execution.js";
 import { CompactionSummaryComponent } from "./components/compaction-summary.js";
 import { FooterComponent } from "./components/footer.js";
 import { ToolExecutionComponent } from "./components/tool-execution.js";
@@ -105,8 +108,21 @@ class InteractiveMode {
 	private headerContainer!: Container;
 	private chatContainer!: Container;
 	private pendingContainer!: Container;
+	private pendingMessagesContainer!: Container;
 	private editorContainer!: Container;
 	private editor!: Editor;
+	private editorTheme!: import("@mariozechner/pi-tui").EditorTheme;
+
+	// Message queues
+	private steeringMessages: string[] = [];
+	private followUpMessages: string[] = [];
+	private isStreaming = false;
+
+	// Inline bash state
+	private isBashMode = false;
+	private isBashRunning = false;
+	private bashAbortController: AbortController | null = null;
+	private bashComponent: import("./components/bash-execution.js").BashExecutionComponent | undefined = undefined;
 	private footer!: FooterComponent;
 
 	// Loading animation during agent processing
@@ -189,6 +205,8 @@ class InteractiveMode {
 
 		const hints = [
 			`${chalk.dim("Escape")} to abort`,
+			`${chalk.dim("!")} inline bash`,
+			`${chalk.dim("Alt+Enter")} follow-up while streaming`,
 			`${chalk.dim("Ctrl+C")} to exit`,
 			`${chalk.dim("Ctrl+E")} to expand tools`,
 			`${chalk.dim("Ctrl+L")} to switch model`,
@@ -215,8 +233,12 @@ class InteractiveMode {
 		// Pending messages (loading animations, status)
 		this.pendingContainer = new Container();
 
+		// Pending steering/follow-up messages
+		this.pendingMessagesContainer = new Container();
+
 		// Editor with slash command autocomplete
-		this.editor = new Editor(this.ui, getEditorTheme());
+		this.editorTheme = getEditorTheme();
+		this.editor = new Editor(this.ui, this.editorTheme);
 		this.editor.setAutocompleteProvider(this.buildAutocompleteProvider());
 		this.editorContainer = new Container();
 		this.editorContainer.addChild(this.editor);
@@ -229,6 +251,7 @@ class InteractiveMode {
 		// Assemble layout
 		this.ui.addChild(this.headerContainer);
 		this.ui.addChild(this.chatContainer);
+		this.ui.addChild(this.pendingMessagesContainer);
 		this.ui.addChild(this.pendingContainer);
 		this.ui.addChild(this.editorContainer);
 		this.ui.addChild(this.footer);
@@ -244,9 +267,25 @@ class InteractiveMode {
 	// ========================================================================
 
 	private setupKeyHandlers(): void {
+		this.editor.onChange = (text: string) => {
+			const wasBashMode = this.isBashMode;
+			this.isBashMode = text.trimStart().startsWith("!");
+			if (wasBashMode !== this.isBashMode) {
+				this.updateEditorBorderColor();
+			}
+		};
 		this.editor.onSubmit = (text: string) => {
 			text = text.trim();
 			if (!text) return;
+
+			// If agent is streaming, Enter becomes a steering message
+			if (this.isStreaming) {
+				this.agent.steer({ role: "user", content: [{ type: "text", text }] });
+				this.steeringMessages.push(text);
+				this.editor.setText("");
+				this.updatePendingMessagesDisplay();
+				return;
+			}
 
 			this.editor.addToHistory(text);
 			this.editor.setText("");
@@ -260,6 +299,10 @@ class InteractiveMode {
 		this.editor.handleInput = (data: string) => {
 			// Escape: abort if agent is running or compacting
 			if (matchesKey(data, Key.escape)) {
+				if (this.isBashRunning && this.bashAbortController) {
+					this.bashAbortController.abort();
+					return;
+				}
 				if (this.isCompacting && this.compactionAbortController) {
 					this.compactionAbortController.abort();
 					return;
@@ -300,6 +343,34 @@ class InteractiveMode {
 			// Ctrl+V: paste image from clipboard
 			if (matchesKey(data, Key.ctrl("v"))) {
 				this.handleClipboardImagePaste();
+				return;
+			}
+
+			// Alt+Enter (Option+Enter on Mac): follow-up while streaming (or submit normally when idle)
+			if (matchesKey(data, Key.alt("enter"))) {
+				const text = this.editor.getText().trim();
+				if (!text) return;
+
+				if (this.isStreaming) {
+					this.agent.followUp({ role: "user", content: [{ type: "text", text }] });
+					this.followUpMessages.push(text);
+					this.editor.setText("");
+					this.updatePendingMessagesDisplay();
+					return;
+				}
+
+				// Not streaming: treat like regular submit
+				this.editor.onSubmit?.(text);
+				return;
+			}
+
+			// Alt+Up (Option+Up on Mac): dequeue all queued messages back into the editor
+			if (matchesKey(data, Key.alt("up"))) {
+				const restored = this.clearAllQueues();
+				if (restored.length > 0) {
+					this.editor.setText(restored.join("\n\n"));
+					this.updatePendingMessagesDisplay();
+				}
 				return;
 			}
 
@@ -374,6 +445,19 @@ class InteractiveMode {
 			return;
 		}
 
+		// Handle bash commands (! for normal, !! for excluded from context)
+		const bashParsed = parseBashInput(input);
+		if (bashParsed) {
+			if (this.isBashRunning) {
+				this.showStatus(chalk.yellow("A bash command is already running. Press Escape to cancel it first."));
+				return;
+			}
+			await this.handleBashCommand(bashParsed.command, bashParsed.excludeFromContext);
+			this.isBashMode = false;
+			this.updateEditorBorderColor();
+			return;
+		}
+
 		// Try expanding prompt templates
 		const { prompts = [] } = this.options;
 		const expanded = expandPromptTemplate(input, prompts);
@@ -387,6 +471,44 @@ class InteractiveMode {
 		this.chatContainer.addChild(new UserMessageComponent(`${expanded}${imageLabel}`, getMarkdownTheme()));
 		this.ui.requestRender();
 		await this.streamPrompt(expanded, images);
+	}
+
+	private async handleBashCommand(command: string, excludeFromContext: boolean): Promise<void> {
+		const { sessionManager } = this.options;
+
+		this.bashAbortController = new AbortController();
+		this.isBashRunning = true;
+
+		this.bashComponent = new BashExecutionComponent(command, this.ui, excludeFromContext);
+		if (this.toolOutputExpanded) {
+			this.bashComponent.setExpanded(true);
+		}
+		this.chatContainer.addChild(this.bashComponent);
+		this.ui.requestRender();
+
+		try {
+			const result = await executeBashCommand(command, {
+				signal: this.bashAbortController.signal,
+				onChunk: (chunk) => {
+					this.bashComponent?.appendOutput(chunk);
+					this.ui.requestRender();
+				},
+			});
+
+			this.bashComponent.setComplete(result.exitCode, result.cancelled, result.truncated, result.fullOutputPath);
+			this.ui.requestRender();
+
+			if (!excludeFromContext) {
+				const msgText = `Ran \`${command}\`\n\n\`\`\`\n${result.output.trimEnd()}\n\`\`\``;
+				const userMsg: ModelMessage = { role: "user", content: [{ type: "text", text: msgText }] };
+				this.agent.setMessages([...this.agent.messages, userMsg]);
+				sessionManager?.appendMessage(userMsg);
+			}
+		} finally {
+			this.isBashRunning = false;
+			this.bashAbortController = null;
+			this.bashComponent = undefined;
+		}
 	}
 
 	// ========================================================================
@@ -487,6 +609,8 @@ class InteractiveMode {
 	// ========================================================================
 
 	private async streamPrompt(prompt: string, images?: ClipboardImage[]): Promise<void> {
+		this.isStreaming = true;
+		this.updatePendingMessagesDisplay();
 		const { sessionManager } = this.options;
 		const messagesBefore = this.agent.messages.length;
 
@@ -505,6 +629,7 @@ class InteractiveMode {
 		this.hadToolResults = false;
 
 		let errorDisplayed = false;
+		let streamFailed = false;
 		try {
 			const result =
 				imageParts.length > 0
@@ -609,8 +734,12 @@ class InteractiveMode {
 			// Check for auto-compaction after successful response
 			await this.checkAutoCompaction();
 		} catch (error) {
-			if (errorDisplayed) return;
+			if (errorDisplayed) {
+				streamFailed = true;
+				return;
+			}
 
+			streamFailed = true;
 			if ((error as Error).name === "AbortError") {
 				if (this.streamingComponent) {
 					this.streamingComponent.setAborted();
@@ -636,8 +765,59 @@ class InteractiveMode {
 			this.streamingText = "";
 			this.hadToolResults = false;
 			this.pendingTools.clear();
+			this.isStreaming = false;
+			this.steeringMessages = [];
+			if (streamFailed) {
+				this.followUpMessages = [];
+			}
+			this.updatePendingMessagesDisplay();
 			this.ui.requestRender();
 		}
+
+		// Process queued follow-ups (skipped if stream failed/aborted)
+		while (this.followUpMessages.length > 0) {
+			const next = this.followUpMessages.shift();
+			if (!next) break;
+
+			this.updatePendingMessagesDisplay();
+
+			this.chatContainer.addChild(new UserMessageComponent(next, getMarkdownTheme()));
+			this.ui.requestRender();
+			await this.streamPrompt(next);
+		}
+	}
+
+	private updatePendingMessagesDisplay(): void {
+		this.pendingMessagesContainer.clear();
+
+		// If no agent is running, clear pending messages (they've been consumed)
+		if (!this.isStreaming && this.followUpMessages.length === 0 && this.steeringMessages.length === 0) {
+			this.ui.requestRender();
+			return;
+		}
+
+		const lines = formatPendingMessages(this.steeringMessages, this.followUpMessages);
+
+		if (lines.length === 0) {
+			this.ui.requestRender();
+			return;
+		}
+
+		this.pendingMessagesContainer.addChild(new Spacer(1));
+		this.pendingMessagesContainer.addChild(new Text(lines.map((l) => chalk.dim(l)).join("\n"), 1, 0));
+		this.pendingMessagesContainer.addChild(new Text(chalk.dim("↳ Alt+Up to edit queued messages"), 1, 0));
+		this.pendingMessagesContainer.addChild(new Spacer(1));
+		this.ui.requestRender();
+	}
+
+	private clearAllQueues(): string[] {
+		const restored = [...this.steeringMessages, ...this.followUpMessages];
+		this.steeringMessages = [];
+		this.followUpMessages = [];
+		// Force agent to drop its internal queue too if possible, but edge-pi agent doesn't expose that yet.
+		// However, steering messages are consumed immediately by the agent loop so they might already be gone.
+		// Follow-ups are managed here in the loop, so clearing this array stops them.
+		return restored;
 	}
 
 	// ========================================================================
@@ -679,6 +859,8 @@ class InteractiveMode {
 			if (child instanceof ToolExecutionComponent) {
 				child.setExpanded(this.toolOutputExpanded);
 			} else if (child instanceof CompactionSummaryComponent) {
+				child.setExpanded(this.toolOutputExpanded);
+			} else if (child instanceof BashExecutionComponent) {
 				child.setExpanded(this.toolOutputExpanded);
 			}
 		}
@@ -1051,6 +1233,8 @@ class InteractiveMode {
 	private showHelp(): void {
 		const helpText = [
 			chalk.bold("Commands:"),
+			"  !<command>          Run inline bash and include output in context",
+			"  !!<command>         Run inline bash but exclude output from context",
 			"  /resume             Resume a previous session",
 			"  /compact [text]     Compact the session context (optional instructions)",
 			"  /auto-compact       Toggle automatic context compaction",
@@ -1412,6 +1596,11 @@ class InteractiveMode {
 	private showStatus(text: string): void {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Text(text, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private updateEditorBorderColor(): void {
+		this.editorTheme.borderColor = this.isBashMode ? (s: string) => chalk.yellow(s) : (s: string) => chalk.gray(s);
 		this.ui.requestRender();
 	}
 

@@ -8,7 +8,9 @@ describe("model-factory", () => {
 			expect(providers).toContain("anthropic");
 			expect(providers).toContain("openai");
 			expect(providers).toContain("google");
-			expect(providers.length).toBe(3);
+			expect(providers).toContain("openai-codex");
+			expect(providers).toContain("github-copilot");
+			expect(providers.length).toBe(5);
 		});
 	});
 
