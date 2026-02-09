@@ -6,15 +6,12 @@
  * then returns the final result.
  */
 
-import { createAnthropic } from "@ai-sdk/anthropic";
+import { anthropic } from "@ai-sdk/anthropic";
 import { stepCountIs } from "ai";
 import { CodingAgent } from "edge-pi";
 
-const anthropic = createAnthropic();
-const model = anthropic("claude-sonnet-4-5-20250929");
-
 const agent = new CodingAgent({
-	model,
+	model: anthropic("claude-sonnet-4-5-20250929"),
 	stopWhen: stepCountIs(5),
 	toolSet: "coding",
 });

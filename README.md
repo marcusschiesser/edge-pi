@@ -1,23 +1,12 @@
-<p align="center">
-  <a href="https://shittycodingagent.ai">
-    <img src="https://shittycodingagent.ai/logo.svg" alt="pi logo" width="128">
-  </a>
-</p>
-<p align="center">
-  <a href="https://discord.com/invite/3cU7Bz4UPx"><img alt="Discord" src="https://img.shields.io/badge/discord-community-5865F2?style=flat-square&logo=discord&logoColor=white" /></a>
-  <a href="https://github.com/badlogic/pi-mono/actions/workflows/ci.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/badlogic/pi-mono/ci.yml?style=flat-square&branch=main" /></a>
-</p>
+# Edge-Pi
 
-# Pi Monorepo
+[Edge-Pi](/packages/edge-pi) is a lightweight, [Vercel AI SDK](https://sdk.vercel.ai) based coding agent library.
 
-Tools for building AI agents and managing LLM deployments.
+It provides the core primitives for building AI-powered coding assistants with tool support, session management, and context compaction. Think of it as an replacement for the proprietary [Claude Agent SDK](https://platform.claude.com/docs/en/agent-sdk/overview) by Anthropic but for any LLM provider and with the flexibility of the Vercel AI SDK.
 
-## Packages
+The `epi` [CLI](/packages/edge-pi-cli) is a full-featured coding agent that features: multi-provider support, skills. It is a proof of concept that shows how to use the SDK to build a full-featured coding agent.
 
-| Package | Description |
-|---------|-------------|
-| **[@mariozechner/edge-pi](packages/edge-pi)** | Edge Pi runtime |
-| **[@mariozechner/edge-pi-cli](packages/edge-pi-cli)** | Edge Pi CLI |
+Code is based on the [pi coding agent](https://github.com/badlogic/pi-mono) by Mario Zechner.
 
 ## Contributing
 
@@ -30,7 +19,7 @@ npm install          # Install all dependencies
 npm run build        # Build all packages
 npm run check        # Lint, format, and type check
 ./test.sh            # Run tests (skips LLM-dependent tests without API keys)
-./pi-test.sh         # Run pi from sources (must be run from repo root)
+./epi.sh             # Run epi from sources (must be run from repo root)
 ```
 
 > **Note:** `npm run check` requires `npm run build` to be run first.

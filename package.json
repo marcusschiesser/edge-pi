@@ -1,5 +1,5 @@
 {
-	"name": "pi-monorepo",
+	"name": "edge-pi-mono",
 	"private": true,
 	"type": "module",
 	"workspaces": [
