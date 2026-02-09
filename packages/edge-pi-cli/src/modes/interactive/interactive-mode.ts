@@ -54,12 +54,27 @@ import { AssistantMessageComponent } from "./components/assistant-message.js";
 import { BashExecutionComponent } from "./components/bash-execution.js";
 import { CompactionSummaryComponent } from "./components/compaction-summary.js";
 import { FooterComponent } from "./components/footer.js";
-import { ToolExecutionComponent } from "./components/tool-execution.js";
+import { ToolExecutionComponent, type ToolOutput } from "./components/tool-execution.js";
 import { UserMessageComponent } from "./components/user-message.js";
 import { getEditorTheme, getMarkdownTheme, getSelectListTheme } from "./theme.js";
 
 /** Default context window size (used when model doesn't report one). */
 const DEFAULT_CONTEXT_WINDOW = 200_000;
+
+/** Extract display-friendly output from a tool result. Handles both plain strings and structured objects with text/image fields. */
+function extractToolOutput(output: unknown): ToolOutput {
+	if (typeof output === "string") {
+		return { text: output };
+	}
+	if (typeof output === "object" && output !== null && "text" in output && typeof (output as any).text === "string") {
+		const obj = output as any;
+		return {
+			text: obj.text,
+			...(obj.image && { image: obj.image }),
+		};
+	}
+	return { text: JSON.stringify(output) };
+}
 
 export interface InteractiveModeOptions {
 	initialMessage?: string;
@@ -679,8 +694,8 @@ class InteractiveMode {
 					case "tool-result": {
 						const toolComponent = this.pendingTools.get(part.toolCallId);
 						if (toolComponent) {
-							const outputStr = typeof part.output === "string" ? part.output : JSON.stringify(part.output);
-							toolComponent.updateResult(outputStr, /* isError */ false, /* isPartial */ false);
+							const toolOutput = extractToolOutput(part.output);
+							toolComponent.updateResult(toolOutput, /* isError */ false, /* isPartial */ false);
 							this.pendingTools.delete(part.toolCallId);
 							this.hadToolResults = true;
 							this.ui.requestRender();
@@ -1133,7 +1148,7 @@ class InteractiveMode {
 							toolComp.setExpanded(true);
 						}
 						// Mark as completed (we don't have the result here, just show collapsed)
-						toolComp.updateResult("(from history)", false, false);
+						toolComp.updateResult({ text: "(from history)" }, false, false);
 						this.chatContainer.addChild(toolComp);
 					}
 				}

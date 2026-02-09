@@ -22,12 +22,18 @@ function shortenPath(path: string): string {
 	return path;
 }
 
+/** Structured tool output that supports text and optional image data */
+export interface ToolOutput {
+	text: string;
+	image?: { base64: string; mimeType: string };
+}
+
 export class ToolExecutionComponent extends Container {
 	private contentBox: Box;
 	private toolName: string;
 	private args: Record<string, unknown>;
 	private result?: {
-		output: string;
+		output: ToolOutput;
 		isError: boolean;
 	};
 	private expanded = false;
@@ -50,7 +56,7 @@ export class ToolExecutionComponent extends Container {
 		this.updateDisplay();
 	}
 
-	updateResult(output: string, isError: boolean, isPartial = false): void {
+	updateResult(output: ToolOutput, isError: boolean, isPartial = false): void {
 		this.result = { output, isError };
 		this.isPartial = isPartial;
 		this.updateDisplay();
@@ -81,7 +87,7 @@ export class ToolExecutionComponent extends Container {
 		this.contentBox.addChild(new Text(headerText, 0, 0));
 
 		if (this.result) {
-			const output = this.result.output.trim();
+			const output = this.result.output.text.trim();
 			if (output) {
 				const lines = output.split("\n");
 				const maxLines = this.expanded ? lines.length : this.getPreviewLineCount();
