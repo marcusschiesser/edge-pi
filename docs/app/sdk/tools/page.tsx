@@ -439,8 +439,7 @@ const lsTool = createLsTool(process.cwd());`}</code>
 
 			<h2>Custom Tools</h2>
 			<p>
-				You can add custom tools using the <code>extraTools</code> config
-				option:
+				You can add custom tools using the <code>tools</code> config option:
 			</p>
 			<pre>
 				<code>{`import { CodingAgent } from "edge-pi";
@@ -459,7 +458,7 @@ const myTool = tool({
 
 const agent = new CodingAgent({
   model,
-  extraTools: { weather: myTool },
+  tools: { weather: myTool },
 });`}</code>
 			</pre>
 		</>

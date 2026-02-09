@@ -13,7 +13,6 @@ import { CodingAgent } from "edge-pi";
 const agent = new CodingAgent({
 	model: anthropic("claude-sonnet-4-5-20250929"),
 	stopWhen: stepCountIs(5),
-	toolSet: "coding",
 });
 
 console.log("Running agent (non-streaming)...\n");

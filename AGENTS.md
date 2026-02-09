@@ -80,6 +80,10 @@ tmux kill-session -t pi-test
 - No fluff or cheerful filler text
 - Technical prose only, be kind but direct (e.g., "Thanks @user" not "Thanks so much @user!")
 
+## Examples
+- Prefer streaming (`agent.stream()` + `for await ... of result.textStream`) in examples so users see incremental output.
+- Only use non-streaming (`agent.prompt()`) when the example specifically needs a final aggregated result object.
+
 ## Changelog
 Location: `packages/*/CHANGELOG.md` (each package has its own)
 

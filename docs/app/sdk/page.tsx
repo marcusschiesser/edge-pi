@@ -44,7 +44,7 @@ const agent = new CodingAgent({
   systemPrompt,       // Override the full system prompt
   systemPromptOptions,// Or configure the prompt builder
   toolSet,            // "coding" | "readonly" | "all" (default: "coding")
-  extraTools,         // Merge additional tools into the set
+  tools,              // Merge additional tools into the set
   thinkingLevel,      // For reasoning models: "off" | "minimal" | "low" | "medium" | "high"
 });`}</code>
 			</pre>
@@ -130,7 +130,7 @@ const agent = new CodingAgent({
 					</tr>
 					<tr>
 						<td>
-							<code>extraTools</code>
+							<code>tools</code>
 						</td>
 						<td>
 							<code>ToolSet</code>

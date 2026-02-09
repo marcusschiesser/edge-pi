@@ -81,8 +81,8 @@ export interface CodingAgentConfig {
 	systemPromptOptions?: BuildSystemPromptOptions;
 	/** Which tool set to use. Default: "coding" */
 	toolSet?: "coding" | "readonly" | "all";
-	/** Extra tools to merge in */
-	extraTools?: ToolSet;
+	/** Additional tools to merge in */
+	tools?: ToolSet;
 	/** Thinking level for reasoning models */
 	thinkingLevel?: ThinkingLevel;
 }

@@ -104,9 +104,9 @@ export class CodingAgent {
 				break;
 		}
 
-		// Merge extra tools
-		if (this.config.extraTools) {
-			tools = { ...tools, ...this.config.extraTools };
+		// Merge additional tools
+		if (this.config.tools) {
+			tools = { ...tools, ...this.config.tools };
 		}
 
 		return tools;
