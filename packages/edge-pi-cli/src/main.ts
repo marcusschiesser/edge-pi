@@ -11,7 +11,12 @@ import { join, resolve } from "node:path";
 import chalk from "chalk";
 import type { CodingAgentConfig, ModelMessage } from "edge-pi";
 import { CodingAgent, SessionManager } from "edge-pi";
-import { AuthStorage, anthropicOAuthProvider, githubCopilotOAuthProvider } from "./auth/index.js";
+import {
+	AuthStorage,
+	anthropicOAuthProvider,
+	githubCopilotOAuthProvider,
+	openaiCodexOAuthProvider,
+} from "./auth/index.js";
 import { parseArgs, printHelp, printModels } from "./cli/args.js";
 import { loadContextFiles } from "./context.js";
 import { createModel } from "./model-factory.js";
@@ -119,6 +124,7 @@ function createAuthStorage(): AuthStorage {
 	const authStorage = new AuthStorage(getAuthPath());
 	authStorage.registerProvider(anthropicOAuthProvider);
 	authStorage.registerProvider(githubCopilotOAuthProvider);
+	authStorage.registerProvider(openaiCodexOAuthProvider);
 	return authStorage;
 }
 

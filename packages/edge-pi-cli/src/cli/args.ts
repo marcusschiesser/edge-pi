@@ -164,6 +164,7 @@ ${chalk.bold("Examples:")}
   # Use specific latest models
   epi --provider anthropic --model claude-opus-4-6
   epi --provider openai --model gpt-5.3
+  epi --provider openai-codex --model gpt-5.3-codex
   epi --provider google --model gemini-3-flash
   epi --provider github-copilot --model claude-sonnet-4.5
 
@@ -202,6 +203,7 @@ export function printModels(): void {
 ${chalk.bold("Examples:")}
   epi --provider anthropic --model claude-opus-4-6 "Hello"
   epi --provider openai --model gpt-5.3 "Hello"
+  epi --provider openai-codex --model gpt-5.3-codex "Hello"
   epi --provider google --model gemini-3-flash "Hello"
   epi --provider github-copilot --model claude-sonnet-4.5 "Hello"
 `);

@@ -69,6 +69,19 @@ const providers: Record<string, ProviderConfig> = {
 			return provider(modelId);
 		},
 	},
+	"openai-codex": {
+		name: "openai-codex",
+		envVar: "OPENAI_API_KEY",
+		defaultModel: "gpt-5.3-codex",
+		createModel: async (modelId: string, apiKey?: string) => {
+			const { createOpenAI } = await import("@ai-sdk/openai");
+			const provider = createOpenAI({
+				apiKey: apiKey ?? "",
+				baseURL: "https://chatgpt.com/backend-api",
+			});
+			return provider(modelId);
+		},
+	},
 	"github-copilot": {
 		name: "github-copilot",
 		envVar: "GITHUB_TOKEN",
@@ -131,6 +144,7 @@ export function getLatestModels(): Record<string, string[]> {
 		anthropic: ["claude-opus-4-6", "claude-sonnet-4-5", "claude-haiku-4-5"],
 		openai: ["gpt-5.2-codex", "gpt-5.3-codex"],
 		google: ["gemini-3-flash-preview", "gemini-3-pro-preview"],
+		"openai-codex": ["gpt-5.3-codex", "gpt-5.2-codex", "gpt-5.1-codex-max"],
 		"github-copilot": ["claude-sonnet-4.5", "gpt-5.2", "gemini-3-pro-preview", "gemini-3-flash-preview"],
 	};
 }
