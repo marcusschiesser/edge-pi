@@ -53,4 +53,4 @@ if [[ "$NO_ENV" == "true" ]]; then
   echo "Running without API keys..."
 fi
 
-npx tsx "$SCRIPT_DIR/packages/coding-agent/src/cli.ts" ${ARGS[@]+"${ARGS[@]}"}
+npx tsx "$SCRIPT_DIR/packages/edge-pi-cli/src/cli.ts" ${ARGS[@]+"${ARGS[@]}"}

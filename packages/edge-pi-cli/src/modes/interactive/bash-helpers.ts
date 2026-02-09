@@ -37,7 +37,7 @@ export function formatBashFooter(
 	}
 
 	if (truncated && fullOutputPath) {
-		footer += (footer ? " " : "") + `(truncated, full output: ${fullOutputPath})`;
+		footer += `${footer ? " " : ""}(truncated, full output: ${fullOutputPath})`;
 	}
 
 	return footer;

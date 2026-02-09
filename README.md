@@ -10,21 +10,14 @@
 
 # Pi Monorepo
 
-> **Looking for the pi coding agent?** See **[packages/coding-agent](packages/coding-agent)** for installation and usage.
-
 Tools for building AI agents and managing LLM deployments.
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
-| **[@mariozechner/pi-env](packages/env)** | Environment abstraction layer for Node.js, Bun, and browser runtimes |
-| **[@mariozechner/pi-coding-agent-sdk](packages/coding-agent-sdk)** | Coding agent SDK with tools, extensions, session management, and model registry |
-| **[@mariozechner/pi-coding-agent](packages/coding-agent)** | Interactive coding agent CLI |
-
-## Examples
-
-See [examples/](examples/) for SDK usage and extension examples.
+| **[@mariozechner/edge-pi](packages/edge-pi)** | Edge Pi runtime |
+| **[@mariozechner/edge-pi-cli](packages/edge-pi-cli)** | Edge Pi CLI |
 
 ## Contributing
 
