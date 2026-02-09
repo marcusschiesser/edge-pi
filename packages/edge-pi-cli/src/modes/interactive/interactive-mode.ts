@@ -46,6 +46,7 @@ import type { ContextFile } from "../../context.js";
 import { getLatestModels } from "../../model-factory.js";
 import type { PromptTemplate } from "../../prompts.js";
 import { expandPromptTemplate } from "../../prompts.js";
+import type { SettingsManager } from "../../settings.js";
 import type { Skill } from "../../skills.js";
 import { executeBashCommand } from "../../utils/bash-executor.js";
 import { type ClipboardImage, extensionForImageMimeType, readClipboardImage } from "../../utils/clipboard-image.js";
@@ -87,6 +88,8 @@ export interface InteractiveModeOptions {
 	provider: string;
 	modelId: string;
 	authStorage?: AuthStorage;
+	/** Settings manager for persisting user preferences (provider, model, compaction). */
+	settingsManager?: SettingsManager;
 	/** Path to the `fd` binary for @ file autocomplete, or undefined if unavailable. */
 	fdPath?: string;
 	/** Called when the user switches model via Ctrl+L. Returns a new agent for the new model. */
@@ -173,7 +176,15 @@ class InteractiveMode {
 		this.currentProvider = options.provider;
 		this.currentModelId = options.modelId;
 		this.contextWindow = options.contextWindow ?? DEFAULT_CONTEXT_WINDOW;
-		this.compactionSettings = { ...DEFAULT_COMPACTION_SETTINGS };
+
+		// Initialize compaction settings from persisted settings if available
+		const savedCompaction = options.settingsManager?.getCompaction();
+		this.compactionSettings = {
+			...DEFAULT_COMPACTION_SETTINGS,
+			...(savedCompaction?.reserveTokens !== undefined && { reserveTokens: savedCompaction.reserveTokens }),
+			...(savedCompaction?.keepRecentTokens !== undefined && { keepRecentTokens: savedCompaction.keepRecentTokens }),
+		};
+		this.autoCompaction = options.settingsManager?.getCompactionEnabled() ?? true;
 	}
 
 	async run(): Promise<void> {
@@ -612,6 +623,9 @@ class InteractiveMode {
 			this.currentModelId = newModelId;
 			this.updateFooter();
 
+			// Persist the choice for next startup
+			this.options.settingsManager?.setDefaults(newProvider, newModelId);
+
 			this.showStatus(chalk.green(`Switched to ${newProvider}/${newModelId}`));
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
@@ -924,6 +938,7 @@ class InteractiveMode {
 	private toggleAutoCompaction(): void {
 		this.autoCompaction = !this.autoCompaction;
 		this.footer.setAutoCompaction(this.autoCompaction);
+		this.options.settingsManager?.setCompactionEnabled(this.autoCompaction);
 		this.showStatus(
 			this.autoCompaction ? chalk.green("Auto-compaction enabled") : chalk.dim("Auto-compaction disabled"),
 		);

@@ -23,6 +23,7 @@ import { createModel } from "./model-factory.js";
 import { runInteractiveMode } from "./modes/interactive-mode.js";
 import { runPrintMode } from "./modes/print-mode.js";
 import { loadPrompts } from "./prompts.js";
+import { SettingsManager } from "./settings.js";
 import { formatSkillsForPrompt, loadSkills, type Skill } from "./skills.js";
 import { findFd } from "./utils/find-fd.js";
 
@@ -171,15 +172,19 @@ export async function main(args: string[]) {
 	// Set up auth storage
 	const authStorage = createAuthStorage();
 
+	// Set up settings persistence
+	const settingsManager = SettingsManager.create(getAgentDir());
+
 	// Apply CLI --api-key override
 	if (parsed.apiKey && parsed.provider) {
 		authStorage.setRuntimeApiKey(parsed.provider, parsed.apiKey);
 	}
 
 	// Create model (async - may resolve OAuth tokens)
+	// Fall back to saved defaults when CLI args are not specified
 	const { model, provider, modelId } = await createModel({
-		provider: parsed.provider,
-		model: parsed.model,
+		provider: parsed.provider ?? settingsManager.getDefaultProvider(),
+		model: parsed.model ?? settingsManager.getDefaultModel(),
 		apiKey: parsed.apiKey,
 		authStorage,
 	});
@@ -308,6 +313,7 @@ export async function main(args: string[]) {
 			provider,
 			modelId,
 			authStorage,
+			settingsManager,
 			fdPath,
 			onModelChange: async (newProvider: string, newModelId: string) => {
 				const { model: newModel } = await createModel({
