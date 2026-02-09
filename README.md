@@ -12,6 +12,26 @@ Code is based on the [pi coding agent](https://github.com/badlogic/pi-mono) by M
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and [AGENTS.md](AGENTS.md) for project-specific rules (for both humans and agents).
 
+## Installation
+
+To install the CLI, run:
+
+```bash
+npm install -g edge-pi-cli
+```
+
+After installation, you can run the CLI with:
+
+```bash
+epi
+```
+
+For more information, run:
+
+```bash
+epi --help
+```
+
 ## Development
 
 ```bash
