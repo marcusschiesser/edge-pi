@@ -220,18 +220,6 @@ agent.steer({
 });`}</code>
 			</pre>
 
-			<h3>followUp()</h3>
-			<p>
-				Queue a message for after the current loop completes. Triggers another
-				execution loop.
-			</p>
-			<pre>
-				<code>{`agent.followUp({
-  role: "user",
-  content: "Now run the tests",
-});`}</code>
-			</pre>
-
 			<h3>abort()</h3>
 			<p>Abort the current execution.</p>
 			<pre>

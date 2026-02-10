@@ -378,7 +378,6 @@ class InteractiveMode {
 				if (!text) return;
 
 				if (this.isStreaming) {
-					this.agent.followUp({ role: "user", content: [{ type: "text", text }] });
 					this.followUpMessages.push(text);
 					this.editor.setText("");
 					this.updatePendingMessagesDisplay();
@@ -843,9 +842,6 @@ class InteractiveMode {
 		const restored = [...this.steeringMessages, ...this.followUpMessages];
 		this.steeringMessages = [];
 		this.followUpMessages = [];
-		// Force agent to drop its internal queue too if possible, but edge-pi agent doesn't expose that yet.
-		// However, steering messages are consumed immediately by the agent loop so they might already be gone.
-		// Follow-ups are managed here in the loop, so clearing this array stops them.
 		return restored;
 	}
 
