@@ -54,14 +54,15 @@ export { createReadTool } from "./tools/read.js";
 export { createWriteTool } from "./tools/write.js";
 // Re-export key Vercel AI types for convenience
 export type {
+	Agent,
+	AgentCallParameters,
+	AgentStreamParameters,
 	AssistantModelMessage,
 	CodingAgentConfig,
 	GenerateTextResult,
 	LanguageModel,
 	LanguageModelUsage,
 	ModelMessage,
-	PromptOptions,
-	PromptResult,
 	StepResult,
 	StopCondition,
 	StreamTextResult,

@@ -55,7 +55,7 @@ export default function Home() {
 				</li>
 				<li>
 					<strong>Streaming and non-streaming</strong> &mdash; Both{" "}
-					<code>stream()</code> and <code>prompt()</code> execution modes
+					<code>stream()</code> and <code>generate()</code> execution modes
 				</li>
 				<li>
 					<strong>Skills system</strong> &mdash; Extend the agent with custom
@@ -76,7 +76,7 @@ const agent = new CodingAgent({
   model: anthropic("claude-sonnet-4-20250514"),
 });
 
-const result = await agent.prompt({
+const result = await agent.generate({
   prompt: "Read the README.md and summarize it",
 });
 

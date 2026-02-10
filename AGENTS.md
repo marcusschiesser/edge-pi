@@ -94,7 +94,7 @@ tmux kill-session -t pi-test
 ## Examples
 
 - Prefer streaming (`agent.stream()` + `for await ... of result.textStream`) in examples so users see incremental output.
-- Only use non-streaming (`agent.prompt()`) when the example specifically needs a final aggregated result object.
+- Only use non-streaming (`agent.generate()`) when the example specifically needs a final aggregated result object.
 
 ## Changelog
 

@@ -5,6 +5,9 @@
  */
 
 import type {
+	Agent,
+	AgentCallParameters,
+	AgentStreamParameters,
 	AssistantModelMessage,
 	FilePart,
 	GenerateTextResult,
@@ -27,6 +30,9 @@ import type { BuildSystemPromptOptions } from "./system-prompt.js";
 
 // Re-export Vercel AI types consumers need
 export type {
+	Agent,
+	AgentCallParameters,
+	AgentStreamParameters,
 	AssistantModelMessage,
 	FilePart,
 	GenerateTextResult,
@@ -85,30 +91,4 @@ export interface CodingAgentConfig {
 	tools?: ToolSet;
 	/** Thinking level for reasoning models */
 	thinkingLevel?: ThinkingLevel;
-}
-
-/**
- * Options for a prompt/stream call.
- */
-export interface PromptOptions {
-	/** Simple text prompt (creates a UserModelMessage) */
-	prompt?: string;
-	/** Or provide full messages */
-	messages?: ModelMessage[];
-	/** Abort signal for cancellation */
-	abortSignal?: AbortSignal;
-}
-
-/**
- * Result from a non-streaming prompt call.
- */
-export interface PromptResult {
-	/** Generated text from the assistant */
-	text: string;
-	/** All messages (input + generated) */
-	messages: ModelMessage[];
-	/** Total usage across all steps */
-	totalUsage: LanguageModelUsage;
-	/** Number of steps executed */
-	stepCount: number;
 }

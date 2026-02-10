@@ -1,7 +1,7 @@
 /**
  * Simple Non-Streaming Example
  *
- * Creates a CodingAgent with an Anthropic model and runs a single prompt.
+ * Creates a CodingAgent with an Anthropic model and runs a single generate call.
  * The agent uses tools (read, bash, edit, write) to answer the question,
  * then returns the final result.
  */
@@ -17,13 +17,13 @@ const agent = new CodingAgent({
 
 console.log("Running agent (non-streaming)...\n");
 
-const result = await agent.prompt({
+const result = await agent.generate({
 	prompt: "What files are in the current directory? List them with their sizes.",
 });
 
 console.log("--- Assistant Response ---");
 console.log(result.text);
 console.log("\n--- Stats ---");
-console.log(`Steps: ${result.stepCount}`);
+console.log(`Steps: ${result.steps.length}`);
 console.log(`Input tokens: ${result.totalUsage.inputTokens}`);
 console.log(`Output tokens: ${result.totalUsage.outputTokens}`);
