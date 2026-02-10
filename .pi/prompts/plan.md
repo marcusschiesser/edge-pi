@@ -1,6 +1,7 @@
 ---
 description: Plan a change before implementing it
 ---
+
 Create an implementation plan for the requested change. Do NOT make any changes — only read, analyze, and plan.
 
 ## Process
@@ -15,9 +16,11 @@ Create an implementation plan for the requested change. Do NOT make any changes 
 3. **Produce a plan in this format:**
 
    ## Goal
+
    One sentence summary of what needs to be done.
 
    ## Plan
+
    Numbered steps, each small and actionable:
    1. Step one — specific file/function to modify
    2. Step two — what to add/change
@@ -31,6 +34,7 @@ Create an implementation plan for the requested change. Do NOT make any changes 
    - `path/to/new.ts` — purpose
 
    ## Risks
+
    Anything to watch out for.
 
 4. **Present the plan** and wait for confirmation before any implementation.
@@ -41,3 +45,7 @@ Create an implementation plan for the requested change. Do NOT make any changes 
 - Prefer editing existing files over creating new ones.
 - Flag any ambiguity or trade-offs for the user to decide.
 - Consider tests, types, and build impact.
+
+## Request
+
+This is the request:
