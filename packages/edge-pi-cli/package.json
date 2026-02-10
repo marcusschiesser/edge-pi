@@ -1,6 +1,6 @@
 {
 	"name": "edge-pi-cli",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "CLI for the edge-pi coding agent SDK",
 	"type": "module",
 	"bin": {
@@ -23,7 +23,7 @@
 		"@ai-sdk/openai": "^3.0.26",
 		"@mariozechner/pi-tui": "^0.50.9",
 		"chalk": "^5.5.0",
-		"edge-pi": "^0.1.1",
+		"edge-pi": "^0.1.2",
 		"proper-lockfile": "^4.1.2",
 		"yaml": "^2.7.1"
 	},
