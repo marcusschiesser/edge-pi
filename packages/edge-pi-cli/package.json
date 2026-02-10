@@ -6,6 +6,10 @@
 	"bin": {
 		"epi": "dist/cli.js"
 	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/marcusschiesser/edge-pi"
+	},
 	"main": "./dist/main.js",
 	"types": "./dist/main.d.ts",
 	"files": [
