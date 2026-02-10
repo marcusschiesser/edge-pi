@@ -98,7 +98,7 @@ console.log(result.text);`}</code>
 ├── Vercel AI SDK (generateText / streamText)
 ├── Tool sets (coding, readonly, all)
 ├── System prompt builder
-├── Message steering & follow-up queues
+├── Message steering queue
 ├── Session persistence (JSONL)
 └── Context compaction`}</code>
 			</pre>

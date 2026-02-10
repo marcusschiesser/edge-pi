@@ -44,7 +44,6 @@ export class CodingAgent implements Agent<never, ToolSet> {
 	private config: CodingAgentConfig;
 	private _messages: ModelMessage[] = [];
 	private steeringQueue: ModelMessage[] = [];
-	private followUpQueue: ModelMessage[] = [];
 	private abortController: AbortController | null = null;
 
 	constructor(config: CodingAgentConfig) {
@@ -74,11 +73,6 @@ export class CodingAgent implements Agent<never, ToolSet> {
 	/** Inject a message between steps via prepareStep */
 	steer(message: ModelMessage): void {
 		this.steeringQueue.push(message);
-	}
-
-	/** Inject a message after loop completes (triggers another loop) */
-	followUp(message: ModelMessage): void {
-		this.followUpQueue.push(message);
 	}
 
 	/** Abort the current operation */
@@ -185,7 +179,7 @@ export class CodingAgent implements Agent<never, ToolSet> {
 
 	/**
 	 * Non-streaming execution (implements Agent.generate).
-	 * Runs the agent loop, handles follow-ups, returns the final GenerateTextResult.
+	 * Runs the agent loop to completion and returns the GenerateTextResult.
 	 */
 	async generate(options: AgentCallParameters<never, ToolSet>): Promise<GenerateTextResult<ToolSet, never>> {
 		this.abortController = new AbortController();
@@ -199,35 +193,18 @@ export class CodingAgent implements Agent<never, ToolSet> {
 
 		const agent = this.createAgent();
 
-		// Run agent loop (with follow-up support)
-		let currentMessages = [...inputMessages];
-		let lastResult: GenerateTextResult<ToolSet, never>;
+		const result = await agent.generate({
+			messages: inputMessages,
+			abortSignal: signal,
+			timeout: options.timeout,
+			onStepFinish: options.onStepFinish,
+		});
 
-		do {
-			lastResult = await agent.generate({
-				messages: currentMessages,
-				abortSignal: signal,
-				timeout: options.timeout,
-				onStepFinish: options.onStepFinish,
-			});
+		// Update messages with the result: input messages + response messages
+		const responseMessages = result.response.messages as ModelMessage[];
+		this._messages = [...inputMessages, ...responseMessages];
 
-			// Update messages with the result: input messages + response messages
-			const responseMessages = lastResult.response.messages as ModelMessage[];
-			this._messages = [...currentMessages, ...responseMessages];
-			currentMessages = this._messages;
-
-			// Check for follow-ups
-			if (this.followUpQueue.length > 0) {
-				const followUps = this.followUpQueue.splice(0);
-				currentMessages = [...currentMessages, ...followUps];
-				this._messages = currentMessages;
-			} else {
-				break;
-			}
-			// biome-ignore lint/correctness/noConstantCondition: follow-up loop with break
-		} while (true);
-
-		return lastResult;
+		return result;
 	}
 
 	/**
