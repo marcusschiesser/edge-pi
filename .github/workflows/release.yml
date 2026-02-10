@@ -38,14 +38,19 @@ jobs:
           EOF
 
       - name: Create release PR or publish
+        id: changesets
         uses: changesets/action@v1
         with:
           version: npm run version
-          publish: npm run release
           title: "chore: release packages"
           commit: "chore: release packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to npm (trusted publishing)
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: npm run release
+        env:
           NPM_CONFIG_PROVENANCE: true
           NODE_AUTH_TOKEN: ""
           NPM_TOKEN: ""
