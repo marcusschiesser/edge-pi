@@ -29,7 +29,7 @@ export {
 	formatFileOperations,
 	serializeModelMessages,
 } from "./compaction/utils.js";
-export { buildSessionContext } from "./session/context.js";
+export { buildSessionContext, type SessionContext } from "./session/context.js";
 // Session
 export { SessionManager } from "./session/session-manager.js";
 export type {

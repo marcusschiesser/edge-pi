@@ -21,6 +21,7 @@ import {
 	ToolLoopAgent,
 	type ToolSet,
 } from "ai";
+import type { SessionManager } from "./session/session-manager.js";
 import type { BuildSystemPromptOptions } from "./system-prompt.js";
 import { buildSystemPrompt } from "./system-prompt.js";
 import { createAllTools, createCodingTools, createReadOnlyTools } from "./tools/index.js";
@@ -43,11 +44,17 @@ export class CodingAgent implements Agent<never, ToolSet> {
 	readonly version = "agent-v1" as const;
 	private config: CodingAgentConfig;
 	private _messages: ModelMessage[] = [];
+	private _sessionManager: SessionManager | undefined;
 	private steeringQueue: ModelMessage[] = [];
 	private abortController: AbortController | null = null;
 
 	constructor(config: CodingAgentConfig) {
 		this.config = { ...config };
+		if (config.sessionManager) {
+			this._sessionManager = config.sessionManager;
+			const context = this._sessionManager.buildSessionContext();
+			this._messages = context.messages;
+		}
 	}
 
 	/** The id of the agent. */
@@ -65,9 +72,23 @@ export class CodingAgent implements Agent<never, ToolSet> {
 		return this._messages;
 	}
 
-	/** Set conversation messages (e.g., when restoring from session) */
+	/** Set conversation messages (e.g., when restoring from session). Does NOT write to the session. */
 	setMessages(messages: ModelMessage[]): void {
 		this._messages = [...messages];
+	}
+
+	/** Get the current session manager (or undefined). */
+	get sessionManager(): SessionManager | undefined {
+		return this._sessionManager;
+	}
+
+	/** Set (or replace) the session manager. Auto-restores messages from the new session. */
+	set sessionManager(sm: SessionManager | undefined) {
+		this._sessionManager = sm;
+		if (sm) {
+			const context = sm.buildSessionContext();
+			this._messages = context.messages;
+		}
 	}
 
 	/** Inject a message between steps via prepareStep */
@@ -188,6 +209,7 @@ export class CodingAgent implements Agent<never, ToolSet> {
 			: this.abortController.signal;
 
 		// Build input messages
+		const previousMessageCount = this._messages.length;
 		const inputMessages = this.buildInputMessages(options);
 		this._messages = inputMessages;
 
@@ -204,6 +226,16 @@ export class CodingAgent implements Agent<never, ToolSet> {
 		const responseMessages = result.response.messages as ModelMessage[];
 		this._messages = [...inputMessages, ...responseMessages];
 
+		// Auto-persist to session
+		if (this._sessionManager) {
+			for (let i = previousMessageCount; i < inputMessages.length; i++) {
+				this._sessionManager.appendMessage(inputMessages[i]);
+			}
+			for (const msg of responseMessages) {
+				this._sessionManager.appendMessage(msg);
+			}
+		}
+
 		return result;
 	}
 
@@ -218,6 +250,7 @@ export class CodingAgent implements Agent<never, ToolSet> {
 			: this.abortController.signal;
 
 		// Build input messages
+		const previousMessageCount = this._messages.length;
 		const inputMessages = this.buildInputMessages(options);
 		this._messages = inputMessages;
 
@@ -230,6 +263,25 @@ export class CodingAgent implements Agent<never, ToolSet> {
 			onStepFinish: options.onStepFinish,
 			experimental_transform: options.experimental_transform,
 		});
+
+		// Auto-persist when stream is fully consumed
+		Promise.resolve(result.response)
+			.then((response) => {
+				const responseMessages = response.messages as ModelMessage[];
+				this._messages = [...inputMessages, ...responseMessages];
+
+				if (this._sessionManager) {
+					for (let i = previousMessageCount; i < inputMessages.length; i++) {
+						this._sessionManager.appendMessage(inputMessages[i]);
+					}
+					for (const msg of responseMessages) {
+						this._sessionManager.appendMessage(msg);
+					}
+				}
+			})
+			.catch(() => {
+				// Stream error/abort — don't persist
+			});
 
 		return result;
 	}

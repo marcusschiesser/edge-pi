@@ -26,6 +26,7 @@ import type {
 	ToolSet,
 	UserModelMessage,
 } from "ai";
+import type { SessionManager } from "./session/session-manager.js";
 import type { BuildSystemPromptOptions } from "./system-prompt.js";
 
 // Re-export Vercel AI types consumers need
@@ -91,4 +92,10 @@ export interface CodingAgentConfig {
 	tools?: ToolSet;
 	/** Thinking level for reasoning models */
 	thinkingLevel?: ThinkingLevel;
+	/**
+	 * Optional session manager for automatic message persistence.
+	 * When provided, messages are auto-restored from the session on construction
+	 * and auto-persisted after generate() and stream() calls.
+	 */
+	sessionManager?: SessionManager;
 }

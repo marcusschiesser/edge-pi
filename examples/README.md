@@ -22,6 +22,7 @@ npx tsx examples/03-pwa-nutrition-scanner.ts
 npx tsx examples/04-streaming-events.ts
 npx tsx examples/05-all-tools.ts
 npx tsx examples/06-web-search-tool.ts
+npx tsx examples/07-sessions.ts
 ```
 
 ## Directories
@@ -33,6 +34,7 @@ Examples in this directory demonstrate:
 - Enabling the full built-in tool set (`toolSet: "all"`)
 - Adding a custom tool (web search)
 - Generating a complete PWA (Progressive Web App)
+- Session persistence with CodingAgent
 
 ## Documentation
 

@@ -9,7 +9,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import chalk from "chalk";
-import type { CodingAgentConfig, ModelMessage } from "edge-pi";
+import type { CodingAgentConfig } from "edge-pi";
 import { CodingAgent, SessionManager } from "edge-pi";
 import {
 	AuthStorage,
@@ -259,19 +259,13 @@ export async function main(args: string[]) {
 		sessionManager = SessionManager.create(cwd, sessionDir);
 	}
 
-	// Restore messages from session if continuing
-	let restoredMessages: ModelMessage[] = [];
-	if (parsed.continue && sessionManager) {
-		const context = sessionManager.buildSessionContext();
-		restoredMessages = context.messages;
-	}
-
 	// Create agent config
 	const agentConfig: CodingAgentConfig = {
 		model,
 		cwd,
 		toolSet: parsed.toolSet ?? "coding",
 		thinkingLevel: parsed.thinking,
+		sessionManager,
 	};
 
 	if (parsed.systemPrompt) {
@@ -286,15 +280,11 @@ export async function main(args: string[]) {
 		};
 	}
 
-	// Create agent
+	// Create agent (session messages are auto-restored from sessionManager)
 	const agent = new CodingAgent(agentConfig);
 
-	// Restore session messages
-	if (restoredMessages.length > 0) {
-		agent.setMessages(restoredMessages);
-		if (parsed.verbose) {
-			console.log(chalk.dim(`Restored ${restoredMessages.length} messages from session.`));
-		}
+	if (parsed.verbose && agent.messages.length > 0) {
+		console.log(chalk.dim(`Restored ${agent.messages.length} messages from session.`));
 	}
 
 	// Dispatch to mode
@@ -302,7 +292,6 @@ export async function main(args: string[]) {
 		await runInteractiveMode(agent, {
 			initialMessage,
 			initialMessages: parsed.messages,
-			sessionManager,
 			sessionDir,
 			agentConfig,
 			resumeOnStart: parsed.resume,
@@ -332,7 +321,6 @@ export async function main(args: string[]) {
 			mode,
 			messages: parsed.messages,
 			initialMessage,
-			sessionManager,
 		});
 		process.exit(0);
 	}

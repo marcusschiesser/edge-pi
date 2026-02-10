@@ -30,7 +30,7 @@ import {
 } from "@mariozechner/pi-tui";
 import type { ImagePart } from "ai";
 import chalk from "chalk";
-import type { CodingAgent, CodingAgentConfig, ModelMessage, SessionManager } from "edge-pi";
+import type { CodingAgent, CodingAgentConfig, ModelMessage } from "edge-pi";
 import {
 	type CompactionResult,
 	type CompactionSettings,
@@ -80,7 +80,6 @@ function extractToolOutput(output: unknown): ToolOutput {
 export interface InteractiveModeOptions {
 	initialMessage?: string;
 	initialMessages?: string[];
-	sessionManager?: SessionManager;
 	skills?: Skill[];
 	contextFiles?: ContextFile[];
 	prompts?: PromptTemplate[];
@@ -221,7 +220,7 @@ class InteractiveMode {
 	// ========================================================================
 
 	private initUI(): void {
-		const { provider, modelId, skills = [], contextFiles = [], prompts = [], verbose, sessionManager } = this.options;
+		const { provider, modelId, skills = [], contextFiles = [], prompts = [], verbose } = this.options;
 
 		this.ui = new TUI(new ProcessTerminal());
 
@@ -246,8 +245,10 @@ class InteractiveMode {
 		this.headerContainer.addChild(new Text(`${logo}\n${hints}`, 1, 0));
 		this.headerContainer.addChild(new Spacer(1));
 
-		if (verbose && sessionManager?.getSessionFile()) {
-			this.headerContainer.addChild(new Text(chalk.dim(`Session: ${sessionManager.getSessionFile()}`), 1, 0));
+		if (verbose && this.agent.sessionManager?.getSessionFile()) {
+			this.headerContainer.addChild(
+				new Text(chalk.dim(`Session: ${this.agent.sessionManager.getSessionFile()}`), 1, 0),
+			);
 		}
 
 		// Show loaded context, skills, and prompts at startup
@@ -499,8 +500,6 @@ class InteractiveMode {
 	}
 
 	private async handleBashCommand(command: string, excludeFromContext: boolean): Promise<void> {
-		const { sessionManager } = this.options;
-
 		this.bashAbortController = new AbortController();
 		this.isBashRunning = true;
 
@@ -527,7 +526,7 @@ class InteractiveMode {
 				const msgText = `Ran \`${command}\`\n\n\`\`\`\n${result.output.trimEnd()}\n\`\`\``;
 				const userMsg: ModelMessage = { role: "user", content: [{ type: "text", text: msgText }] };
 				this.agent.setMessages([...this.agent.messages, userMsg]);
-				sessionManager?.appendMessage(userMsg);
+				this.agent.sessionManager?.appendMessage(userMsg);
 			}
 		} finally {
 			this.isBashRunning = false;
@@ -639,8 +638,6 @@ class InteractiveMode {
 	private async streamPrompt(prompt: string, images?: ClipboardImage[]): Promise<void> {
 		this.isStreaming = true;
 		this.updatePendingMessagesDisplay();
-		const { sessionManager } = this.options;
-		const messagesBefore = this.agent.messages.length;
 
 		// Build image parts from clipboard images
 		const imageParts: ImagePart[] = (images ?? []).map((img) => ({
@@ -735,26 +732,8 @@ class InteractiveMode {
 
 			if (errorDisplayed) return;
 
-			// Get final response and update messages
-			const response = await result.response;
-			const responseMessages = response.messages as ModelMessage[];
-			this.agent.setMessages([
-				...this.agent.messages.slice(0, messagesBefore),
-				...buildUserMessage(prompt, imageParts),
-				...responseMessages,
-			]);
-
-			// Save to session
-			if (sessionManager) {
-				const userMsg: ModelMessage = {
-					role: "user",
-					content: [{ type: "text", text: prompt }, ...imageParts],
-				};
-				sessionManager.appendMessage(userMsg);
-				for (const msg of responseMessages) {
-					sessionManager.appendMessage(msg);
-				}
-			}
+			// Wait for stream to complete — the agent auto-updates messages and persists to session
+			await result.response;
 
 			// Update footer token stats
 			this.updateFooterTokens();
@@ -959,7 +938,7 @@ class InteractiveMode {
 	private async executeCompaction(isAuto: boolean): Promise<CompactionResult | undefined> {
 		if (this.isCompacting) return undefined;
 
-		const { sessionManager } = this.options;
+		const sessionManager = this.agent.sessionManager;
 
 		// Build path entries from session if available, otherwise from agent messages
 		const pathEntries = sessionManager ? sessionManager.getBranch() : this.buildSessionEntriesFromMessages();
@@ -1456,7 +1435,7 @@ class InteractiveMode {
 			const sessions: { path: string; mtime: number; preview: string; timestamp: string }[] = [];
 			for (const file of files) {
 				// Skip the current session file
-				if (this.options.sessionManager?.getSessionFile() === file.path) continue;
+				if (this.agent.sessionManager?.getSessionFile() === file.path) continue;
 
 				const preview = this.getSessionPreview(file.path);
 				const timestamp = new Date(file.mtime).toLocaleString();
@@ -1549,16 +1528,10 @@ class InteractiveMode {
 		if (!session) return;
 
 		try {
-			// Open the selected session
+			// Open the selected session and set on agent (auto-restores messages)
 			const sessionDir = this.options.sessionDir!;
 			const newSessionManager = SessionManagerClass.open(selected, sessionDir);
-
-			// Rebuild agent messages from session context
-			const context = newSessionManager.buildSessionContext();
-			this.agent.setMessages(context.messages);
-
-			// Update session manager reference
-			this.options.sessionManager = newSessionManager;
+			this.agent.sessionManager = newSessionManager;
 
 			// Rebuild the chat UI
 			this.chatContainer.clear();
@@ -1567,7 +1540,7 @@ class InteractiveMode {
 			// Update footer tokens
 			this.updateFooterTokens();
 
-			const msgCount = context.messages.length;
+			const msgCount = this.agent.messages.length;
 			this.showStatus(chalk.green(`Resumed session (${msgCount} messages)`));
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
@@ -1640,14 +1613,6 @@ class InteractiveMode {
 // ============================================================================
 // Helpers
 // ============================================================================
-
-function buildUserMessage(text: string, imageParts?: ImagePart[]): ModelMessage[] {
-	const content: Array<{ type: "text"; text: string } | ImagePart> = [{ type: "text" as const, text }];
-	if (imageParts && imageParts.length > 0) {
-		content.push(...imageParts);
-	}
-	return [{ role: "user" as const, content }];
-}
 
 function extractTextFromMessage(msg: ModelMessage): string {
 	if (msg.role === "user") {

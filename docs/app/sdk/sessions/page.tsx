@@ -177,11 +177,37 @@ session.branchWithSummary(
 session.resetLeaf();`}</code>
 			</pre>
 
-			<h2>Building Context</h2>
+			<h2>Using with CodingAgent</h2>
 			<p>
-				Use <code>buildSessionContext()</code> to reconstruct the message history
-				from a session. This handles compaction entries, branch summaries, and
-				model changes.
+				The simplest way to use sessions is to pass a <code>SessionManager</code>{" "}
+				to <code>CodingAgent</code>. Messages are auto-restored from the session on
+				construction and auto-persisted after <code>generate()</code> and{" "}
+				<code>stream()</code> calls.
+			</p>
+			<pre>
+				<code>{`import { CodingAgent, SessionManager } from "edge-pi";
+
+const session = SessionManager.create(process.cwd(), "./sessions");
+const agent = new CodingAgent({ model, sessionManager: session });
+// Messages are auto-restored from session
+// Messages are auto-persisted after generate() and stream()`}</code>
+			</pre>
+			<p>
+				To resume a different session, set the <code>sessionManager</code> property.
+				This automatically restores messages from the new session:
+			</p>
+			<pre>
+				<code>{`const newSession = SessionManager.open("./sessions/previous.jsonl");
+agent.sessionManager = newSession;
+// agent.messages now contains the restored conversation`}</code>
+			</pre>
+
+			<h2>Building Context (Standalone)</h2>
+			<p>
+				When not using the integrated <code>CodingAgent</code> approach, use{" "}
+				<code>buildSessionContext()</code> to manually reconstruct the message
+				history from a session. This handles compaction entries, branch summaries,
+				and model changes.
 			</p>
 			<pre>
 				<code>{`// Build context from the current session state

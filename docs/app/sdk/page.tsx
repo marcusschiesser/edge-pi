@@ -47,6 +47,7 @@ const agent = new CodingAgent({
   toolSet,            // "coding" | "readonly" | "all" (default: "coding")
   tools,              // Merge additional tools into the set
   thinkingLevel,      // For reasoning models: "off" | "minimal" | "low" | "medium" | "high"
+  sessionManager,     // Optional: SessionManager for auto-persist
 });`}</code>
 			</pre>
 
@@ -149,6 +150,20 @@ const agent = new CodingAgent({
 						<td>&mdash;</td>
 						<td>
 							Thinking budget for reasoning models.
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<code>sessionManager</code>
+						</td>
+						<td>
+							<code>SessionManager</code>
+						</td>
+						<td>&mdash;</td>
+						<td>
+							Optional session manager for auto-persist. Messages are
+							auto-restored on construction and auto-persisted after{" "}
+							<code>generate()</code> and <code>stream()</code>.
 						</td>
 					</tr>
 				</tbody>
