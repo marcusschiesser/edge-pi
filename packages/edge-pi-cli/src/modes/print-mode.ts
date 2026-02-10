@@ -34,11 +34,11 @@ export async function runPrintMode(agent: CodingAgent, options: PrintModeOptions
 	}
 
 	for (const message of allMessages) {
-		const result = await agent.prompt({ prompt: message });
+		const result = await agent.generate({ prompt: message });
 
 		// Save messages to session
 		if (sessionManager) {
-			const agentMessages = result.messages;
+			const agentMessages = [...agent.messages];
 			for (const msg of agentMessages.slice(agent.messages.length - agentMessages.length)) {
 				sessionManager.appendMessage(msg);
 			}
@@ -49,7 +49,7 @@ export async function runPrintMode(agent: CodingAgent, options: PrintModeOptions
 				JSON.stringify({
 					type: "result",
 					text: result.text,
-					stepCount: result.stepCount,
+					stepCount: result.steps.length,
 					usage: result.totalUsage,
 				}),
 			);

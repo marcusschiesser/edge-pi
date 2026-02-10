@@ -28,8 +28,9 @@ export default function SdkOverview() {
 
 			<h2>CodingAgent</h2>
 			<p>
-				The main entry point is the <code>CodingAgent</code> class. It wraps the
-				Vercel AI SDK&apos;s tool loop with defaults for coding tasks.
+				The main entry point is the <code>CodingAgent</code> class. It implements
+				the Vercel AI SDK <code>Agent</code> interface and wraps the
+				SDK&apos;s tool loop with defaults for coding tasks.
 			</p>
 
 			<h3>Constructor</h3>
@@ -155,22 +156,21 @@ const agent = new CodingAgent({
 
 			<h2>Execution Methods</h2>
 
-			<h3>prompt()</h3>
+			<h3>generate()</h3>
 			<p>
-				Non-streaming execution. Runs the tool loop to completion and returns the
-				final result.
+				Non-streaming execution. Runs the tool loop to completion and returns a{" "}
+				<code>GenerateTextResult</code>.
 			</p>
 			<pre>
-				<code>{`const result = await agent.prompt({
+				<code>{`const result = await agent.generate({
   prompt: "Read src/index.ts and explain it",
   // Optional: provide messages instead of prompt
   // messages: [{ role: "user", content: "..." }],
 });
 
-console.log(result.text);       // Final text response
-console.log(result.messages);   // Full message history
-console.log(result.usage);      // Token usage
-console.log(result.stepCount);  // Number of tool steps`}</code>
+console.log(result.text);          // Final text response
+console.log(result.steps.length);  // Number of tool steps
+console.log(result.totalUsage);    // Token usage`}</code>
 			</pre>
 
 			<h3>stream()</h3>
@@ -322,9 +322,10 @@ import {
 
 // Types (re-exported from Vercel AI SDK)
 import type {
+  Agent,
+  AgentCallParameters,
+  AgentStreamParameters,
   CodingAgentConfig,
-  PromptOptions,
-  PromptResult,
   LanguageModel,
   ModelMessage,
   GenerateTextResult,

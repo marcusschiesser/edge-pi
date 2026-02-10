@@ -1,8 +1,9 @@
 /**
  * CodingAgent - wraps Vercel AI SDK's ToolLoopAgent.
  *
- * Takes a LanguageModel directly (no model factory).
- * Uses streamText/generateText as the core agent loop.
+ * Implements the Vercel AI SDK Agent interface, providing generate() and
+ * stream() methods with the same signatures. Takes a LanguageModel directly
+ * (no model factory). Uses streamText/generateText as the core agent loop.
  *
  * The agent runs without an artificial step limit — it continues
  * until the model naturally stops (no more tool calls). This matches
@@ -10,10 +11,20 @@
  * as long as the model wants to make tool calls.
  */
 
-import { type GenerateTextResult, type ModelMessage, type StreamTextResult, ToolLoopAgent, type ToolSet } from "ai";
-import { type BuildSystemPromptOptions, buildSystemPrompt } from "./system-prompt.js";
+import {
+	type Agent,
+	type AgentCallParameters,
+	type AgentStreamParameters,
+	type GenerateTextResult,
+	type ModelMessage,
+	type StreamTextResult,
+	ToolLoopAgent,
+	type ToolSet,
+} from "ai";
+import type { BuildSystemPromptOptions } from "./system-prompt.js";
+import { buildSystemPrompt } from "./system-prompt.js";
 import { createAllTools, createCodingTools, createReadOnlyTools } from "./tools/index.js";
-import type { CodingAgentConfig, PromptOptions, PromptResult } from "./types.js";
+import type { CodingAgentConfig } from "./types.js";
 
 /**
  * A stop condition that never triggers, allowing the agent to run
@@ -24,10 +35,12 @@ function neverStop(_options: { steps: unknown[] }): boolean {
 }
 
 /**
- * CodingAgent wraps ToolLoopAgent and provides a simple interface
- * for running coding tasks with tools.
+ * CodingAgent wraps ToolLoopAgent and implements the Vercel AI SDK
+ * Agent interface, providing generate() and stream() methods for
+ * running coding tasks with tools.
  */
-export class CodingAgent {
+export class CodingAgent implements Agent<never, ToolSet> {
+	readonly version = "agent-v1" as const;
 	private config: CodingAgentConfig;
 	private _messages: ModelMessage[] = [];
 	private steeringQueue: ModelMessage[] = [];
@@ -36,6 +49,16 @@ export class CodingAgent {
 
 	constructor(config: CodingAgentConfig) {
 		this.config = { ...config };
+	}
+
+	/** The id of the agent. */
+	get id(): string | undefined {
+		return undefined;
+	}
+
+	/** The tools that the agent can use. */
+	get tools(): ToolSet {
+		return this.getTools();
 	}
 
 	/** Current conversation messages */
@@ -161,10 +184,10 @@ export class CodingAgent {
 	}
 
 	/**
-	 * Non-streaming execution.
-	 * Runs the agent loop, handles follow-ups, returns final result.
+	 * Non-streaming execution (implements Agent.generate).
+	 * Runs the agent loop, handles follow-ups, returns the final GenerateTextResult.
 	 */
-	async prompt(options: PromptOptions): Promise<PromptResult> {
+	async generate(options: AgentCallParameters<never, ToolSet>): Promise<GenerateTextResult<ToolSet, never>> {
 		this.abortController = new AbortController();
 		const signal = options.abortSignal
 			? mergeAbortSignals(options.abortSignal, this.abortController.signal)
@@ -175,19 +198,18 @@ export class CodingAgent {
 		this._messages = inputMessages;
 
 		const agent = this.createAgent();
-		let totalSteps = 0;
 
 		// Run agent loop (with follow-up support)
 		let currentMessages = [...inputMessages];
-		let lastResult: GenerateTextResult<ToolSet, any>;
+		let lastResult: GenerateTextResult<ToolSet, never>;
 
 		do {
 			lastResult = await agent.generate({
 				messages: currentMessages,
 				abortSignal: signal,
+				timeout: options.timeout,
+				onStepFinish: options.onStepFinish,
 			});
-
-			totalSteps += lastResult.steps.length;
 
 			// Update messages with the result: input messages + response messages
 			const responseMessages = lastResult.response.messages as ModelMessage[];
@@ -205,19 +227,14 @@ export class CodingAgent {
 			// biome-ignore lint/correctness/noConstantCondition: follow-up loop with break
 		} while (true);
 
-		return {
-			text: lastResult.text,
-			messages: this._messages,
-			totalUsage: lastResult.totalUsage,
-			stepCount: totalSteps,
-		};
+		return lastResult;
 	}
 
 	/**
-	 * Streaming execution.
+	 * Streaming execution (implements Agent.stream).
 	 * Returns Vercel AI StreamTextResult directly.
 	 */
-	async stream(options: PromptOptions): Promise<StreamTextResult<ToolSet, any>> {
+	async stream(options: AgentStreamParameters<never, ToolSet>): Promise<StreamTextResult<ToolSet, never>> {
 		this.abortController = new AbortController();
 		const signal = options.abortSignal
 			? mergeAbortSignals(options.abortSignal, this.abortController.signal)
@@ -232,22 +249,29 @@ export class CodingAgent {
 		const result = await agent.stream({
 			messages: inputMessages,
 			abortSignal: signal,
+			timeout: options.timeout,
+			onStepFinish: options.onStepFinish,
+			experimental_transform: options.experimental_transform,
 		});
 
 		return result;
 	}
 
-	/** Build input messages from PromptOptions */
-	private buildInputMessages(options: PromptOptions): ModelMessage[] {
-		if (options.messages) {
+	/** Build input messages from AgentCallParameters */
+	private buildInputMessages(options: AgentCallParameters<never, ToolSet>): ModelMessage[] {
+		if ("messages" in options && options.messages) {
 			return [...this._messages, ...options.messages];
 		}
 
-		if (options.prompt) {
-			return [
-				...this._messages,
-				{ role: "user" as const, content: [{ type: "text" as const, text: options.prompt }] },
-			];
+		if ("prompt" in options && options.prompt !== undefined) {
+			if (typeof options.prompt === "string") {
+				return [
+					...this._messages,
+					{ role: "user" as const, content: [{ type: "text" as const, text: options.prompt }] },
+				];
+			}
+			// prompt is Array<ModelMessage>
+			return [...this._messages, ...options.prompt];
 		}
 
 		return [...this._messages];

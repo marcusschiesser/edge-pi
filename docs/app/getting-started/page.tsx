@@ -72,11 +72,11 @@ const agent = new CodingAgent({
 });
 
 // Non-streaming
-const result = await agent.prompt({
+const result = await agent.generate({
   prompt: "Read package.json and tell me the project name",
 });
 console.log(result.text);
-console.log(\`Steps: \${result.stepCount}, Tokens: \${result.usage.totalTokens}\`);`}</code>
+console.log(\`Steps: \${result.steps.length}, Tokens: \${result.totalUsage.inputTokens + result.totalUsage.outputTokens}\`);`}</code>
 			</pre>
 
 			<h3>3. Streaming</h3>
@@ -126,7 +126,7 @@ if (context.messages.length > 0) {
   agent.setMessages(context.messages);
 }
 
-const result = await agent.prompt({
+const result = await agent.generate({
   prompt: "What files have we discussed?",
 });
 
