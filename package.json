@@ -17,7 +17,7 @@
 		"publish:dry": "npm run prepublishOnly && npm publish -ws --access public --dry-run",
 		"changeset": "changeset",
 		"version": "changeset version",
-		"release": "changeset publish",
+			"release": "npm run build && changeset publish",
 		"prepare": "husky"
 	},
 	"devDependencies": {
