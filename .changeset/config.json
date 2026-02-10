@@ -1,0 +1,11 @@
+{
+	"$schema": "https://unpkg.com/@changesets/config@3.2.0/schema.json",
+	"changelog": ["@changesets/changelog-github", { "repo": "marcusschiesser/edge-pi" }],
+	"commit": false,
+	"fixed": [["edge-pi", "edge-pi-cli"]],
+	"linked": [],
+	"access": "public",
+	"baseBranch": "main",
+	"updateInternalDependencies": "patch",
+	"ignore": []
+}

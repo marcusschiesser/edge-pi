@@ -144,24 +144,27 @@ Adding a new provider requires changes in `packages/coding-agent-sdk` and `packa
 
 ## Releasing
 
-**Lockstep versioning**: All packages always share the same version number. Every release updates all packages together.
+We use **Changesets** for release management.
 
-**Version semantics** (no major releases):
-
-- `patch`: Bug fixes and new features
-- `minor`: API breaking changes
+- **Lockstep versioning** is enforced via Changesets `fixed` groups.
+- Create a changeset for any user-facing change: `npm run changeset`
 
 ### Steps
 
-1. **Update CHANGELOGs**: Ensure all changes since last release are documented in the `[Unreleased]` section of each affected package's CHANGELOG.md
-
-2. **Run release script**:
+1. Add changesets for the changes you want to release:
    ```bash
-   npm run release:patch    # Fixes and additions
-   npm run release:minor    # API breaking changes
+   npm run changeset
    ```
 
-The script handles: version bump, CHANGELOG finalization, commit, tag, publish, and adding new `[Unreleased]` sections.
+2. Bump package versions + update changelogs:
+   ```bash
+   npm run version
+   ```
+
+3. Publish to npm:
+   ```bash
+   npm run release
+   ```
 
 ## **CRITICAL** Tool Usage Rules **CRITICAL**
 
