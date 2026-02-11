@@ -154,6 +154,21 @@ What remains to be done.
 - Modified: src/parser.ts, tests/parser.test.ts`}</code>
 			</pre>
 
+			<h2>Token Estimation</h2>
+			<pre>
+				<code>{`import { estimateTokens, estimateContextTokens } from "edge-pi";
+
+// Estimate tokens for a single message
+const tokens = estimateTokens(message);
+
+// Estimate total tokens for all messages
+const total = estimateContextTokens(messages);`}</code>
+			</pre>
+			<p>
+				Token estimation uses a <code>chars / 4</code> heuristic. This is
+				conservative (overestimates) but fast and works across all models.
+			</p>
+
 			<h2>Branch Summarization</h2>
 			<p>
 				When branching to a new conversation path, edge-pi can summarize the
