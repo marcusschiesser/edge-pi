@@ -23,6 +23,7 @@ import { createModel } from "./model-factory.js";
 import { runInteractiveMode } from "./modes/interactive-mode.js";
 import { runPrintMode } from "./modes/print-mode.js";
 import { loadPrompts } from "./prompts.js";
+import { buildProviderOptions } from "./provider-options.js";
 import { SettingsManager } from "./settings.js";
 import { formatSkillsForPrompt, loadSkills, type Skill } from "./skills.js";
 import { findFd } from "./utils/find-fd.js";
@@ -264,7 +265,7 @@ export async function main(args: string[]) {
 		model,
 		cwd,
 		toolSet: parsed.toolSet ?? "coding",
-		thinkingLevel: parsed.thinking,
+		providerOptions: buildProviderOptions(provider, parsed.thinking),
 		sessionManager,
 	};
 
@@ -313,6 +314,7 @@ export async function main(args: string[]) {
 				return new CodingAgent({
 					...agentConfig,
 					model: newModel,
+					providerOptions: buildProviderOptions(newProvider, parsed.thinking),
 				});
 			},
 		});

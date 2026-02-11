@@ -10,11 +10,33 @@ import chalk from "chalk";
 import { isAnthropicOAuthToken } from "./auth/anthropic-oauth.js";
 import type { AuthStorage } from "./auth/auth-storage.js";
 
+const OPENAI_CODEX_ACCOUNT_CLAIM = "https://api.openai.com/auth";
+
 export interface ProviderConfig {
 	name: string;
 	envVar: string;
 	defaultModel: string;
 	createModel: (modelId: string, apiKey?: string) => Promise<LanguageModel>;
+}
+
+function extractOpenAICodexAccountId(token: string): string {
+	try {
+		const parts = token.split(".");
+		if (parts.length !== 3) {
+			throw new Error("Invalid OAuth token format");
+		}
+
+		const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8")) as Record<string, unknown>;
+		const authClaim = payload[OPENAI_CODEX_ACCOUNT_CLAIM] as Record<string, unknown> | undefined;
+		const accountId = authClaim?.chatgpt_account_id;
+		if (typeof accountId !== "string" || accountId.length === 0) {
+			throw new Error("chatgpt_account_id claim missing");
+		}
+		return accountId;
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		throw new Error(`Failed to extract ChatGPT account ID from OAuth token: ${message}`);
+	}
 }
 
 async function createAnthropicModelWithOAuth(modelId: string, apiKey: string): Promise<LanguageModel> {
@@ -75,9 +97,16 @@ const providers: Record<string, ProviderConfig> = {
 		defaultModel: "gpt-5.3-codex",
 		createModel: async (modelId: string, apiKey?: string) => {
 			const { createOpenAI } = await import("@ai-sdk/openai");
+			const accountId = apiKey ? extractOpenAICodexAccountId(apiKey) : undefined;
 			const provider = createOpenAI({
 				apiKey: apiKey ?? "",
-				baseURL: "https://chatgpt.com/backend-api",
+				baseURL: "https://chatgpt.com/backend-api/codex",
+				headers: {
+					...(accountId ? { "chatgpt-account-id": accountId } : {}),
+					"OpenAI-Beta": "responses=experimental",
+					originator: "pi",
+					"User-Agent": "epi/0.1.0 (external, cli)",
+				},
 			});
 			return provider(modelId);
 		},

@@ -67,7 +67,6 @@ export type {
 	StopCondition,
 	StreamTextResult,
 	SystemModelMessage,
-	ThinkingLevel,
 	ToolModelMessage,
 	ToolSet,
 	UserModelMessage,

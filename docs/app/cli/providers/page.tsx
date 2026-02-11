@@ -3,9 +3,9 @@ export default function ProvidersPage() {
 		<>
 			<h1>Providers & Auth</h1>
 			<p>
-				The <code>epi</code> CLI supports three AI providers out of the box:
-				Anthropic, OpenAI, and Google. Authentication is handled through API
-				keys, environment variables, or OAuth.
+				The <code>epi</code> CLI supports five AI providers out of the box:
+				Anthropic, OpenAI, OpenAI Codex, Google, and GitHub Copilot.
+				Authentication is handled through API keys, environment variables, or OAuth.
 			</p>
 
 			<h2>Supported Providers</h2>
@@ -25,7 +25,7 @@ export default function ProvidersPage() {
 							<code>--provider anthropic</code>
 						</td>
 						<td>
-							<code>claude-sonnet-4-20250514</code>
+							<code>claude-opus-4-6</code>
 						</td>
 						<td>
 							<code>ANTHROPIC_API_KEY</code>
@@ -37,7 +37,19 @@ export default function ProvidersPage() {
 							<code>--provider openai</code>
 						</td>
 						<td>
-							<code>gpt-4o</code>
+							<code>gpt-5.3</code>
+						</td>
+						<td>
+							<code>OPENAI_API_KEY</code>
+						</td>
+					</tr>
+					<tr>
+						<td>OpenAI Codex</td>
+						<td>
+							<code>--provider openai-codex</code>
+						</td>
+						<td>
+							<code>gpt-5.3-codex</code>
 						</td>
 						<td>
 							<code>OPENAI_API_KEY</code>
@@ -49,10 +61,22 @@ export default function ProvidersPage() {
 							<code>--provider google</code>
 						</td>
 						<td>
-							<code>gemini-2.5-flash</code>
+							<code>gemini-3-flash</code>
 						</td>
 						<td>
 							<code>GEMINI_API_KEY</code>
+						</td>
+					</tr>
+					<tr>
+						<td>GitHub Copilot</td>
+						<td>
+							<code>--provider github-copilot</code>
+						</td>
+						<td>
+							<code>claude-sonnet-4.5</code>
+						</td>
+						<td>
+							<code>GITHUB_TOKEN</code>
 						</td>
 					</tr>
 				</tbody>
@@ -137,6 +161,18 @@ export GEMINI_API_KEY=...`}</code>
 				</p>
 			</blockquote>
 
+			<h2>OAuth (OpenAI Codex)</h2>
+			<p>
+				The CLI supports ChatGPT OAuth device flow for{" "}
+				<code>openai-codex</code>:
+			</p>
+			<pre>
+				<code>{`# In interactive mode:
+/login
+
+# Select "OpenAI (ChatGPT Plus/Pro)"`}</code>
+			</pre>
+
 			<h2>Credential Storage</h2>
 			<p>
 				Credentials are stored in{" "}
@@ -192,12 +228,18 @@ epi --provider anthropic --model claude-sonnet-4-20250514
 epi --provider anthropic --model claude-opus-4-20250514
 
 # OpenAI models
-epi --provider openai --model gpt-4o
-epi --provider openai --model gpt-4o-mini
+epi --provider openai --model gpt-5.3
+epi --provider openai --model gpt-5.2-codex
+
+# OpenAI Codex models
+epi --provider openai-codex --model gpt-5.3-codex
 
 # Google models
-epi --provider google --model gemini-2.5-flash
-epi --provider google --model gemini-2.5-pro`}</code>
+epi --provider google --model gemini-3-flash
+epi --provider google --model gemini-3-pro-preview
+
+# GitHub Copilot models
+epi --provider github-copilot --model claude-sonnet-4.5`}</code>
 			</pre>
 
 			<h2>Configuration Directory</h2>

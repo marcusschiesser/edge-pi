@@ -46,7 +46,7 @@ const agent = new CodingAgent({
   systemPromptOptions,// Or configure the prompt builder
   toolSet,            // "coding" | "readonly" | "all" (default: "coding")
   tools,              // Merge additional tools into the set
-  thinkingLevel,      // For reasoning models: "off" | "minimal" | "low" | "medium" | "high"
+  providerOptions,    // Optional provider-specific options passed to model calls
   sessionManager,     // Optional: SessionManager for auto-persist
 });`}</code>
 			</pre>
@@ -142,14 +142,14 @@ const agent = new CodingAgent({
 					</tr>
 					<tr>
 						<td>
-							<code>thinkingLevel</code>
+							<code>providerOptions</code>
 						</td>
 						<td>
-							<code>ThinkingLevel</code>
+							<code>{`Record<string, Record<string, JSONValue>>`}</code>
 						</td>
 						<td>&mdash;</td>
 						<td>
-							Thinking budget for reasoning models.
+							Optional provider-specific options to forward to model calls.
 						</td>
 					</tr>
 					<tr>
@@ -334,7 +334,6 @@ import type {
   GenerateTextResult,
   StopCondition,
   StreamTextResult,
-  ThinkingLevel,
   Tool,
   ToolSet,
   LanguageModelUsage,

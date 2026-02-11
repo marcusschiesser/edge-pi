@@ -50,6 +50,7 @@ import type { SettingsManager } from "../../settings.js";
 import type { Skill } from "../../skills.js";
 import { executeBashCommand } from "../../utils/bash-executor.js";
 import { type ClipboardImage, extensionForImageMimeType, readClipboardImage } from "../../utils/clipboard-image.js";
+import { formatAIError } from "../../utils/format-ai-error.js";
 import { formatPendingMessages, parseBashInput } from "./bash-helpers.js";
 import { AssistantMessageComponent } from "./components/assistant-message.js";
 import { BashExecutionComponent } from "./components/bash-execution.js";
@@ -714,11 +715,7 @@ class InteractiveMode {
 					}
 
 					case "error": {
-						const errorMessage =
-							(part.error as any)?.message ??
-							(typeof part.error === "object" && part.error !== null
-								? JSON.stringify(part.error)
-								: String(part.error));
+						const errorMessage = formatAIError(part.error);
 						if (this.streamingComponent) {
 							this.streamingComponent.setError(errorMessage);
 						} else {
@@ -994,7 +991,12 @@ class InteractiveMode {
 			// a model via the same factory used at startup.
 			const { model } = await this.getCompactionModel();
 
-			result = await compact(preparation, model, this.compactionAbortController.signal);
+			result = await compact(
+				preparation,
+				model,
+				this.options.agentConfig?.providerOptions,
+				this.compactionAbortController.signal,
+			);
 
 			// Record compaction in session
 			if (sessionManager) {

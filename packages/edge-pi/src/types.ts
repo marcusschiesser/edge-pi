@@ -4,6 +4,7 @@
  * Re-exports Vercel AI types and defines package-specific types.
  */
 
+import type { JSONValue } from "@ai-sdk/provider";
 import type {
 	Agent,
 	AgentCallParameters,
@@ -57,8 +58,6 @@ export { generateId, tool } from "ai";
 /**
  * Thinking level for model reasoning.
  */
-export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high";
-
 /**
  * Configuration for the CodingAgent.
  */
@@ -90,8 +89,8 @@ export interface CodingAgentConfig {
 	toolSet?: "coding" | "readonly" | "all";
 	/** Additional tools to merge in */
 	tools?: ToolSet;
-	/** Thinking level for reasoning models */
-	thinkingLevel?: ThinkingLevel;
+	/** Optional provider-specific options forwarded to the model call. */
+	providerOptions?: Record<string, Record<string, JSONValue>>;
 	/**
 	 * Optional session manager for automatic message persistence.
 	 * When provided, messages are auto-restored from the session on construction

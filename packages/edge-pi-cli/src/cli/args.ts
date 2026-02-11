@@ -5,10 +5,10 @@
  */
 
 import chalk from "chalk";
-import type { ThinkingLevel } from "edge-pi";
 import { getLatestModels, listProviders } from "../model-factory.js";
 
 export type Mode = "text" | "json";
+type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high";
 
 const VALID_THINKING_LEVELS = new Set(["off", "minimal", "low", "medium", "high"]);
 

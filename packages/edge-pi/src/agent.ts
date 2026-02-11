@@ -150,27 +150,6 @@ export class CodingAgent implements Agent<never, ToolSet> {
 		return tools;
 	}
 
-	/** Build provider options for thinking levels */
-	private getProviderOptions(): Record<string, Record<string, any>> | undefined {
-		const level = this.config.thinkingLevel;
-		if (!level || level === "off") return undefined;
-
-		// Map thinking levels to budget tokens
-		const budgetMap: Record<string, number> = {
-			minimal: 1024,
-			low: 4096,
-			medium: 10240,
-			high: 32768,
-		};
-
-		const budget = budgetMap[level];
-		if (!budget) return undefined;
-
-		return {
-			anthropic: { thinking: { type: "enabled", budgetTokens: budget } },
-		};
-	}
-
 	/** Create a ToolLoopAgent for this call */
 	private createAgent(): ToolLoopAgent<never, ToolSet> {
 		const tools = this.getTools();
@@ -181,7 +160,7 @@ export class CodingAgent implements Agent<never, ToolSet> {
 			instructions,
 			tools,
 			stopWhen: this.config.stopWhen ?? neverStop,
-			providerOptions: this.getProviderOptions(),
+			providerOptions: this.config.providerOptions,
 			prepareStep: ({ steps }) => {
 				// Drain steering queue
 				if (this.steeringQueue.length > 0) {
@@ -296,7 +275,10 @@ export class CodingAgent implements Agent<never, ToolSet> {
 			if (typeof options.prompt === "string") {
 				return [
 					...this._messages,
-					{ role: "user" as const, content: [{ type: "text" as const, text: options.prompt }] },
+					{
+						role: "user" as const,
+						content: [{ type: "text" as const, text: options.prompt }],
+					},
 				];
 			}
 			// prompt is Array<ModelMessage>

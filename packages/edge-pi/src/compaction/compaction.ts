@@ -5,6 +5,7 @@
  * Uses LLM-based summarization via generateText.
  */
 
+import type { ProviderOptions } from "@ai-sdk/provider-utils";
 import { generateText, type LanguageModel, type ModelMessage, type UserModelMessage } from "ai";
 import type { CompactionEntry, SessionEntry } from "../session/types.js";
 import { estimateTokens } from "./token-estimation.js";
@@ -400,6 +401,7 @@ async function generateSummary(
 	currentMessages: ModelMessage[],
 	model: LanguageModel,
 	reserveTokens: number,
+	providerOptions: ProviderOptions | undefined,
 	signal?: AbortSignal,
 	previousSummary?: string,
 ): Promise<string> {
@@ -418,6 +420,7 @@ async function generateSummary(
 		model,
 		system: SUMMARIZATION_SYSTEM_PROMPT,
 		messages: [{ role: "user" as const, content: [{ type: "text", text: promptText }] }],
+		providerOptions,
 		maxOutputTokens: maxTokens,
 		abortSignal: signal,
 	});
@@ -429,6 +432,7 @@ async function generateTurnPrefixSummary(
 	messages: ModelMessage[],
 	model: LanguageModel,
 	reserveTokens: number,
+	providerOptions: ProviderOptions | undefined,
 	signal?: AbortSignal,
 ): Promise<string> {
 	const maxTokens = Math.floor(0.5 * reserveTokens);
@@ -439,6 +443,7 @@ async function generateTurnPrefixSummary(
 		model,
 		system: SUMMARIZATION_SYSTEM_PROMPT,
 		messages: [{ role: "user" as const, content: [{ type: "text", text: promptText }] }],
+		providerOptions,
 		maxOutputTokens: maxTokens,
 		abortSignal: signal,
 	});
@@ -456,6 +461,7 @@ async function generateTurnPrefixSummary(
 export async function compact(
 	preparation: CompactionPreparation,
 	model: LanguageModel,
+	providerOptions?: ProviderOptions,
 	signal?: AbortSignal,
 ): Promise<CompactionResult> {
 	const {
@@ -474,13 +480,27 @@ export async function compact(
 	if (isSplitTurn && turnPrefixMessages.length > 0) {
 		const [historyResult, turnPrefixResult] = await Promise.all([
 			messagesToSummarize.length > 0
-				? generateSummary(messagesToSummarize, model, settings.reserveTokens, signal, previousSummary)
+				? generateSummary(
+						messagesToSummarize,
+						model,
+						settings.reserveTokens,
+						providerOptions,
+						signal,
+						previousSummary,
+					)
 				: Promise.resolve("No prior history."),
-			generateTurnPrefixSummary(turnPrefixMessages, model, settings.reserveTokens, signal),
+			generateTurnPrefixSummary(turnPrefixMessages, model, settings.reserveTokens, providerOptions, signal),
 		]);
 		summary = `${historyResult}\n\n---\n\n**Turn Context (split turn):**\n\n${turnPrefixResult}`;
 	} else {
-		summary = await generateSummary(messagesToSummarize, model, settings.reserveTokens, signal, previousSummary);
+		summary = await generateSummary(
+			messagesToSummarize,
+			model,
+			settings.reserveTokens,
+			providerOptions,
+			signal,
+			previousSummary,
+		);
 	}
 
 	const { readFiles, modifiedFiles } = computeFileLists(fileOps);

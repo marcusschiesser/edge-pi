@@ -5,6 +5,7 @@
  * a summary of the branch being left so context isn't lost.
  */
 
+import type { ProviderOptions } from "@ai-sdk/provider-utils";
 import { generateText, type LanguageModel, type ModelMessage, type UserModelMessage } from "ai";
 import type { SessionManager } from "../session/session-manager.js";
 import type { SessionEntry } from "../session/types.js";
@@ -46,6 +47,7 @@ export interface GenerateBranchSummaryOptions {
 	signal: AbortSignal;
 	reserveTokens?: number;
 	contextWindow?: number;
+	providerOptions?: ProviderOptions;
 }
 
 // ============================================================================
@@ -222,7 +224,7 @@ export async function generateBranchSummary(
 	entries: SessionEntry[],
 	options: GenerateBranchSummaryOptions,
 ): Promise<BranchSummaryResult> {
-	const { model, signal, reserveTokens = 16384, contextWindow = 128000 } = options;
+	const { model, signal, reserveTokens = 16384, contextWindow = 128000, providerOptions } = options;
 
 	const tokenBudget = contextWindow - reserveTokens;
 
@@ -240,6 +242,7 @@ export async function generateBranchSummary(
 			model,
 			system: SUMMARIZATION_SYSTEM_PROMPT,
 			messages: [{ role: "user" as const, content: [{ type: "text", text: promptText }] }],
+			providerOptions,
 			maxOutputTokens: 2048,
 			abortSignal: signal,
 		});
