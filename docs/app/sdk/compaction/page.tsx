@@ -4,8 +4,8 @@ export default function CompactionPage() {
 			<h1>Compaction</h1>
 			<p>
 				Compaction keeps the conversation within the model&apos;s context window
-				by summarizing older messages. edge-pi provides utilities to detect when
-				compaction is needed, prepare the messages, and generate summaries.
+				by summarizing older messages. In <code>edge-pi</code>, compaction
+				orchestration is part of <code>CodingAgent</code>.
 			</p>
 
 			<h2>How It Works</h2>
@@ -36,47 +36,32 @@ export default function CompactionPage() {
 
 			<h2>Settings</h2>
 			<pre>
-				<code>{`import { compactionSchema } from "edge-pi";
-
-// Default settings
-const defaults = {
-  enabled: true,
-  reserveTokens: 16384,   // Space to reserve for generation
-  keepRecentTokens: 20000, // Recent context to preserve
-};`}</code>
+				<code>{`// Defaults used by CodingAgent compaction:
+// reserveTokens: 16384
+// keepRecentTokens: 20000`}</code>
 			</pre>
-			<table>
-				<thead>
-					<tr>
-						<th>Setting</th>
-						<th>Type</th>
-						<th>Default</th>
-						<th>Description</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>
-							<code>enabled</code>
-						</td>
-						<td>boolean</td>
-						<td>
-							<code>true</code>
-						</td>
-						<td>Whether compaction is active.</td>
-					</tr>
-					<tr>
-						<td>
-							<code>reserveTokens</code>
-						</td>
-						<td>number</td>
-						<td>
-							<code>16384</code>
-						</td>
-						<td>
-							Tokens to reserve for the model&apos;s response.
-						</td>
-					</tr>
+				<table>
+					<thead>
+						<tr>
+							<th>Setting</th>
+							<th>Type</th>
+							<th>Default</th>
+							<th>Description</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>
+								<code>reserveTokens</code>
+							</td>
+							<td>number</td>
+							<td>
+								<code>16384</code>
+							</td>
+							<td>
+								Tokens to reserve for the model&apos;s response.
+							</td>
+						</tr>
 					<tr>
 						<td>
 							<code>keepRecentTokens</code>
@@ -92,72 +77,59 @@ const defaults = {
 				</tbody>
 			</table>
 
-			<h2>Checking If Compaction Is Needed</h2>
-			<pre>
-				<code>{`import {
-  estimateContextTokens,
-  shouldCompact,
-} from "edge-pi";
-
-const tokens = estimateContextTokens(messages);
-const contextWindow = 200000; // Model's context window
-
-if (shouldCompact(tokens, contextWindow, { enabled: true, reserveTokens: 16384 })) {
-  // Trigger compaction
-}`}</code>
-			</pre>
-
-			<h2>Running Compaction</h2>
-			<pre>
-				<code>{`import { prepareCompaction, compact } from "edge-pi";
-
-// 1. Prepare: find the cut point and collect messages
-const preparation = prepareCompaction(sessionEntries, settings);
-
-if (preparation) {
-  // 2. Run: generate the summary using the model
-  const result = await compact(preparation, model);
-
-  // 3. Store: save the compaction result in the session
-  session.appendCompaction(
-    result.summary,
-    result.firstKeptEntryId,
-    result.tokensBefore,
-    result.details // { readFiles, modifiedFiles }
-  );
-}`}</code>
-			</pre>
-
-			<h3>Preparation</h3>
+			<h2>CodingAgent Auto-Compaction</h2>
 			<p>
-				<code>prepareCompaction()</code> analyzes the session entries and returns
-				a preparation object containing:
+				Compaction orchestration is built into <code>CodingAgent</code>.
+				When configured with <code>mode: "auto"</code>, the agent checks for
+				compaction after <code>generate()</code> and <code>stream()</code>.
 			</p>
-			<ul>
-				<li>
-					<code>messagesToSummarize</code> &mdash; Older messages to compress
-				</li>
-				<li>
-					<code>turnPrefixMessages</code> &mdash; Partial turn messages at the
-					boundary
-				</li>
-				<li>
-					<code>firstKeptEntryId</code> &mdash; ID of the first entry to keep
-				</li>
-				<li>
-					<code>tokensBefore</code> &mdash; Token count before compaction
-				</li>
-				<li>
-					<code>previousSummary</code> &mdash; Any existing compaction summary
-					to build on
-				</li>
-				<li>
-					<code>fileOps</code> &mdash; Tracked file read/write operations
-				</li>
-			</ul>
+			<pre>
+				<code>{`import { CodingAgent, SessionManager } from "edge-pi";
+
+const sessionManager = SessionManager.create(process.cwd());
+
+const agent = new CodingAgent({
+  model,
+  sessionManager,
+  compaction: {
+    contextWindow: 200_000,
+    mode: "auto",
+    settings: {
+      reserveTokens: 16_384,
+      keepRecentTokens: 20_000,
+    },
+    onCompactionComplete: (result) => {
+      console.log("Compacted", result.tokensBefore, "tokens");
+    },
+  },
+});
+
+await agent.generate({ prompt: "Refactor auth" });`}</code>
+			</pre>
+
+			<h3>Manual Mode and Runtime Toggle</h3>
+			<pre>
+				<code>{`const agent = new CodingAgent({
+  model,
+  sessionManager,
+  compaction: { contextWindow: 200_000, mode: "manual" },
+});
+
+await agent.compact();
+
+if (agent.compaction) {
+  agent.setCompaction({ ...agent.compaction, mode: "auto" });
+  agent.setCompaction({ ...agent.compaction, mode: "manual" });
+}`}</code>
+				</pre>
+
+			<h2>What&apos;s Public API</h2>
 			<p>
-				Returns <code>undefined</code> if compaction is not needed or not
-				possible.
+				Use <code>CodingAgent</code> compaction APIs: <code>compaction</code>{" "}
+				config in <code>CodingAgentConfig</code>,{" "}
+				<code>agent.compact()</code>, and <code>agent.setCompaction()</code>.
+				Low-level compaction helpers are internal and not exported from the package
+				root.
 			</p>
 
 			<h3>Summary Format</h3>
@@ -181,21 +153,6 @@ What remains to be done.
 - Read: src/index.ts, src/utils.ts
 - Modified: src/parser.ts, tests/parser.test.ts`}</code>
 			</pre>
-
-			<h2>Token Estimation</h2>
-			<pre>
-				<code>{`import { estimateTokens, estimateContextTokens } from "edge-pi";
-
-// Estimate tokens for a single message
-const tokens = estimateTokens(message);
-
-// Estimate total tokens for all messages
-const total = estimateContextTokens(messages);`}</code>
-			</pre>
-			<p>
-				Token estimation uses a <code>chars / 4</code> heuristic. This is
-				conservative (overestimates) but fast and works across all models.
-			</p>
 
 			<h2>Branch Summarization</h2>
 			<p>

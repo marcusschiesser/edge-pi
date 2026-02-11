@@ -28,19 +28,10 @@ import {
 	Text,
 	TUI,
 } from "@mariozechner/pi-tui";
-import type { ImagePart } from "ai";
+import type { ImagePart, ModelMessage } from "ai";
 import chalk from "chalk";
-import type { CodingAgent, CodingAgentConfig, ModelMessage } from "edge-pi";
-import {
-	type CompactionResult,
-	type CompactionSettings,
-	compact,
-	DEFAULT_COMPACTION_SETTINGS,
-	estimateContextTokens,
-	prepareCompaction,
-	SessionManager as SessionManagerClass,
-	shouldCompact,
-} from "edge-pi";
+import type { CodingAgent, CodingAgentConfig } from "edge-pi";
+import { type CompactionResult, estimateContextTokens, SessionManager as SessionManagerClass } from "edge-pi";
 import type { AuthStorage } from "../../auth/auth-storage.js";
 import type { ContextFile } from "../../context.js";
 import { getLatestModels } from "../../model-factory.js";
@@ -62,6 +53,15 @@ import { getEditorTheme, getMarkdownTheme, getSelectListTheme } from "./theme.js
 
 /** Default context window size (used when model doesn't report one). */
 const DEFAULT_CONTEXT_WINDOW = 200_000;
+const DEFAULT_COMPACTION_SETTINGS = {
+	reserveTokens: 16384,
+	keepRecentTokens: 20000,
+} as const;
+
+type CompactionSettings = {
+	reserveTokens: number;
+	keepRecentTokens: number;
+};
 
 /** Extract display-friendly output from a tool result. Handles both plain strings and structured objects with text/image fields. */
 function extractToolOutput(output: unknown): ToolOutput {
@@ -168,7 +168,7 @@ class InteractiveMode {
 	private compactionSettings: CompactionSettings;
 	private autoCompaction = true;
 	private isCompacting = false;
-	private compactionAbortController: AbortController | null = null;
+	private compactionLoader: Loader | null = null;
 
 	constructor(agent: CodingAgent, options: InteractiveModeOptions) {
 		this.agent = agent;
@@ -185,6 +185,8 @@ class InteractiveMode {
 			...(savedCompaction?.keepRecentTokens !== undefined && { keepRecentTokens: savedCompaction.keepRecentTokens }),
 		};
 		this.autoCompaction = options.settingsManager?.getCompactionEnabled() ?? true;
+
+		this.configureAgentCompaction();
 	}
 
 	async run(): Promise<void> {
@@ -331,8 +333,8 @@ class InteractiveMode {
 					this.bashAbortController.abort();
 					return;
 				}
-				if (this.isCompacting && this.compactionAbortController) {
-					this.compactionAbortController.abort();
+				if (this.isCompacting) {
+					this.agent.abort();
 					return;
 				}
 				if (this.loadingAnimation) {
@@ -617,6 +619,7 @@ class InteractiveMode {
 			// Preserve conversation history
 			newAgent.setMessages([...this.agent.messages]);
 			this.agent = newAgent;
+			this.configureAgentCompaction();
 
 			this.currentProvider = newProvider;
 			this.currentModelId = newModelId;
@@ -734,9 +737,6 @@ class InteractiveMode {
 
 			// Update footer token stats
 			this.updateFooterTokens();
-
-			// Check for auto-compaction after successful response
-			await this.checkAutoCompaction();
 		} catch (error) {
 			if (errorDisplayed) {
 				streamFailed = true;
@@ -895,13 +895,10 @@ class InteractiveMode {
 	 * Handle the /compact command.
 	 */
 	private async handleCompactCommand(_customInstructions?: string): Promise<void> {
-		const messages = this.agent.messages;
-		if (messages.length < 2) {
-			this.showStatus(chalk.yellow("Nothing to compact (not enough messages)."));
-			return;
+		const result = await this.agent.compact();
+		if (!result) {
+			this.showStatus(chalk.yellow("Nothing to compact (already compacted or insufficient history)."));
 		}
-
-		await this.executeCompaction(false);
 	}
 
 	/**
@@ -911,6 +908,12 @@ class InteractiveMode {
 		this.autoCompaction = !this.autoCompaction;
 		this.footer.setAutoCompaction(this.autoCompaction);
 		this.options.settingsManager?.setCompactionEnabled(this.autoCompaction);
+		if (this.agent.compaction) {
+			this.agent.setCompaction({
+				...this.agent.compaction,
+				mode: this.autoCompaction ? "auto" : "manual",
+			});
+		}
 		this.showStatus(
 			this.autoCompaction ? chalk.green("Auto-compaction enabled") : chalk.dim("Auto-compaction disabled"),
 		);
@@ -918,180 +921,72 @@ class InteractiveMode {
 	}
 
 	/**
-	 * Check if auto-compaction should trigger after an agent response.
+	 * Configure agent-level compaction and callbacks for UI updates.
 	 */
-	private async checkAutoCompaction(): Promise<void> {
-		if (!this.autoCompaction) return;
-
-		const contextTokens = estimateContextTokens([...this.agent.messages]);
-		if (!shouldCompact(contextTokens, this.contextWindow, this.compactionSettings)) return;
-
-		await this.executeCompaction(true);
-	}
-
-	/**
-	 * Execute compaction (used by both manual /compact and auto mode).
-	 */
-	private async executeCompaction(isAuto: boolean): Promise<CompactionResult | undefined> {
-		if (this.isCompacting) return undefined;
-
-		const sessionManager = this.agent.sessionManager;
-
-		// Build path entries from session if available, otherwise from agent messages
-		const pathEntries = sessionManager ? sessionManager.getBranch() : this.buildSessionEntriesFromMessages();
-
-		if (pathEntries.length < 2) {
-			if (!isAuto) {
-				this.showStatus(chalk.yellow("Nothing to compact (not enough messages)."));
-			}
-			return undefined;
-		}
-
-		// Prepare compaction
-		const preparation = prepareCompaction(pathEntries, this.compactionSettings);
-		if (!preparation) {
-			if (!isAuto) {
-				this.showStatus(chalk.yellow("Nothing to compact (already compacted or insufficient history)."));
-			}
-			return undefined;
-		}
-
-		if (preparation.messagesToSummarize.length === 0) {
-			if (!isAuto) {
-				this.showStatus(chalk.yellow("Nothing to compact (no messages to summarize)."));
-			}
-			return undefined;
-		}
-
-		this.isCompacting = true;
-		this.compactionAbortController = new AbortController();
-
-		// Show compaction indicator
-		const label = isAuto
-			? "Auto-compacting context... (Escape to cancel)"
-			: "Compacting context... (Escape to cancel)";
-		const compactingLoader = new Loader(
-			this.ui,
-			(s: string) => chalk.cyan(s),
-			(s: string) => chalk.dim(s),
-			label,
-		);
-		compactingLoader.start();
-		this.pendingContainer.clear();
-		this.pendingContainer.addChild(new Spacer(1));
-		this.pendingContainer.addChild(compactingLoader);
-		this.ui.requestRender();
-
-		let result: CompactionResult | undefined;
-
-		try {
-			// We need a LanguageModel for summarization. Use the agent's model
-			// by extracting it from the config. The model is accessible through
-			// the onModelChange callback pattern, but for simplicity we create
-			// a model via the same factory used at startup.
-			const { model } = await this.getCompactionModel();
-
-			result = await compact(
-				preparation,
-				model,
-				this.options.agentConfig?.providerOptions,
-				this.compactionAbortController.signal,
-			);
-
-			// Record compaction in session
-			if (sessionManager) {
-				sessionManager.appendCompaction(
-					result.summary,
-					result.firstKeptEntryId,
-					result.tokensBefore,
-					result.details,
+	private configureAgentCompaction(): void {
+		const mode = this.autoCompaction ? "auto" : "manual";
+		this.agent.setCompaction({
+			contextWindow: this.contextWindow,
+			mode,
+			settings: {
+				reserveTokens: this.compactionSettings.reserveTokens,
+				keepRecentTokens: this.compactionSettings.keepRecentTokens,
+			},
+			onCompactionStart: () => {
+				this.isCompacting = true;
+				this.compactionLoader?.stop();
+				this.compactionLoader = new Loader(
+					this.ui,
+					(s: string) => chalk.cyan(s),
+					(s: string) => chalk.dim(s),
+					this.autoCompaction
+						? "Auto-compacting context... (Escape to cancel)"
+						: "Compacting context... (Escape to cancel)",
 				);
-			}
+				this.compactionLoader.start();
+				this.pendingContainer.clear();
+				this.pendingContainer.addChild(new Spacer(1));
+				this.pendingContainer.addChild(this.compactionLoader);
+				this.ui.requestRender();
+			},
+			onCompactionComplete: (result: CompactionResult) => {
+				this.compactionLoader?.stop();
+				this.compactionLoader = null;
+				this.pendingContainer.clear();
+				this.isCompacting = false;
 
-			// Rebuild agent messages from the session context
-			if (sessionManager) {
-				const context = sessionManager.buildSessionContext();
-				this.agent.setMessages(context.messages);
-			}
+				this.rebuildChatFromSession();
+				const summaryComponent = new CompactionSummaryComponent(result.tokensBefore, result.summary);
+				if (this.toolOutputExpanded) {
+					summaryComponent.setExpanded(true);
+				}
+				this.chatContainer.addChild(summaryComponent);
 
-			// Rebuild the chat UI
-			this.rebuildChatFromSession();
+				this.updateFooterTokens();
+				if (this.options.verbose) {
+					const tokensAfter = estimateContextTokens([...this.agent.messages]);
+					this.showStatus(
+						chalk.dim(
+							`Compacted: ${result.tokensBefore.toLocaleString()} -> ${tokensAfter.toLocaleString()} tokens`,
+						),
+					);
+				}
+				this.ui.requestRender();
+			},
+			onCompactionError: (error: Error) => {
+				this.compactionLoader?.stop();
+				this.compactionLoader = null;
+				this.pendingContainer.clear();
+				this.isCompacting = false;
 
-			// Add compaction summary component so user sees it
-			const summaryComponent = new CompactionSummaryComponent(result.tokensBefore, result.summary);
-			if (this.toolOutputExpanded) {
-				summaryComponent.setExpanded(true);
-			}
-			this.chatContainer.addChild(summaryComponent);
-
-			// Update footer tokens
-			this.updateFooterTokens();
-
-			if (this.options.verbose) {
-				const tokensAfter = estimateContextTokens([...this.agent.messages]);
-				this.showStatus(
-					chalk.dim(
-						`Compacted: ${result.tokensBefore.toLocaleString()} -> ${tokensAfter.toLocaleString()} tokens`,
-					),
-				);
-			}
-		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			if (
-				this.compactionAbortController.signal.aborted ||
-				message === "Compaction cancelled" ||
-				(error instanceof Error && error.name === "AbortError")
-			) {
-				this.showStatus(chalk.dim("Compaction cancelled."));
-			} else {
-				this.showStatus(chalk.red(`Compaction failed: ${message}`));
-			}
-		} finally {
-			compactingLoader.stop();
-			this.pendingContainer.clear();
-			this.isCompacting = false;
-			this.compactionAbortController = null;
-			this.ui.requestRender();
-		}
-
-		return result;
-	}
-
-	/**
-	 * Get the language model for compaction summarization.
-	 * Uses the same model creation path as the main agent.
-	 */
-	private async getCompactionModel(): Promise<{ model: import("ai").LanguageModel }> {
-		const { createModel } = await import("../../model-factory.js");
-		return createModel({
-			provider: this.currentProvider,
-			model: this.currentModelId,
-			authStorage: this.options.authStorage,
+				if (error.name === "AbortError" || error.message === "Compaction cancelled") {
+					this.showStatus(chalk.dim("Compaction cancelled."));
+				} else {
+					this.showStatus(chalk.red(`Compaction failed: ${error.message}`));
+				}
+				this.ui.requestRender();
+			},
 		});
-	}
-
-	/**
-	 * Build session entries from agent messages (when no session manager).
-	 * Creates synthetic SessionEntry objects for the compaction algorithm.
-	 */
-	private buildSessionEntriesFromMessages(): import("edge-pi").SessionEntry[] {
-		const messages = this.agent.messages;
-		const entries: import("edge-pi").SessionEntry[] = [];
-		let parentId: string | null = null;
-
-		for (let i = 0; i < messages.length; i++) {
-			const id = `msg-${i}`;
-			entries.push({
-				type: "message",
-				id,
-				parentId,
-				timestamp: new Date().toISOString(),
-				message: messages[i],
-			});
-			parentId = id;
-		}
-
-		return entries;
 	}
 
 	/**

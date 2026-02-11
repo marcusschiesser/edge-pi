@@ -11,24 +11,12 @@ export {
 	generateBranchSummary,
 } from "./compaction/branch-summarization.js";
 // Compaction
-export {
-	type CompactionDetails,
-	type CompactionPreparation,
-	type CompactionResult,
-	type CompactionSettings,
-	compact,
-	DEFAULT_COMPACTION_SETTINGS,
-	findCutPoint,
-	prepareCompaction,
+export type {
+	CompactionDetails,
+	CompactionResult,
+	CompactionSettings,
 } from "./compaction/compaction.js";
 export { estimateContextTokens, estimateTokens, shouldCompact } from "./compaction/token-estimation.js";
-export {
-	computeFileLists,
-	extractFileOpsFromModelMessage,
-	type FileOperations,
-	formatFileOperations,
-	serializeModelMessages,
-} from "./compaction/utils.js";
 export { buildSessionContext, type SessionContext } from "./session/context.js";
 // Session
 export { SessionManager } from "./session/session-manager.js";
@@ -59,6 +47,7 @@ export type {
 	AgentStreamParameters,
 	AssistantModelMessage,
 	CodingAgentConfig,
+	CompactionConfig,
 	GenerateTextResult,
 	LanguageModel,
 	LanguageModelUsage,

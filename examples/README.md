@@ -23,6 +23,7 @@ npx tsx examples/04-streaming-events.ts
 npx tsx examples/05-all-tools.ts
 npx tsx examples/06-web-search-tool.ts
 npx tsx examples/07-sessions.ts
+npx tsx examples/08-compaction.ts
 ```
 
 ## Directories
@@ -35,6 +36,7 @@ Examples in this directory demonstrate:
 - Adding a custom tool (web search)
 - Generating a complete PWA (Progressive Web App)
 - Session persistence with CodingAgent
+- Built-in context compaction (auto + manual)
 
 ## Documentation
 

@@ -116,4 +116,42 @@ describe("CodingAgent SessionManager integration", () => {
 		// Session should still be empty (setMessages doesn't persist)
 		expect(session.getEntries()).toHaveLength(0);
 	});
+
+	it("exposes and updates compaction config at runtime", () => {
+		const agent = new CodingAgent({ model: mockModel });
+
+		expect(agent.compaction).toBeUndefined();
+
+		agent.setCompaction({
+			contextWindow: 200000,
+			mode: "manual",
+			settings: {
+				reserveTokens: 16000,
+				keepRecentTokens: 20000,
+			},
+		});
+
+		expect(agent.compaction).toMatchObject({
+			contextWindow: 200000,
+			mode: "manual",
+		});
+	});
+
+	it("compact() throws when compaction is not configured", async () => {
+		const agent = new CodingAgent({ model: mockModel });
+
+		await expect(agent.compact()).rejects.toThrow("Compaction not configured");
+	});
+
+	it("compact() returns undefined when no session manager is attached", async () => {
+		const agent = new CodingAgent({
+			model: mockModel,
+			compaction: {
+				contextWindow: 200000,
+				mode: "manual",
+			},
+		});
+
+		await expect(agent.compact()).resolves.toBeUndefined();
+	});
 });

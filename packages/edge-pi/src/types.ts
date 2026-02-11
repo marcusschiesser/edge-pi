@@ -27,6 +27,7 @@ import type {
 	ToolSet,
 	UserModelMessage,
 } from "ai";
+import type { CompactionResult, CompactionSettings } from "./compaction/compaction.js";
 import type { SessionManager } from "./session/session-manager.js";
 import type { BuildSystemPromptOptions } from "./system-prompt.js";
 
@@ -58,6 +59,28 @@ export { generateId, tool } from "ai";
 /**
  * Thinking level for model reasoning.
  */
+/**
+ * Configuration for automatic and manual context compaction.
+ */
+export interface CompactionConfig {
+	/** The model's context window size in tokens. */
+	contextWindow: number;
+	/**
+	 * 'auto' = check after generate/stream, 'manual' = only agent.compact().
+	 */
+	mode: "auto" | "manual";
+	/** Optional separate model for summarization. Defaults to agent model. */
+	model?: LanguageModel;
+	/** Override default compaction settings (reserveTokens, keepRecentTokens). */
+	settings?: Partial<Omit<CompactionSettings, "enabled">>;
+	/** Called when compaction starts. */
+	onCompactionStart?: () => void;
+	/** Called when compaction completes successfully. */
+	onCompactionComplete?: (result: CompactionResult) => void;
+	/** Called when compaction fails (including abort). */
+	onCompactionError?: (error: Error) => void;
+}
+
 /**
  * Configuration for the CodingAgent.
  */
@@ -97,4 +120,6 @@ export interface CodingAgentConfig {
 	 * and auto-persisted after generate() and stream() calls.
 	 */
 	sessionManager?: SessionManager;
+	/** Optional compaction configuration for automatic/manual context compaction. */
+	compaction?: CompactionConfig;
 }

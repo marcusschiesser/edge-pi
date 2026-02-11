@@ -48,8 +48,9 @@ const agent = new CodingAgent({
   tools,              // Merge additional tools into the set
   providerOptions,    // Optional provider-specific options passed to model calls
   sessionManager,     // Optional: SessionManager for auto-persist
+  compaction,         // Optional: built-in auto/manual context compaction
 });`}</code>
-			</pre>
+				</pre>
 
 			<h3>Configuration</h3>
 			<table>
@@ -130,42 +131,55 @@ const agent = new CodingAgent({
 						</td>
 						<td>Which tool set to use.</td>
 					</tr>
-					<tr>
-						<td>
-							<code>tools</code>
-						</td>
-						<td>
-							<code>ToolSet</code>
-						</td>
-						<td>&mdash;</td>
-						<td>Additional tools to merge in.</td>
-					</tr>
-					<tr>
-						<td>
-							<code>providerOptions</code>
-						</td>
-						<td>
-							<code>{`Record<string, Record<string, JSONValue>>`}</code>
-						</td>
-						<td>&mdash;</td>
-						<td>
-							Optional provider-specific options to forward to model calls.
-						</td>
-					</tr>
-					<tr>
-						<td>
-							<code>sessionManager</code>
-						</td>
-						<td>
-							<code>SessionManager</code>
-						</td>
-						<td>&mdash;</td>
-						<td>
-							Optional session manager for auto-persist. Messages are
-							auto-restored on construction and auto-persisted after{" "}
-							<code>generate()</code> and <code>stream()</code>.
-						</td>
-					</tr>
+						<tr>
+							<td>
+								<code>tools</code>
+							</td>
+							<td>
+								<code>ToolSet</code>
+							</td>
+							<td>&mdash;</td>
+							<td>Additional tools to merge in.</td>
+						</tr>
+						<tr>
+							<td>
+								<code>providerOptions</code>
+							</td>
+							<td>
+								<code>{`Record<string, Record<string, JSONValue>>`}</code>
+							</td>
+							<td>&mdash;</td>
+							<td>
+								Optional provider-specific options to forward to model calls.
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<code>compaction</code>
+							</td>
+							<td>
+								<code>CompactionConfig</code>
+							</td>
+							<td>&mdash;</td>
+							<td>
+								Optional built-in compaction configuration (auto or manual mode
+								via <code>agent.compact()</code>).
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<code>sessionManager</code>
+							</td>
+							<td>
+								<code>SessionManager</code>
+							</td>
+							<td>&mdash;</td>
+							<td>
+								Optional session manager for auto-persist. Messages are
+								auto-restored on construction and auto-persisted after{" "}
+								<code>generate()</code> and <code>stream()</code>.
+							</td>
+						</tr>
 				</tbody>
 			</table>
 
@@ -312,15 +326,9 @@ import { SessionManager, buildSessionContext } from "edge-pi";
 
 // Compaction
 import {
-  compact,
-  prepareCompaction,
-  findCutPoint,
-  shouldCompact,
-  estimateTokens,
-  estimateContextTokens,
+  CompactionConfig,
   generateBranchSummary,
   collectEntriesForBranchSummary,
-  compactionSchema,
 } from "edge-pi";
 
 // Types (re-exported from Vercel AI SDK)
