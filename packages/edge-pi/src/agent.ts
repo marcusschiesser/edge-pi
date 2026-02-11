@@ -344,28 +344,31 @@ export class CodingAgent implements Agent<never, ToolSet> {
 			experimental_transform: options.experimental_transform,
 		});
 
-		// Auto-persist when stream is fully consumed
-		Promise.resolve(result.response)
-			.then(async (response) => {
-				const responseMessages = response.messages as ModelMessage[];
-				this._messages = [...inputMessages, ...responseMessages];
+		// Auto-persist when stream is fully consumed, and resolve response only after auto-compaction.
+		const responsePromise = Promise.resolve(result.response).then(async (response) => {
+			const responseMessages = response.messages as ModelMessage[];
+			this._messages = [...inputMessages, ...responseMessages];
 
-				if (this._sessionManager) {
-					for (let i = previousMessageCount; i < inputMessages.length; i++) {
-						this._sessionManager.appendMessage(inputMessages[i]);
-					}
-					for (const msg of responseMessages) {
-						this._sessionManager.appendMessage(msg);
-					}
+			if (this._sessionManager) {
+				for (let i = previousMessageCount; i < inputMessages.length; i++) {
+					this._sessionManager.appendMessage(inputMessages[i]);
 				}
+				for (const msg of responseMessages) {
+					this._sessionManager.appendMessage(msg);
+				}
+			}
 
-				await this.autoCompact(signal);
-			})
-			.catch(() => {
-				// Stream error/abort — don't persist
-			});
+			await this.autoCompact(signal);
+			return response;
+		});
 
-		return result;
+		// Prevent unhandled rejection warnings when callers ignore result.response.
+		void responsePromise.catch(() => {});
+
+		return {
+			...result,
+			response: responsePromise,
+		};
 	}
 
 	/** Build input messages from AgentCallParameters */

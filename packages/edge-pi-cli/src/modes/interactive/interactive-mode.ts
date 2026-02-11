@@ -895,9 +895,23 @@ class InteractiveMode {
 	 * Handle the /compact command.
 	 */
 	private async handleCompactCommand(_customInstructions?: string): Promise<void> {
-		const result = await this.agent.compact();
-		if (!result) {
-			this.showStatus(chalk.yellow("Nothing to compact (already compacted or insufficient history)."));
+		try {
+			const result = await this.agent.compact();
+			if (!result) {
+				this.showStatus(chalk.yellow("Nothing to compact (already compacted or insufficient history)."));
+			}
+		} catch (error) {
+			// Compaction callbacks already report errors in interactive mode.
+			// Catch here to avoid unwinding the main TUI loop on abort/provider errors.
+			if (!this.agent.compaction?.onCompactionError) {
+				const compactionError = error instanceof Error ? error : new Error(String(error));
+				if (compactionError.name === "AbortError" || compactionError.message === "Compaction cancelled") {
+					this.showStatus(chalk.dim("Compaction cancelled."));
+				} else {
+					this.showStatus(chalk.red(`Compaction failed: ${compactionError.message}`));
+				}
+				this.ui.requestRender();
+			}
 		}
 	}
 
