@@ -1,5 +1,19 @@
 # edge-pi-cli
 
+## 0.1.4
+
+### Patch Changes
+
+- [`f506424`](https://github.com/marcusschiesser/edge-pi/commit/f506424de1c5cc47abb9eb496f94900054ca194e) Thanks [@marcusschiesser](https://github.com/marcusschiesser)! - Fix OpenAI Codex request compatibility and simplify provider option handling.
+
+  - Add explicit Codex provider options (`instructions`, `store: false`) from CLI configuration.
+  - Expose `providerOptions` on `CodingAgentConfig` and remove `thinkingLevel` from `edge-pi` SDK config.
+  - Thread provider options through compaction and branch summarization model calls.
+  - Improve interactive stream error formatting to surface API status/body details.
+
+- Updated dependencies [[`f506424`](https://github.com/marcusschiesser/edge-pi/commit/f506424de1c5cc47abb9eb496f94900054ca194e)]:
+  - edge-pi@0.1.4
+
 ## 0.1.3
 
 ### Patch Changes
