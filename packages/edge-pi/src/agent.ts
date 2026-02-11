@@ -365,10 +365,14 @@ export class CodingAgent implements Agent<never, ToolSet> {
 		// Prevent unhandled rejection warnings when callers ignore result.response.
 		void responsePromise.catch(() => {});
 
-		return {
-			...result,
-			response: responsePromise,
-		};
+		Object.defineProperty(result, "response", {
+			configurable: true,
+			enumerable: true,
+			value: responsePromise,
+			writable: false,
+		});
+
+		return result;
 	}
 
 	/** Build input messages from AgentCallParameters */
