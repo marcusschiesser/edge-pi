@@ -184,36 +184,42 @@ export async function executeBashCommand(
 
 		child.on("close", (code, sig) => {
 			if (options.signal) options.signal.removeEventListener("abort", onAbort);
-			if (tempFileStream) tempFileStream.end();
+			const resolveResult = () => {
+				const fullOutput = Buffer.concat(chunks).toString("utf-8");
+				const truncation = truncateTail(fullOutput, { maxBytes, maxLines });
 
-			const fullOutput = Buffer.concat(chunks).toString("utf-8");
-			const truncation = truncateTail(fullOutput, { maxBytes, maxLines });
+				let outputText = truncation.content;
+				if (cancelled || sig) {
+					resolve({
+						output: outputText,
+						exitCode: code === null ? undefined : code,
+						cancelled: true,
+						truncated: truncation.truncated,
+						fullOutputPath: tempFilePath,
+					});
+					return;
+				}
 
-			let outputText = truncation.content;
-			if (cancelled || sig) {
+				if (truncation.truncated) {
+					const startLine = truncation.totalLines - truncation.outputLines + 1;
+					const endLine = truncation.totalLines;
+					outputText += `\n\n[Showing lines ${startLine}-${endLine} of ${truncation.totalLines} (${formatSize(maxBytes)} limit). Full output: ${tempFilePath}]`;
+				}
+
 				resolve({
 					output: outputText,
 					exitCode: code === null ? undefined : code,
-					cancelled: true,
+					cancelled: false,
 					truncated: truncation.truncated,
 					fullOutputPath: tempFilePath,
 				});
-				return;
-			}
+			};
 
-			if (truncation.truncated) {
-				const startLine = truncation.totalLines - truncation.outputLines + 1;
-				const endLine = truncation.totalLines;
-				outputText += `\n\n[Showing lines ${startLine}-${endLine} of ${truncation.totalLines} (${formatSize(maxBytes)} limit). Full output: ${tempFilePath}]`;
+			if (tempFileStream) {
+				tempFileStream.end(resolveResult);
+			} else {
+				resolveResult();
 			}
-
-			resolve({
-				output: outputText,
-				exitCode: code === null ? undefined : code,
-				cancelled: false,
-				truncated: truncation.truncated,
-				fullOutputPath: tempFilePath,
-			});
 		});
 	});
 }

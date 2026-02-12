@@ -2,29 +2,28 @@
  * Compaction Example
  *
  * Demonstrates built-in CodingAgent compaction with:
- * - auto compaction checks after generate()/stream()
- * - manual compaction via agent.compact()
- * - compaction lifecycle callbacks
+ * - manual compaction mode
+ * - one model call plus seeded session history to build enough context
+ * - message count before and after compaction
  */
 
 import { anthropic } from "@ai-sdk/anthropic";
-import { stepCountIs } from "ai";
 import { CodingAgent, SessionManager } from "edge-pi";
 
-const model = anthropic("claude-sonnet-4-5-20250929");
-const session = SessionManager.create(process.cwd(), "./sessions");
+const model = anthropic("claude-sonnet-4-5");
+const session = SessionManager.inMemory();
 
 const agent = new CodingAgent({
 	model,
-	stopWhen: stepCountIs(3),
 	sessionManager: session,
 	compaction: {
-		// Intentionally small window so compaction triggers in a short demo.
-		contextWindow: 1200,
-		mode: "auto",
+		// Small window so a single run can exceed compaction threshold.
+		contextWindow: 2000,
+		mode: "manual",
 		settings: {
-			reserveTokens: 400,
-			keepRecentTokens: 300,
+			reserveTokens: 1200,
+			// Keep only a small recent slice so older messages are summarized.
+			keepRecentTokens: 80,
 		},
 		onCompactionStart: () => {
 			console.log("\n[compaction] started");
@@ -32,41 +31,22 @@ const agent = new CodingAgent({
 		onCompactionComplete: (result) => {
 			console.log(`[compaction] done (tokens before: ${result.tokensBefore})`);
 		},
-		onCompactionError: (error) => {
-			console.log(`[compaction] failed: ${error.message}`);
-		},
 	},
 });
 
-console.log("Streaming first prompt...\n");
-const first = await agent.stream({
-	prompt: "Read package.json and summarize the project in 3 bullet points. Include one point about dependencies.",
+await agent.generate({
+	prompt: "Do not use tools. Write 8 concise bullets about designing robust TypeScript CLIs.",
+});
+await agent.generate({
+	prompt: "Do not use tools. Add one more section with 3 concrete failure-handling examples.",
 });
 
-for await (const text of first.textStream) {
-	process.stdout.write(text);
-}
-console.log("\n");
+console.log(`Context messages before manual compaction: ${session.buildSessionContext().messages.length}`);
 
-console.log("Streaming second prompt (likely to trigger auto compaction)...\n");
-const second = await agent.stream({
-	prompt:
-		"Now read README.md and compare it with your previous summary. Keep the answer concise but include concrete details.",
-});
-
-for await (const text of second.textStream) {
-	process.stdout.write(text);
-}
-console.log("\n");
-
-console.log("Switching to manual mode and compacting explicitly...\n");
-if (agent.compaction) {
-	agent.setCompaction({ ...agent.compaction, mode: "manual" });
-}
 const manualResult = await agent.compact();
 
 if (!manualResult) {
 	console.log("No manual compaction was needed.");
 }
 
-console.log(`Session file: ${session.getSessionFile()}`);
+console.log(`Context messages after manual compaction: ${session.buildSessionContext().messages.length}`);
