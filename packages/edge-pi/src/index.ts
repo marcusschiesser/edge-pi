@@ -17,6 +17,7 @@ export type {
 	CompactionSettings,
 } from "./compaction/compaction.js";
 export { estimateContextTokens, estimateTokens, shouldCompact } from "./compaction/token-estimation.js";
+export type { ContextFile, Skill } from "./prompt-context.js";
 export { buildSessionContext, type SessionContext } from "./session/context.js";
 // Session
 export { SessionManager } from "./session/session-manager.js";

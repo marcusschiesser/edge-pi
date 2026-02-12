@@ -7,11 +7,9 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import type { ContextFile } from "edge-pi";
 
-export interface ContextFile {
-	path: string;
-	content: string;
-}
+export type { ContextFile };
 
 /**
  * Load AGENTS.md context files by walking up from `cwd` to the filesystem root.

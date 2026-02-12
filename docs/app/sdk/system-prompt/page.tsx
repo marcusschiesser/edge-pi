@@ -103,6 +103,17 @@ console.log(prompt);`}</code>
 							Pre-loaded file contents to include in the prompt context.
 						</td>
 					</tr>
+					<tr>
+						<td>
+							<code>skills</code>
+						</td>
+						<td>
+							<code>Skill[]</code>
+						</td>
+						<td>
+							Pre-loaded skills to include in the model-visible skills section.
+						</td>
+					</tr>
 				</tbody>
 			</table>
 
@@ -193,6 +204,29 @@ const agent = new CodingAgent({
         content: fs.readFileSync("CONVENTIONS.md", "utf-8"),
       },
     ],
+  },
+});`}</code>
+			</pre>
+
+			<h3>Include skills</h3>
+			<pre>
+				<code>{`import type { Skill } from "edge-pi";
+
+const skills: Skill[] = [
+  {
+    name: "code-review",
+    description: "Perform detailed code reviews",
+    filePath: "/tmp/skills/code-review/SKILL.md",
+    baseDir: "/tmp/skills/code-review",
+    source: "project",
+    disableModelInvocation: false,
+  },
+];
+
+const agent = new CodingAgent({
+  model,
+  systemPromptOptions: {
+    skills,
   },
 });`}</code>
 			</pre>

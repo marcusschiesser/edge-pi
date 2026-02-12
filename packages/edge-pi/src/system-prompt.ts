@@ -3,6 +3,8 @@
  * Standalone copy - no dependency on old SDK.
  */
 
+import type { ContextFile, Skill } from "./prompt-context.js";
+
 /** Tool descriptions for system prompt */
 const toolDescriptions: Record<string, string> = {
 	read: "Read file contents",
@@ -24,12 +26,21 @@ export interface BuildSystemPromptOptions {
 	/** Working directory. Default: process.cwd() */
 	cwd?: string;
 	/** Pre-loaded context files. */
-	contextFiles?: Array<{ path: string; content: string }>;
+	contextFiles?: ContextFile[];
+	/** Pre-loaded skills. */
+	skills?: Skill[];
 }
 
 /** Build the system prompt with tools, guidelines, and context */
 export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): string {
-	const { customPrompt, selectedTools, appendSystemPrompt, cwd, contextFiles: providedContextFiles } = options;
+	const {
+		customPrompt,
+		selectedTools,
+		appendSystemPrompt,
+		cwd,
+		contextFiles: providedContextFiles,
+		skills = [],
+	} = options;
 	const resolvedCwd = cwd ?? process.cwd();
 
 	const now = new Date();
@@ -45,11 +56,16 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): strin
 	});
 
 	const appendSection = appendSystemPrompt ? `\n\n${appendSystemPrompt}` : "";
+	const skillsSection = formatSkillsForPrompt(skills);
 
 	const contextFiles = providedContextFiles ?? [];
 
 	if (customPrompt) {
 		let prompt = customPrompt;
+
+		if (skillsSection) {
+			prompt += skillsSection;
+		}
 
 		if (appendSection) {
 			prompt += appendSection;
@@ -131,6 +147,10 @@ In addition to the tools above, you may have access to other custom tools depend
 Guidelines:
 ${guidelines}`;
 
+	if (skillsSection) {
+		prompt += skillsSection;
+	}
+
 	if (appendSection) {
 		prompt += appendSection;
 	}
@@ -149,4 +169,40 @@ ${guidelines}`;
 	prompt += `\nCurrent working directory: ${resolvedCwd}`;
 
 	return prompt;
+}
+
+function formatSkillsForPrompt(skills: Skill[]): string {
+	const visibleSkills = skills.filter((skill) => !skill.disableModelInvocation);
+
+	if (visibleSkills.length === 0) {
+		return "";
+	}
+
+	const lines = [
+		"\n\nThe following skills provide specialized instructions for specific tasks.",
+		"Use the read tool to load a skill's file when the task matches its description.",
+		"When a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.",
+		"",
+		"<available_skills>",
+	];
+
+	for (const skill of visibleSkills) {
+		lines.push("  <skill>");
+		lines.push(`    <name>${escapeXml(skill.name)}</name>`);
+		lines.push(`    <description>${escapeXml(skill.description)}</description>`);
+		lines.push(`    <location>${escapeXml(skill.filePath)}</location>`);
+		lines.push("  </skill>");
+	}
+
+	lines.push("</available_skills>");
+	return lines.join("\n");
+}
+
+function escapeXml(str: string): string {
+	return str
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&apos;");
 }

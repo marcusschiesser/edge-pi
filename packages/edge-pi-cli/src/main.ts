@@ -9,7 +9,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import chalk from "chalk";
-import type { CodingAgentConfig } from "edge-pi";
+import type { CodingAgentConfig, Skill } from "edge-pi";
 import { CodingAgent, SessionManager } from "edge-pi";
 import {
 	AuthStorage,
@@ -25,7 +25,7 @@ import { runPrintMode } from "./modes/print-mode.js";
 import { loadPrompts } from "./prompts.js";
 import { buildProviderOptions } from "./provider-options.js";
 import { SettingsManager } from "./settings.js";
-import { formatSkillsForPrompt, loadSkills, type Skill } from "./skills.js";
+import { loadSkills } from "./skills.js";
 import { findFd } from "./utils/find-fd.js";
 
 const VERSION = "0.1.0";
@@ -225,17 +225,6 @@ export async function main(args: string[]) {
 	// Find fd binary for @ file autocomplete
 	const fdPath = findFd();
 
-	// Build system prompt additions
-	const skillsPrompt = formatSkillsForPrompt(skills);
-	const appendParts: string[] = [];
-	if (skillsPrompt) {
-		appendParts.push(skillsPrompt);
-	}
-	if (parsed.appendSystemPrompt) {
-		appendParts.push(parsed.appendSystemPrompt);
-	}
-	const appendSystemPrompt = appendParts.length > 0 ? appendParts.join("\n\n") : undefined;
-
 	// Set up session manager
 	const sessionDir = parsed.sessionDir ?? getProjectSessionDir(cwd);
 	let sessionManager: SessionManager | undefined;
@@ -269,16 +258,13 @@ export async function main(args: string[]) {
 		sessionManager,
 	};
 
+	agentConfig.systemPromptOptions = {
+		appendSystemPrompt: parsed.appendSystemPrompt,
+		contextFiles,
+		skills,
+	};
 	if (parsed.systemPrompt) {
-		agentConfig.systemPrompt = parsed.systemPrompt;
-		if (appendSystemPrompt) {
-			agentConfig.systemPrompt += `\n\n${appendSystemPrompt}`;
-		}
-	} else {
-		agentConfig.systemPromptOptions = {
-			appendSystemPrompt,
-			contextFiles,
-		};
+		agentConfig.systemPromptOptions.customPrompt = parsed.systemPrompt;
 	}
 
 	// Create agent (session messages are auto-restored from sessionManager)
