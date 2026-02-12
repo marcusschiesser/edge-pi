@@ -116,4 +116,80 @@ describe("CodingAgent SessionManager integration", () => {
 		// Session should still be empty (setMessages doesn't persist)
 		expect(session.getEntries()).toHaveLength(0);
 	});
+
+	it("exposes and updates compaction config at runtime", () => {
+		const agent = new CodingAgent({ model: mockModel });
+
+		expect(agent.compaction).toBeUndefined();
+
+		agent.setCompaction({
+			contextWindow: 200000,
+			mode: "manual",
+			settings: {
+				reserveTokens: 16000,
+				keepRecentTokens: 20000,
+			},
+		});
+
+		expect(agent.compaction).toMatchObject({
+			contextWindow: 200000,
+			mode: "manual",
+		});
+	});
+
+	it("compact() throws when compaction is not configured", async () => {
+		const agent = new CodingAgent({ model: mockModel });
+
+		await expect(agent.compact()).rejects.toThrow("Compaction not configured");
+	});
+
+	it("compact() returns undefined when no session manager is attached", async () => {
+		const agent = new CodingAgent({
+			model: mockModel,
+			compaction: {
+				contextWindow: 200000,
+				mode: "manual",
+			},
+		});
+
+		await expect(agent.compact()).resolves.toBeUndefined();
+	});
+
+	it("stream() preserves async-iterable fullStream when wrapping response", async () => {
+		const agent = new CodingAgent({ model: mockModel });
+
+		class FakeStreamResult {
+			get fullStream(): AsyncIterable<{ type: string; text: string }> {
+				return (async function* () {
+					yield { type: "text-delta", text: "hello" };
+				})();
+			}
+
+			get response(): Promise<{ messages: ReturnType<typeof assistantMsg>[] }> {
+				return Promise.resolve({
+					messages: [assistantMsg("mock response")],
+				});
+			}
+		}
+
+		const fakeAgent = {
+			stream: async () => new FakeStreamResult(),
+		};
+
+		(agent as unknown as { createAgent: () => { stream: () => Promise<FakeStreamResult> } }).createAgent = () =>
+			fakeAgent;
+
+		const result = await agent.stream({ prompt: "hello" });
+
+		const parts: Array<{ type: string; text: string }> = [];
+		for await (const part of result.fullStream as AsyncIterable<{ type: string; text: string }>) {
+			parts.push(part);
+		}
+
+		expect(parts).toHaveLength(1);
+		expect(parts[0]).toEqual({ type: "text-delta", text: "hello" });
+
+		const response = await result.response;
+		expect(response.messages).toHaveLength(1);
+	});
 });

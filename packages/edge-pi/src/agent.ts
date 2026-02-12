@@ -21,11 +21,18 @@ import {
 	ToolLoopAgent,
 	type ToolSet,
 } from "ai";
+import {
+	type CompactionResult,
+	compact,
+	DEFAULT_COMPACTION_SETTINGS,
+	prepareCompaction,
+} from "./compaction/compaction.js";
+import { estimateContextTokens, shouldCompact } from "./compaction/token-estimation.js";
 import type { SessionManager } from "./session/session-manager.js";
 import type { BuildSystemPromptOptions } from "./system-prompt.js";
 import { buildSystemPrompt } from "./system-prompt.js";
 import { createAllTools, createCodingTools, createReadOnlyTools } from "./tools/index.js";
-import type { CodingAgentConfig } from "./types.js";
+import type { CodingAgentConfig, CompactionConfig } from "./types.js";
 
 /**
  * A stop condition that never triggers, allowing the agent to run
@@ -47,6 +54,7 @@ export class CodingAgent implements Agent<never, ToolSet> {
 	private _sessionManager: SessionManager | undefined;
 	private steeringQueue: ModelMessage[] = [];
 	private abortController: AbortController | null = null;
+	private isCompacting = false;
 
 	constructor(config: CodingAgentConfig) {
 		this.config = { ...config };
@@ -91,6 +99,16 @@ export class CodingAgent implements Agent<never, ToolSet> {
 		}
 	}
 
+	/** Current compaction configuration (if configured). */
+	get compaction(): CompactionConfig | undefined {
+		return this.config.compaction;
+	}
+
+	/** Update compaction configuration at runtime. */
+	setCompaction(compaction: CompactionConfig | undefined): void {
+		this.config.compaction = compaction;
+	}
+
 	/** Inject a message between steps via prepareStep */
 	steer(message: ModelMessage): void {
 		this.steeringQueue.push(message);
@@ -99,6 +117,17 @@ export class CodingAgent implements Agent<never, ToolSet> {
 	/** Abort the current operation */
 	abort(): void {
 		this.abortController?.abort();
+	}
+
+	/** Trigger compaction manually, skipping threshold checks. */
+	async compact(): Promise<CompactionResult | undefined> {
+		const compactionConfig = this.config.compaction;
+		if (!compactionConfig) {
+			throw new Error("Compaction not configured");
+		}
+
+		this.abortController = new AbortController();
+		return this.runCompaction(compactionConfig, this.abortController.signal, true);
 	}
 
 	/** Build the system prompt based on config */
@@ -177,6 +206,76 @@ export class CodingAgent implements Agent<never, ToolSet> {
 		});
 	}
 
+	private async autoCompact(signal?: AbortSignal): Promise<void> {
+		const compactionConfig = this.config.compaction;
+		if (!compactionConfig || compactionConfig.mode !== "auto" || !this._sessionManager || this.isCompacting) {
+			return;
+		}
+
+		try {
+			await this.runCompaction(compactionConfig, signal, false);
+		} catch {
+			// Compaction errors are reported through onCompactionError callback.
+		}
+	}
+
+	private async runCompaction(
+		compactionConfig: CompactionConfig,
+		signal: AbortSignal | undefined,
+		skipThresholdCheck: boolean,
+	): Promise<CompactionResult | undefined> {
+		if (!this._sessionManager || this.isCompacting) {
+			return undefined;
+		}
+
+		const settings = {
+			...DEFAULT_COMPACTION_SETTINGS,
+			enabled: true,
+			...compactionConfig.settings,
+		};
+
+		if (!skipThresholdCheck) {
+			const contextTokens = estimateContextTokens(this._messages);
+			if (!shouldCompact(contextTokens, compactionConfig.contextWindow, settings)) {
+				return undefined;
+			}
+		}
+
+		const preparation = prepareCompaction(this._sessionManager.getBranch(), settings);
+		if (!preparation || preparation.messagesToSummarize.length === 0) {
+			return undefined;
+		}
+
+		this.isCompacting = true;
+		compactionConfig.onCompactionStart?.();
+
+		try {
+			const result = await compact(
+				preparation,
+				compactionConfig.model ?? this.config.model,
+				this.config.providerOptions,
+				signal,
+			);
+
+			this._sessionManager.appendCompaction(
+				result.summary,
+				result.firstKeptEntryId,
+				result.tokensBefore,
+				result.details,
+			);
+			this._messages = this._sessionManager.buildSessionContext().messages;
+
+			compactionConfig.onCompactionComplete?.(result);
+			return result;
+		} catch (error) {
+			const compactionError = error instanceof Error ? error : new Error(String(error));
+			compactionConfig.onCompactionError?.(compactionError);
+			throw compactionError;
+		} finally {
+			this.isCompacting = false;
+		}
+	}
+
 	/**
 	 * Non-streaming execution (implements Agent.generate).
 	 * Runs the agent loop to completion and returns the GenerateTextResult.
@@ -215,6 +314,8 @@ export class CodingAgent implements Agent<never, ToolSet> {
 			}
 		}
 
+		await this.autoCompact(signal);
+
 		return result;
 	}
 
@@ -243,24 +344,33 @@ export class CodingAgent implements Agent<never, ToolSet> {
 			experimental_transform: options.experimental_transform,
 		});
 
-		// Auto-persist when stream is fully consumed
-		Promise.resolve(result.response)
-			.then((response) => {
-				const responseMessages = response.messages as ModelMessage[];
-				this._messages = [...inputMessages, ...responseMessages];
+		// Auto-persist when stream is fully consumed, and resolve response only after auto-compaction.
+		const responsePromise = Promise.resolve(result.response).then(async (response) => {
+			const responseMessages = response.messages as ModelMessage[];
+			this._messages = [...inputMessages, ...responseMessages];
 
-				if (this._sessionManager) {
-					for (let i = previousMessageCount; i < inputMessages.length; i++) {
-						this._sessionManager.appendMessage(inputMessages[i]);
-					}
-					for (const msg of responseMessages) {
-						this._sessionManager.appendMessage(msg);
-					}
+			if (this._sessionManager) {
+				for (let i = previousMessageCount; i < inputMessages.length; i++) {
+					this._sessionManager.appendMessage(inputMessages[i]);
 				}
-			})
-			.catch(() => {
-				// Stream error/abort — don't persist
-			});
+				for (const msg of responseMessages) {
+					this._sessionManager.appendMessage(msg);
+				}
+			}
+
+			await this.autoCompact(signal);
+			return response;
+		});
+
+		// Prevent unhandled rejection warnings when callers ignore result.response.
+		void responsePromise.catch(() => {});
+
+		Object.defineProperty(result, "response", {
+			configurable: true,
+			enumerable: true,
+			value: responsePromise,
+			writable: false,
+		});
 
 		return result;
 	}
