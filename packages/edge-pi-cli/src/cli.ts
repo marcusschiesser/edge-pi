@@ -4,6 +4,7 @@
  */
 process.title = "epi";
 
-import { main } from "./main.js";
+import { runCliFromSource } from "./source-runner.js";
 
-main(process.argv.slice(2));
+const exitCode = runCliFromSource(process.argv.slice(2), process.env);
+process.exit(exitCode);
