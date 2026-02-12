@@ -1,5 +1,24 @@
 # edge-pi-cli
 
+## 0.1.5
+
+### Patch Changes
+
+- [#21](https://github.com/marcusschiesser/edge-pi/pull/21) [`3e1fec6`](https://github.com/marcusschiesser/edge-pi/commit/3e1fec69fe72d09e30bfaa82946b8e930035336a) Thanks [@marcusschiesser](https://github.com/marcusschiesser)! - Move compaction orchestration into `CodingAgent` with optional config-driven auto/manual modes.
+
+  Add `CodingAgent` compaction APIs:
+
+  - `compaction` config in `CodingAgentConfig`
+  - `agent.compact()` for manual compaction
+  - `agent.setCompaction()` for runtime toggling
+  - compaction lifecycle callbacks (`onCompactionStart`, `onCompactionComplete`, `onCompactionError`)
+  - low-level compaction helpers are no longer exported from the package root
+
+  Update the CLI interactive mode to rely on agent-level compaction orchestration instead of duplicating orchestration logic.
+
+- Updated dependencies [[`3e1fec6`](https://github.com/marcusschiesser/edge-pi/commit/3e1fec69fe72d09e30bfaa82946b8e930035336a)]:
+  - edge-pi@0.1.5
+
 ## 0.1.4
 
 ### Patch Changes
