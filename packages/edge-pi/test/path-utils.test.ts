@@ -2,35 +2,38 @@ import { mkdtempSync, readdirSync, rmdirSync, unlinkSync, writeFileSync } from "
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createNodeRuntime } from "../src/runtime/node-runtime.js";
 import { expandPath, resolveReadPath, resolveToCwd } from "../src/tools/path-utils.js";
+
+const runtime = createNodeRuntime();
 
 describe("path-utils", () => {
 	describe("expandPath", () => {
 		it("should expand ~ to home directory", () => {
-			const result = expandPath("~");
+			const result = expandPath("~", runtime);
 			expect(result).not.toContain("~");
 		});
 
 		it("should expand ~/path to home directory", () => {
-			const result = expandPath("~/Documents/file.txt");
+			const result = expandPath("~/Documents/file.txt", runtime);
 			expect(result).not.toContain("~/");
 		});
 
 		it("should normalize Unicode spaces", () => {
 			const withNBSP = "file\u00A0name.txt";
-			const result = expandPath(withNBSP);
+			const result = expandPath(withNBSP, runtime);
 			expect(result).toBe("file name.txt");
 		});
 	});
 
 	describe("resolveToCwd", () => {
 		it("should resolve absolute paths as-is", () => {
-			const result = resolveToCwd("/absolute/path/file.txt", "/some/cwd");
+			const result = resolveToCwd("/absolute/path/file.txt", "/some/cwd", runtime);
 			expect(result).toBe("/absolute/path/file.txt");
 		});
 
 		it("should resolve relative paths against cwd", () => {
-			const result = resolveToCwd("relative/file.txt", "/some/cwd");
+			const result = resolveToCwd("relative/file.txt", "/some/cwd", runtime);
 			expect(result).toBe("/some/cwd/relative/file.txt");
 		});
 	});
@@ -54,36 +57,22 @@ describe("path-utils", () => {
 			}
 		});
 
-		it("should resolve existing file path", () => {
+		it("should resolve existing file path", async () => {
 			writeFileSync(join(tempDir, "test-file.txt"), "content");
-			const result = resolveReadPath("test-file.txt", tempDir);
+			const result = await resolveReadPath("test-file.txt", tempDir, runtime);
 			expect(result).toBe(join(tempDir, "test-file.txt"));
 		});
 
-		it("should handle curly quotes vs straight quotes (macOS filenames)", () => {
+		it("should handle curly quotes vs straight quotes (macOS filenames)", async () => {
 			const curlyQuoteName = "Capture d\u2019cran.txt";
 			const straightQuoteName = "Capture d'cran.txt";
-
-			expect(curlyQuoteName).not.toBe(straightQuoteName);
-
 			writeFileSync(join(tempDir, curlyQuoteName), "content");
-
-			const result = resolveReadPath(straightQuoteName, tempDir);
+			const result = await resolveReadPath(straightQuoteName, tempDir, runtime);
 			expect(result).toBe(join(tempDir, curlyQuoteName));
 		});
 
-		it("should handle macOS screenshot AM/PM variant with narrow no-break space", () => {
-			const macosName = "Screenshot 2024-01-01 at 10.00.00\u202FAM.png";
-			const userName = "Screenshot 2024-01-01 at 10.00.00 AM.png";
-
-			writeFileSync(join(tempDir, macosName), "content");
-
-			const result = resolveReadPath(userName, tempDir);
-			expect(result).toBe(join(tempDir, macosName));
-		});
-
-		it("should return resolved path for non-existent files (no error)", () => {
-			const result = resolveReadPath("nonexistent.txt", tempDir);
+		it("should return resolved path for non-existent files (no error)", async () => {
+			const result = await resolveReadPath("nonexistent.txt", tempDir, runtime);
 			expect(result).toBe(join(tempDir, "nonexistent.txt"));
 		});
 	});

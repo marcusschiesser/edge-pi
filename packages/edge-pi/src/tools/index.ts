@@ -1,8 +1,5 @@
-/**
- * Tool factory functions returning Vercel AI ToolSet.
- */
-
 import type { ToolSet } from "ai";
+import type { EdgePiRuntime } from "../runtime/types.js";
 import { createBashTool } from "./bash.js";
 import { createEditTool } from "./edit.js";
 import { createFindTool } from "./find.js";
@@ -19,41 +16,37 @@ export { createLsTool } from "./ls.js";
 export { createReadTool } from "./read.js";
 export { createWriteTool } from "./write.js";
 
-/**
- * Create coding tools (read, bash, edit, write) configured for a specific working directory.
- */
-export function createCodingTools(cwd: string): ToolSet {
+export interface ToolFactoryOptions {
+	cwd: string;
+	runtime?: EdgePiRuntime;
+}
+
+export function createCodingTools(options: ToolFactoryOptions): ToolSet {
 	return {
-		read: createReadTool(cwd),
-		bash: createBashTool(cwd),
-		edit: createEditTool(cwd),
-		write: createWriteTool(cwd),
+		read: createReadTool(options),
+		bash: createBashTool(options),
+		edit: createEditTool(options),
+		write: createWriteTool(options),
 	};
 }
 
-/**
- * Create read-only tools (read, grep, find, ls) configured for a specific working directory.
- */
-export function createReadOnlyTools(cwd: string): ToolSet {
+export function createReadOnlyTools(options: ToolFactoryOptions): ToolSet {
 	return {
-		read: createReadTool(cwd),
-		grep: createGrepTool(cwd),
-		find: createFindTool(cwd),
-		ls: createLsTool(cwd),
+		read: createReadTool(options),
+		grep: createGrepTool(options),
+		find: createFindTool(options),
+		ls: createLsTool(options),
 	};
 }
 
-/**
- * Create all tools configured for a specific working directory.
- */
-export function createAllTools(cwd: string): ToolSet {
+export function createAllTools(options: ToolFactoryOptions): ToolSet {
 	return {
-		read: createReadTool(cwd),
-		bash: createBashTool(cwd),
-		edit: createEditTool(cwd),
-		write: createWriteTool(cwd),
-		grep: createGrepTool(cwd),
-		find: createFindTool(cwd),
-		ls: createLsTool(cwd),
+		read: createReadTool(options),
+		bash: createBashTool(options),
+		edit: createEditTool(options),
+		write: createWriteTool(options),
+		grep: createGrepTool(options),
+		find: createFindTool(options),
+		ls: createLsTool(options),
 	};
 }

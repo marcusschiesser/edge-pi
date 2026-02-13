@@ -15,7 +15,7 @@ describe("Coding Agent Tools", () => {
 	beforeEach(() => {
 		testDir = join(tmpdir(), `edge-pi-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 		mkdirSync(testDir, { recursive: true });
-		tools = createAllTools(testDir);
+		tools = createAllTools({ cwd: testDir });
 	});
 
 	afterEach(() => {
@@ -291,7 +291,7 @@ describe("Coding Agent Tools", () => {
 
 	describe("tool factory functions", () => {
 		it("createCodingTools returns read, bash, edit, write", () => {
-			const codingTools = createCodingTools(testDir);
+			const codingTools = createCodingTools({ cwd: testDir });
 			expect(codingTools).toHaveProperty("read");
 			expect(codingTools).toHaveProperty("bash");
 			expect(codingTools).toHaveProperty("edit");
@@ -302,7 +302,7 @@ describe("Coding Agent Tools", () => {
 		});
 
 		it("createReadOnlyTools returns read, grep, find, ls", () => {
-			const readOnlyTools = createReadOnlyTools(testDir);
+			const readOnlyTools = createReadOnlyTools({ cwd: testDir });
 			expect(readOnlyTools).toHaveProperty("read");
 			expect(readOnlyTools).toHaveProperty("grep");
 			expect(readOnlyTools).toHaveProperty("find");
@@ -313,7 +313,7 @@ describe("Coding Agent Tools", () => {
 		});
 
 		it("createAllTools returns all 7 tools", () => {
-			const allTools = createAllTools(testDir);
+			const allTools = createAllTools({ cwd: testDir });
 			expect(Object.keys(allTools)).toHaveLength(7);
 			expect(allTools).toHaveProperty("read");
 			expect(allTools).toHaveProperty("bash");

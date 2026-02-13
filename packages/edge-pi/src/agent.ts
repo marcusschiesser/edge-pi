@@ -161,13 +161,13 @@ export class CodingAgent implements Agent<never, ToolSet> {
 		let tools: ToolSet;
 		switch (toolSetType) {
 			case "coding":
-				tools = createCodingTools(cwd);
+				tools = createCodingTools({ cwd, runtime: this.config.runtime });
 				break;
 			case "readonly":
-				tools = createReadOnlyTools(cwd);
+				tools = createReadOnlyTools({ cwd, runtime: this.config.runtime });
 				break;
 			case "all":
-				tools = createAllTools(cwd);
+				tools = createAllTools({ cwd, runtime: this.config.runtime });
 				break;
 		}
 
