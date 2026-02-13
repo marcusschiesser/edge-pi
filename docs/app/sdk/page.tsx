@@ -42,8 +42,7 @@ const agent = new CodingAgent({
   model,              // Required: Vercel AI LanguageModel
   cwd,                // Working directory (default: process.cwd())
   stopWhen,           // Optional: StopCondition or array (default: run until model stops)
-  systemPrompt,       // Override the full system prompt
-  systemPromptOptions,// Or configure the prompt builder
+  systemPromptOptions,// Configure the prompt builder
   toolSet,            // "coding" | "readonly" | "all" (default: "coding")
   tools,              // Merge additional tools into the set
   providerOptions,    // Optional provider-specific options passed to model calls
@@ -98,16 +97,6 @@ const agent = new CodingAgent({
 							<code>stepCountIs(n)</code> or <code>hasToolCall(name)</code> from{" "}
 							<code>ai</code>. When omitted, runs until the model stops.
 						</td>
-					</tr>
-					<tr>
-						<td>
-							<code>systemPrompt</code>
-						</td>
-						<td>
-							<code>string</code>
-						</td>
-						<td>&mdash;</td>
-						<td>Override the entire system prompt.</td>
 					</tr>
 					<tr>
 						<td>

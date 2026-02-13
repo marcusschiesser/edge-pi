@@ -131,10 +131,6 @@ export class CodingAgent implements Agent<never, ToolSet> {
 
 	/** Build the system prompt based on config */
 	private getSystemPrompt(): string {
-		if (this.config.systemPrompt) {
-			return this.config.systemPrompt;
-		}
-
 		const toolSetType = this.config.toolSet ?? "coding";
 		const selectedTools =
 			toolSetType === "coding"

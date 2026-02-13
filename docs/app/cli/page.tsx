@@ -233,7 +233,10 @@ echo "Explain this error" | epi -p`}</code>
 						<td>
 							<code>--system-prompt &lt;text&gt;</code>
 						</td>
-						<td>Override the entire system prompt.</td>
+						<td>
+							Override the generated system prompt (mapped to SDK{" "}
+							<code>systemPromptOptions.customPrompt</code>).
+						</td>
 					</tr>
 					<tr>
 						<td>

@@ -253,9 +253,11 @@ const agent = new CodingAgent({
 			<pre>
 				<code>{`const agent = new CodingAgent({
   model,
-  systemPrompt: \`You are a code review assistant.
+  systemPromptOptions: {
+    customPrompt: \`You are a code review assistant.
 Only analyze code - never modify files.
 Focus on security issues and performance.\`,
+  },
 });`}</code>
 			</pre>
 		</>

@@ -104,9 +104,7 @@ export interface CodingAgentConfig {
 	 * ```
 	 */
 	stopWhen?: StopCondition<ToolSet> | Array<StopCondition<ToolSet>>;
-	/** Override full system prompt */
-	systemPrompt?: string;
-	/** Or configure the system prompt builder */
+	/** Configure the system prompt builder */
 	systemPromptOptions?: BuildSystemPromptOptions;
 	/** Which tool set to use. Default: "coding" */
 	toolSet?: "coding" | "readonly" | "all";
