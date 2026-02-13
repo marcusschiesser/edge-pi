@@ -8,10 +8,7 @@ export interface ContextFile {
 }
 
 export interface Skill {
-	name: string;
 	description: string;
 	filePath: string;
-	baseDir: string;
-	source: string;
-	disableModelInvocation: boolean;
+	disableModelInvocation?: boolean;
 }

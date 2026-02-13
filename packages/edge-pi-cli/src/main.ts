@@ -9,7 +9,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import chalk from "chalk";
-import type { CodingAgentConfig, Skill } from "edge-pi";
+import type { CodingAgentConfig, Skill as PromptSkill } from "edge-pi";
 import { CodingAgent, SessionManager } from "edge-pi";
 import {
 	AuthStorage,
@@ -25,7 +25,7 @@ import { runPrintMode } from "./modes/print-mode.js";
 import { loadPrompts } from "./prompts.js";
 import { buildProviderOptions } from "./provider-options.js";
 import { SettingsManager } from "./settings.js";
-import { loadSkills } from "./skills.js";
+import { loadSkills, type Skill } from "./skills.js";
 import { findFd } from "./utils/find-fd.js";
 
 const VERSION = "0.1.0";
@@ -128,6 +128,18 @@ function createAuthStorage(): AuthStorage {
 	authStorage.registerProvider(githubCopilotOAuthProvider);
 	authStorage.registerProvider(openaiCodexOAuthProvider);
 	return authStorage;
+}
+
+function toSkillMap(skills: Skill[]): Record<string, PromptSkill> {
+	const map: Record<string, PromptSkill> = {};
+	for (const skill of skills) {
+		map[skill.name] = {
+			description: skill.description,
+			filePath: skill.filePath,
+			disableModelInvocation: skill.disableModelInvocation,
+		};
+	}
+	return map;
 }
 
 export async function main(args: string[]) {
@@ -261,7 +273,7 @@ export async function main(args: string[]) {
 	agentConfig.systemPromptOptions = {
 		appendSystemPrompt: parsed.appendSystemPrompt,
 		contextFiles,
-		skills,
+		skills: toSkillMap(skills),
 	};
 	if (parsed.systemPrompt) {
 		agentConfig.systemPromptOptions.customPrompt = parsed.systemPrompt;

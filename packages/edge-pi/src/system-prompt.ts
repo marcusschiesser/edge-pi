@@ -23,8 +23,8 @@ export interface BuildSystemPromptOptions {
 	appendSystemPrompt?: string;
 	/** Pre-loaded context files. */
 	contextFiles?: ContextFile[];
-	/** Pre-loaded skills. */
-	skills?: Skill[];
+	/** Pre-loaded skills as a keyed object map. */
+	skills?: Record<string, Skill>;
 }
 
 export interface BuildSystemPromptCallOptions {
@@ -39,7 +39,7 @@ export function buildSystemPrompt(
 	options: BuildSystemPromptOptions = {},
 	callOptions: BuildSystemPromptCallOptions = {},
 ): string {
-	const { customPrompt, appendSystemPrompt, contextFiles: providedContextFiles, skills = [] } = options;
+	const { customPrompt, appendSystemPrompt, contextFiles: providedContextFiles, skills } = options;
 	const { selectedTools, cwd } = callOptions;
 	const resolvedCwd = cwd ?? process.cwd();
 
@@ -149,8 +149,12 @@ ${guidelines}`;
 	return prompt;
 }
 
-function formatSkillsForPrompt(skills: Skill[]): string {
-	const visibleSkills = skills.filter((skill) => !skill.disableModelInvocation);
+function formatSkillsForPrompt(skills: BuildSystemPromptOptions["skills"]): string {
+	if (!skills) {
+		return "";
+	}
+
+	const visibleSkills = Object.entries(skills).filter(([, skill]) => !skill.disableModelInvocation);
 
 	if (visibleSkills.length === 0) {
 		return "";
@@ -164,9 +168,9 @@ function formatSkillsForPrompt(skills: Skill[]): string {
 		"<available_skills>",
 	];
 
-	for (const skill of visibleSkills) {
+	for (const [key, skill] of visibleSkills) {
 		lines.push("  <skill>");
-		lines.push(`    <name>${escapeXml(skill.name)}</name>`);
+		lines.push(`    <name>${escapeXml(key)}</name>`);
 		lines.push(`    <description>${escapeXml(skill.description)}</description>`);
 		lines.push(`    <location>${escapeXml(skill.filePath)}</location>`);
 		lines.push("  </skill>");

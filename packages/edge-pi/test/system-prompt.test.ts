@@ -157,20 +157,17 @@ describe("buildSystemPrompt", () => {
 
 		it("includes visible skills in XML format", () => {
 			const prompt = buildSystemPrompt({
-				skills: [
-					{
-						name: "code-review",
+				skills: {
+					codeReview: {
 						description: "Review code for correctness.",
 						filePath: "/tmp/skills/code-review/SKILL.md",
-						baseDir: "/tmp/skills/code-review",
-						source: "test",
 						disableModelInvocation: false,
 					},
-				],
+				},
 			});
 
 			expect(prompt).toContain("<available_skills>");
-			expect(prompt).toContain("<name>code-review</name>");
+			expect(prompt).toContain("<name>codeReview</name>");
 			expect(prompt).toContain("<description>Review code for correctness.</description>");
 			expect(prompt).toContain("<location>/tmp/skills/code-review/SKILL.md</location>");
 			expect(prompt).toContain("The following skills provide specialized instructions");
@@ -179,43 +176,34 @@ describe("buildSystemPrompt", () => {
 
 		it("formats multiple visible skills", () => {
 			const prompt = buildSystemPrompt({
-				skills: [
-					{
-						name: "skill-one",
+				skills: {
+					skillOne: {
 						description: "First skill.",
 						filePath: "/tmp/skills/one/SKILL.md",
-						baseDir: "/tmp/skills/one",
-						source: "test",
 						disableModelInvocation: false,
 					},
-					{
-						name: "skill-two",
+					skillTwo: {
 						description: "Second skill.",
 						filePath: "/tmp/skills/two/SKILL.md",
-						baseDir: "/tmp/skills/two",
-						source: "test",
 						disableModelInvocation: false,
 					},
-				],
+				},
 			});
 
-			expect(prompt).toContain("<name>skill-one</name>");
-			expect(prompt).toContain("<name>skill-two</name>");
+			expect(prompt).toContain("<name>skillOne</name>");
+			expect(prompt).toContain("<name>skillTwo</name>");
 			expect((prompt.match(/<skill>/g) || []).length).toBe(2);
 		});
 
 		it("does not include skills hidden from model invocation", () => {
 			const prompt = buildSystemPrompt({
-				skills: [
-					{
-						name: "hidden",
+				skills: {
+					hidden: {
 						description: "Internal only.",
 						filePath: "/tmp/skills/hidden/SKILL.md",
-						baseDir: "/tmp/skills/hidden",
-						source: "test",
 						disableModelInvocation: true,
 					},
-				],
+				},
 			});
 
 			expect(prompt).not.toContain("<available_skills>");
@@ -224,16 +212,13 @@ describe("buildSystemPrompt", () => {
 
 		it("escapes XML special characters in skill fields", () => {
 			const prompt = buildSystemPrompt({
-				skills: [
-					{
-						name: "security-skill",
+				skills: {
+					securitySkill: {
 						description: 'Use <strict> checks & "safe" defaults.',
 						filePath: "/tmp/skills/security's/SKILL.md",
-						baseDir: "/tmp/skills/security's",
-						source: "test",
 						disableModelInvocation: false,
 					},
-				],
+				},
 			});
 
 			expect(prompt).toContain("&lt;strict&gt;");
@@ -246,16 +231,13 @@ describe("buildSystemPrompt", () => {
 			expect(() =>
 				buildSystemPrompt(
 					{
-						skills: [
-							{
-								name: "code-review",
+						skills: {
+							codeReview: {
 								description: "Review code for correctness.",
 								filePath: "/tmp/skills/code-review/SKILL.md",
-								baseDir: "/tmp/skills/code-review",
-								source: "test",
 								disableModelInvocation: false,
 							},
-						],
+						},
 					},
 					{ selectedTools: [] },
 				),

@@ -86,10 +86,11 @@ console.log(prompt);`}</code>
 							<code>skills</code>
 						</td>
 						<td>
-							<code>Skill[]</code>
+							<code>{`Record<string, Skill>`}</code>
 						</td>
 						<td>
 							Pre-loaded skills to include in the model-visible skills section.
+							The map key is the skill name shown to the model.
 						</td>
 					</tr>
 				</tbody>
@@ -230,16 +231,12 @@ const agent = new CodingAgent({
 			<pre>
 				<code>{`import type { Skill } from "edge-pi";
 
-const skills: Skill[] = [
-  {
-    name: "code-review",
+const skills = {
+  codeReview: {
     description: "Perform detailed code reviews",
     filePath: "/tmp/skills/code-review/SKILL.md",
-    baseDir: "/tmp/skills/code-review",
-    source: "project",
-    disableModelInvocation: false,
   },
-];
+};
 
 const agent = new CodingAgent({
   model,

@@ -17,7 +17,6 @@ describe("skills", () => {
 			expect(skills).toHaveLength(1);
 			expect(skills[0].name).toBe("valid-skill");
 			expect(skills[0].description).toBe("A valid skill for testing purposes.");
-			expect(skills[0].source).toBe("path");
 			expect(diagnostics).toHaveLength(0);
 		});
 

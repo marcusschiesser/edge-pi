@@ -7,8 +7,8 @@
 
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
-import type { Skill } from "edge-pi";
+import { basename, dirname, isAbsolute, join, resolve } from "node:path";
+import type { Skill as PromptSkill } from "edge-pi";
 import { parseFrontmatter } from "./utils/frontmatter.js";
 
 const CONFIG_DIR_NAME = ".pi";
@@ -33,7 +33,9 @@ export interface SkillFrontmatter {
 	[key: string]: unknown;
 }
 
-export type { Skill };
+export interface Skill extends PromptSkill {
+	name: string;
+}
 
 export interface SkillDiagnostic {
 	type: "warning" | "collision";
@@ -86,7 +88,7 @@ function validateFrontmatterFields(keys: string[]): string[] {
 	return errors;
 }
 
-function loadSkillFromFile(filePath: string, source: string): { skill: Skill | null; diagnostics: SkillDiagnostic[] } {
+function loadSkillFromFile(filePath: string): { skill: Skill | null; diagnostics: SkillDiagnostic[] } {
 	const diagnostics: SkillDiagnostic[] = [];
 
 	try {
@@ -122,8 +124,6 @@ function loadSkillFromFile(filePath: string, source: string): { skill: Skill | n
 				name,
 				description: frontmatter.description,
 				filePath,
-				baseDir: skillDir,
-				source,
 				disableModelInvocation: frontmatter["disable-model-invocation"] === true,
 			},
 			diagnostics,
@@ -135,7 +135,7 @@ function loadSkillFromFile(filePath: string, source: string): { skill: Skill | n
 	}
 }
 
-function loadSkillsFromDirInternal(dir: string, source: string, includeRootFiles: boolean): LoadSkillsResult {
+function loadSkillsFromDirInternal(dir: string, includeRootFiles: boolean): LoadSkillsResult {
 	const skills: Skill[] = [];
 	const diagnostics: SkillDiagnostic[] = [];
 
@@ -166,7 +166,7 @@ function loadSkillsFromDirInternal(dir: string, source: string, includeRootFiles
 			}
 
 			if (isDirectory) {
-				const subResult = loadSkillsFromDirInternal(fullPath, source, false);
+				const subResult = loadSkillsFromDirInternal(fullPath, false);
 				skills.push(...subResult.skills);
 				diagnostics.push(...subResult.diagnostics);
 				continue;
@@ -178,7 +178,7 @@ function loadSkillsFromDirInternal(dir: string, source: string, includeRootFiles
 			const isSkillMd = !includeRootFiles && entry.name === "SKILL.md";
 			if (!isRootMd && !isSkillMd) continue;
 
-			const result = loadSkillFromFile(fullPath, source);
+			const result = loadSkillFromFile(fullPath);
 			if (result.skill) {
 				skills.push(result.skill);
 			}
@@ -262,27 +262,9 @@ export function loadSkills(options: LoadSkillsOptions = {}): LoadSkillsResult {
 	}
 
 	if (includeDefaults) {
-		addSkills(loadSkillsFromDirInternal(join(resolvedAgentDir, "skills"), "user", true));
-		addSkills(loadSkillsFromDirInternal(resolve(cwd, CONFIG_DIR_NAME, "skills"), "project", true));
+		addSkills(loadSkillsFromDirInternal(join(resolvedAgentDir, "skills"), true));
+		addSkills(loadSkillsFromDirInternal(resolve(cwd, CONFIG_DIR_NAME, "skills"), true));
 	}
-
-	const userSkillsDir = join(resolvedAgentDir, "skills");
-	const projectSkillsDir = resolve(cwd, CONFIG_DIR_NAME, "skills");
-
-	const isUnderPath = (target: string, root: string): boolean => {
-		const normalizedRoot = resolve(root);
-		if (target === normalizedRoot) return true;
-		const prefix = normalizedRoot.endsWith(sep) ? normalizedRoot : `${normalizedRoot}${sep}`;
-		return target.startsWith(prefix);
-	};
-
-	const getSource = (resolvedPath: string): "user" | "project" | "path" => {
-		if (!includeDefaults) {
-			if (isUnderPath(resolvedPath, userSkillsDir)) return "user";
-			if (isUnderPath(resolvedPath, projectSkillsDir)) return "project";
-		}
-		return "path";
-	};
 
 	for (const rawPath of skillPaths) {
 		const resolvedPath = resolveSkillPath(rawPath, cwd);
@@ -293,11 +275,10 @@ export function loadSkills(options: LoadSkillsOptions = {}): LoadSkillsResult {
 
 		try {
 			const stats = statSync(resolvedPath);
-			const source = getSource(resolvedPath);
 			if (stats.isDirectory()) {
-				addSkills(loadSkillsFromDirInternal(resolvedPath, source, true));
+				addSkills(loadSkillsFromDirInternal(resolvedPath, true));
 			} else if (stats.isFile() && resolvedPath.endsWith(".md")) {
-				const result = loadSkillFromFile(resolvedPath, source);
+				const result = loadSkillFromFile(resolvedPath);
 				if (result.skill) {
 					addSkills({ skills: [result.skill], diagnostics: result.diagnostics });
 				} else {
