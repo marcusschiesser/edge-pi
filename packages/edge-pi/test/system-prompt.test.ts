@@ -4,17 +4,17 @@ import { buildSystemPrompt } from "../src/system-prompt.js";
 describe("buildSystemPrompt", () => {
 	describe("empty tools", () => {
 		it("shows (none) for empty tools list", () => {
-			const prompt = buildSystemPrompt({ selectedTools: [] });
+			const prompt = buildSystemPrompt({}, { selectedTools: [] });
 			expect(prompt).toContain("Available tools:\n(none)");
 		});
 
 		it("includes file paths guideline even with no tools", () => {
-			const prompt = buildSystemPrompt({ selectedTools: [] });
+			const prompt = buildSystemPrompt({}, { selectedTools: [] });
 			expect(prompt).toContain("Show file paths clearly");
 		});
 
 		it("includes concise guideline", () => {
-			const prompt = buildSystemPrompt({ selectedTools: [] });
+			const prompt = buildSystemPrompt({}, { selectedTools: [] });
 			expect(prompt).toContain("Be concise");
 		});
 	});
@@ -31,9 +31,7 @@ describe("buildSystemPrompt", () => {
 
 	describe("selected tools", () => {
 		it("includes only selected tools", () => {
-			const prompt = buildSystemPrompt({
-				selectedTools: ["read", "grep"],
-			});
+			const prompt = buildSystemPrompt({}, { selectedTools: ["read", "grep"] });
 			expect(prompt).toContain("- read:");
 			expect(prompt).toContain("- grep:");
 			expect(prompt).not.toContain("- bash:");
@@ -41,9 +39,10 @@ describe("buildSystemPrompt", () => {
 		});
 
 		it("includes all 7 tools", () => {
-			const prompt = buildSystemPrompt({
-				selectedTools: ["read", "bash", "edit", "write", "grep", "find", "ls"],
-			});
+			const prompt = buildSystemPrompt(
+				{},
+				{ selectedTools: ["read", "bash", "edit", "write", "grep", "find", "ls"] },
+			);
 			expect(prompt).toContain("- read:");
 			expect(prompt).toContain("- bash:");
 			expect(prompt).toContain("- edit:");
@@ -56,27 +55,27 @@ describe("buildSystemPrompt", () => {
 
 	describe("guidelines", () => {
 		it("includes bash file exploration when bash only", () => {
-			const prompt = buildSystemPrompt({ selectedTools: ["bash"] });
+			const prompt = buildSystemPrompt({}, { selectedTools: ["bash"] });
 			expect(prompt).toContain("Use bash for file operations");
 		});
 
 		it("prefers grep/find over bash when both available", () => {
-			const prompt = buildSystemPrompt({ selectedTools: ["bash", "grep", "find"] });
+			const prompt = buildSystemPrompt({}, { selectedTools: ["bash", "grep", "find"] });
 			expect(prompt).toContain("Prefer grep/find/ls tools over bash");
 		});
 
 		it("includes read-before-edit guideline when both available", () => {
-			const prompt = buildSystemPrompt({ selectedTools: ["read", "edit"] });
+			const prompt = buildSystemPrompt({}, { selectedTools: ["read", "edit"] });
 			expect(prompt).toContain("Use read to examine files before editing");
 		});
 
 		it("includes edit precision guideline", () => {
-			const prompt = buildSystemPrompt({ selectedTools: ["edit"] });
+			const prompt = buildSystemPrompt({}, { selectedTools: ["edit"] });
 			expect(prompt).toContain("Use edit for precise changes");
 		});
 
 		it("includes write guideline", () => {
-			const prompt = buildSystemPrompt({ selectedTools: ["write"] });
+			const prompt = buildSystemPrompt({}, { selectedTools: ["write"] });
 			expect(prompt).toContain("Use write only for new files");
 		});
 	});
@@ -98,10 +97,12 @@ describe("buildSystemPrompt", () => {
 		});
 
 		it("includes working directory with custom prompt", () => {
-			const prompt = buildSystemPrompt({
-				customPrompt: "Custom.",
-				cwd: "/test/dir",
-			});
+			const prompt = buildSystemPrompt(
+				{
+					customPrompt: "Custom.",
+				},
+				{ cwd: "/test/dir" },
+			);
 			expect(prompt).toContain("Current working directory: /test/dir");
 		});
 	});
@@ -243,19 +244,21 @@ describe("buildSystemPrompt", () => {
 
 		it("throws when skills are provided without read tool", () => {
 			expect(() =>
-				buildSystemPrompt({
-					selectedTools: [],
-					skills: [
-						{
-							name: "code-review",
-							description: "Review code for correctness.",
-							filePath: "/tmp/skills/code-review/SKILL.md",
-							baseDir: "/tmp/skills/code-review",
-							source: "test",
-							disableModelInvocation: false,
-						},
-					],
-				}),
+				buildSystemPrompt(
+					{
+						skills: [
+							{
+								name: "code-review",
+								description: "Review code for correctness.",
+								filePath: "/tmp/skills/code-review/SKILL.md",
+								baseDir: "/tmp/skills/code-review",
+								source: "test",
+								disableModelInvocation: false,
+							},
+						],
+					},
+					{ selectedTools: [] },
+				),
 			).toThrow('skills require the "read" tool to be enabled in selectedTools');
 		});
 	});
@@ -267,7 +270,7 @@ describe("buildSystemPrompt", () => {
 		});
 
 		it("includes working directory", () => {
-			const prompt = buildSystemPrompt({ cwd: "/my/project" });
+			const prompt = buildSystemPrompt({}, { cwd: "/my/project" });
 			expect(prompt).toContain("Current working directory: /my/project");
 		});
 

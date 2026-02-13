@@ -31,7 +31,11 @@ export type {
 	SessionTreeNode,
 } from "./session/types.js";
 // System prompt
-export { type BuildSystemPromptOptions, buildSystemPrompt } from "./system-prompt.js";
+export {
+	type BuildSystemPromptCallOptions,
+	type BuildSystemPromptOptions,
+	buildSystemPrompt,
+} from "./system-prompt.js";
 export { createBashTool } from "./tools/bash.js";
 export { createEditTool } from "./tools/edit.js";
 export { createFindTool } from "./tools/find.js";

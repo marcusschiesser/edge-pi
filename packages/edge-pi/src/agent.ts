@@ -29,7 +29,6 @@ import {
 } from "./compaction/compaction.js";
 import { estimateContextTokens, shouldCompact } from "./compaction/token-estimation.js";
 import type { SessionManager } from "./session/session-manager.js";
-import type { BuildSystemPromptOptions } from "./system-prompt.js";
 import { buildSystemPrompt } from "./system-prompt.js";
 import { createAllTools, createCodingTools, createReadOnlyTools } from "./tools/index.js";
 import type { CodingAgentConfig, CompactionConfig } from "./types.js";
@@ -144,13 +143,10 @@ export class CodingAgent implements Agent<never, ToolSet> {
 					? ["read", "grep", "find", "ls"]
 					: ["read", "bash", "edit", "write", "grep", "find", "ls"];
 
-		const opts: BuildSystemPromptOptions = {
-			...this.config.systemPromptOptions,
+		return buildSystemPrompt(this.config.systemPromptOptions, {
 			selectedTools,
 			cwd: this.config.cwd ?? process.cwd(),
-		};
-
-		return buildSystemPrompt(opts);
+		});
 	}
 
 	/** Build the tools based on config */

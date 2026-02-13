@@ -30,6 +30,7 @@ export default function SystemPromptPage() {
 				<code>{`import { buildSystemPrompt } from "edge-pi";
 
 const prompt = buildSystemPrompt({
+}, {
   selectedTools: ["read", "bash", "edit", "write"],
   cwd: process.cwd(),
 });
@@ -60,18 +61,6 @@ console.log(prompt);`}</code>
 					</tr>
 					<tr>
 						<td>
-							<code>selectedTools</code>
-						</td>
-						<td>
-							<code>string[]</code>
-						</td>
-						<td>
-							Which tools to include descriptions for. Defaults to the
-							tool set.
-						</td>
-					</tr>
-					<tr>
-						<td>
 							<code>appendSystemPrompt</code>
 						</td>
 						<td>
@@ -79,17 +68,6 @@ console.log(prompt);`}</code>
 						</td>
 						<td>
 							Text to append to the end of the generated prompt.
-						</td>
-					</tr>
-					<tr>
-						<td>
-							<code>cwd</code>
-						</td>
-						<td>
-							<code>string</code>
-						</td>
-						<td>
-							Working directory to include in the prompt.
 						</td>
 					</tr>
 					<tr>
@@ -112,6 +90,46 @@ console.log(prompt);`}</code>
 						</td>
 						<td>
 							Pre-loaded skills to include in the model-visible skills section.
+						</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<h3>Call options</h3>
+			<p>
+				Pass runtime values like selected tools and cwd in the second argument of{" "}
+				<code>buildSystemPrompt()</code>.
+			</p>
+			<table>
+				<thead>
+					<tr>
+						<th>Option</th>
+						<th>Type</th>
+						<th>Description</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>
+							<code>selectedTools</code>
+						</td>
+						<td>
+							<code>string[]</code>
+						</td>
+						<td>
+							Which tools to include descriptions for. Defaults to read, bash,
+							edit, write.
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<code>cwd</code>
+						</td>
+						<td>
+							<code>string</code>
+						</td>
+						<td>
+							Working directory to include in the prompt footer.
 						</td>
 					</tr>
 				</tbody>
