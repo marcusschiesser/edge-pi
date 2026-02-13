@@ -30,6 +30,7 @@ export default function SystemPromptPage() {
 				<code>{`import { buildSystemPrompt } from "edge-pi";
 
 const prompt = buildSystemPrompt({
+}, {
   selectedTools: ["read", "bash", "edit", "write"],
   cwd: process.cwd(),
 });
@@ -60,18 +61,6 @@ console.log(prompt);`}</code>
 					</tr>
 					<tr>
 						<td>
-							<code>selectedTools</code>
-						</td>
-						<td>
-							<code>string[]</code>
-						</td>
-						<td>
-							Which tools to include descriptions for. Defaults to the
-							tool set.
-						</td>
-					</tr>
-					<tr>
-						<td>
 							<code>appendSystemPrompt</code>
 						</td>
 						<td>
@@ -83,17 +72,6 @@ console.log(prompt);`}</code>
 					</tr>
 					<tr>
 						<td>
-							<code>cwd</code>
-						</td>
-						<td>
-							<code>string</code>
-						</td>
-						<td>
-							Working directory to include in the prompt.
-						</td>
-					</tr>
-					<tr>
-						<td>
 							<code>contextFiles</code>
 						</td>
 						<td>
@@ -101,6 +79,58 @@ console.log(prompt);`}</code>
 						</td>
 						<td>
 							Pre-loaded file contents to include in the prompt context.
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<code>skills</code>
+						</td>
+						<td>
+							<code>{`Record<string, Skill>`}</code>
+						</td>
+						<td>
+							Pre-loaded skills to include in the model-visible skills section.
+							The map key is the skill name shown to the model.
+						</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<h3>Call options</h3>
+			<p>
+				Pass runtime values like selected tools and cwd in the second argument of{" "}
+				<code>buildSystemPrompt()</code>.
+			</p>
+			<table>
+				<thead>
+					<tr>
+						<th>Option</th>
+						<th>Type</th>
+						<th>Description</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>
+							<code>selectedTools</code>
+						</td>
+						<td>
+							<code>string[]</code>
+						</td>
+						<td>
+							Which tools to include descriptions for. Defaults to read, bash,
+							edit, write.
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<code>cwd</code>
+						</td>
+						<td>
+							<code>string</code>
+						</td>
+						<td>
+							Working directory to include in the prompt footer.
 						</td>
 					</tr>
 				</tbody>
@@ -197,13 +227,34 @@ const agent = new CodingAgent({
 });`}</code>
 			</pre>
 
+			<h3>Include skills</h3>
+			<pre>
+				<code>{`import type { Skill } from "edge-pi";
+
+const skills = {
+  codeReview: {
+    description: "Perform detailed code reviews",
+    filePath: "/tmp/skills/code-review/SKILL.md",
+  },
+};
+
+const agent = new CodingAgent({
+  model,
+  systemPromptOptions: {
+    skills,
+  },
+});`}</code>
+			</pre>
+
 			<h3>Replace the prompt entirely</h3>
 			<pre>
 				<code>{`const agent = new CodingAgent({
   model,
-  systemPrompt: \`You are a code review assistant.
+  systemPromptOptions: {
+    customPrompt: \`You are a code review assistant.
 Only analyze code - never modify files.
 Focus on security issues and performance.\`,
+  },
 });`}</code>
 			</pre>
 		</>

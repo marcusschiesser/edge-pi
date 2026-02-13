@@ -3,6 +3,8 @@
  * Standalone copy - no dependency on old SDK.
  */
 
+import type { ContextFile, Skill } from "./prompt-context.js";
+
 /** Tool descriptions for system prompt */
 const toolDescriptions: Record<string, string> = {
 	read: "Read file contents",
@@ -17,19 +19,28 @@ const toolDescriptions: Record<string, string> = {
 export interface BuildSystemPromptOptions {
 	/** Custom system prompt (replaces default). */
 	customPrompt?: string;
-	/** Tools to include in prompt. Default: [read, bash, edit, write] */
-	selectedTools?: string[];
 	/** Text to append to system prompt. */
 	appendSystemPrompt?: string;
+	/** Pre-loaded context files. */
+	contextFiles?: ContextFile[];
+	/** Pre-loaded skills as a keyed object map. */
+	skills?: Record<string, Skill>;
+}
+
+export interface BuildSystemPromptCallOptions {
+	/** Tools to include in prompt. Default: [read, bash, edit, write] */
+	selectedTools?: string[];
 	/** Working directory. Default: process.cwd() */
 	cwd?: string;
-	/** Pre-loaded context files. */
-	contextFiles?: Array<{ path: string; content: string }>;
 }
 
 /** Build the system prompt with tools, guidelines, and context */
-export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): string {
-	const { customPrompt, selectedTools, appendSystemPrompt, cwd, contextFiles: providedContextFiles } = options;
+export function buildSystemPrompt(
+	options: BuildSystemPromptOptions = {},
+	callOptions: BuildSystemPromptCallOptions = {},
+): string {
+	const { customPrompt, appendSystemPrompt, contextFiles: providedContextFiles, skills } = options;
+	const { selectedTools, cwd } = callOptions;
 	const resolvedCwd = cwd ?? process.cwd();
 
 	const now = new Date();
@@ -45,34 +56,16 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): strin
 	});
 
 	const appendSection = appendSystemPrompt ? `\n\n${appendSystemPrompt}` : "";
+	const tools = (selectedTools || ["read", "bash", "edit", "write"]).filter((t) => t in toolDescriptions);
+	const skillsSection = formatSkillsForPrompt(skills);
+	const hasRead = tools.includes("read");
+	if (skillsSection && !hasRead) {
+		throw new Error('skills require the "read" tool to be enabled in selectedTools');
+	}
 
 	const contextFiles = providedContextFiles ?? [];
 
-	if (customPrompt) {
-		let prompt = customPrompt;
-
-		if (appendSection) {
-			prompt += appendSection;
-		}
-
-		// Append project context files
-		if (contextFiles.length > 0) {
-			prompt += "\n\n# Project Context\n\n";
-			prompt += "Project-specific instructions and guidelines:\n\n";
-			for (const { path: filePath, content } of contextFiles) {
-				prompt += `## ${filePath}\n\n${content}\n\n`;
-			}
-		}
-
-		// Add date/time and working directory last
-		prompt += `\nCurrent date and time: ${dateTime}`;
-		prompt += `\nCurrent working directory: ${resolvedCwd}`;
-
-		return prompt;
-	}
-
 	// Build tools list based on selected tools (only built-in tools with known descriptions)
-	const tools = (selectedTools || ["read", "bash", "edit", "write"]).filter((t) => t in toolDescriptions);
 	const toolsList = tools.length > 0 ? tools.map((t) => `- ${t}: ${toolDescriptions[t]}`).join("\n") : "(none)";
 
 	// Build guidelines based on which tools are actually available
@@ -84,7 +77,6 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): strin
 	const hasGrep = tools.includes("grep");
 	const hasFind = tools.includes("find");
 	const hasLs = tools.includes("ls");
-	const hasRead = tools.includes("read");
 
 	// File exploration guidelines
 	if (hasBash && !hasGrep && !hasFind && !hasLs) {
@@ -121,7 +113,9 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): strin
 
 	const guidelines = guidelinesList.map((g) => `- ${g}`).join("\n");
 
-	let prompt = `You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+	let prompt =
+		customPrompt ??
+		`You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
 
 Available tools:
 ${toolsList}
@@ -130,6 +124,10 @@ In addition to the tools above, you may have access to other custom tools depend
 
 Guidelines:
 ${guidelines}`;
+
+	if (skillsSection) {
+		prompt += skillsSection;
+	}
 
 	if (appendSection) {
 		prompt += appendSection;
@@ -149,4 +147,44 @@ ${guidelines}`;
 	prompt += `\nCurrent working directory: ${resolvedCwd}`;
 
 	return prompt;
+}
+
+function formatSkillsForPrompt(skills: BuildSystemPromptOptions["skills"]): string {
+	if (!skills) {
+		return "";
+	}
+
+	const visibleSkills = Object.entries(skills).filter(([, skill]) => !skill.disableModelInvocation);
+
+	if (visibleSkills.length === 0) {
+		return "";
+	}
+
+	const lines = [
+		"\n\nThe following skills provide specialized instructions for specific tasks.",
+		"Use the read tool to load a skill's file when the task matches its description.",
+		"When a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.",
+		"",
+		"<available_skills>",
+	];
+
+	for (const [key, skill] of visibleSkills) {
+		lines.push("  <skill>");
+		lines.push(`    <name>${escapeXml(key)}</name>`);
+		lines.push(`    <description>${escapeXml(skill.description)}</description>`);
+		lines.push(`    <location>${escapeXml(skill.filePath)}</location>`);
+		lines.push("  </skill>");
+	}
+
+	lines.push("</available_skills>");
+	return lines.join("\n");
+}
+
+function escapeXml(str: string): string {
+	return str
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&apos;");
 }

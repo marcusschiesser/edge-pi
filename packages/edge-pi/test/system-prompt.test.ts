@@ -4,17 +4,17 @@ import { buildSystemPrompt } from "../src/system-prompt.js";
 describe("buildSystemPrompt", () => {
 	describe("empty tools", () => {
 		it("shows (none) for empty tools list", () => {
-			const prompt = buildSystemPrompt({ selectedTools: [] });
+			const prompt = buildSystemPrompt({}, { selectedTools: [] });
 			expect(prompt).toContain("Available tools:\n(none)");
 		});
 
 		it("includes file paths guideline even with no tools", () => {
-			const prompt = buildSystemPrompt({ selectedTools: [] });
+			const prompt = buildSystemPrompt({}, { selectedTools: [] });
 			expect(prompt).toContain("Show file paths clearly");
 		});
 
 		it("includes concise guideline", () => {
-			const prompt = buildSystemPrompt({ selectedTools: [] });
+			const prompt = buildSystemPrompt({}, { selectedTools: [] });
 			expect(prompt).toContain("Be concise");
 		});
 	});
@@ -31,9 +31,7 @@ describe("buildSystemPrompt", () => {
 
 	describe("selected tools", () => {
 		it("includes only selected tools", () => {
-			const prompt = buildSystemPrompt({
-				selectedTools: ["read", "grep"],
-			});
+			const prompt = buildSystemPrompt({}, { selectedTools: ["read", "grep"] });
 			expect(prompt).toContain("- read:");
 			expect(prompt).toContain("- grep:");
 			expect(prompt).not.toContain("- bash:");
@@ -41,9 +39,10 @@ describe("buildSystemPrompt", () => {
 		});
 
 		it("includes all 7 tools", () => {
-			const prompt = buildSystemPrompt({
-				selectedTools: ["read", "bash", "edit", "write", "grep", "find", "ls"],
-			});
+			const prompt = buildSystemPrompt(
+				{},
+				{ selectedTools: ["read", "bash", "edit", "write", "grep", "find", "ls"] },
+			);
 			expect(prompt).toContain("- read:");
 			expect(prompt).toContain("- bash:");
 			expect(prompt).toContain("- edit:");
@@ -56,27 +55,27 @@ describe("buildSystemPrompt", () => {
 
 	describe("guidelines", () => {
 		it("includes bash file exploration when bash only", () => {
-			const prompt = buildSystemPrompt({ selectedTools: ["bash"] });
+			const prompt = buildSystemPrompt({}, { selectedTools: ["bash"] });
 			expect(prompt).toContain("Use bash for file operations");
 		});
 
 		it("prefers grep/find over bash when both available", () => {
-			const prompt = buildSystemPrompt({ selectedTools: ["bash", "grep", "find"] });
+			const prompt = buildSystemPrompt({}, { selectedTools: ["bash", "grep", "find"] });
 			expect(prompt).toContain("Prefer grep/find/ls tools over bash");
 		});
 
 		it("includes read-before-edit guideline when both available", () => {
-			const prompt = buildSystemPrompt({ selectedTools: ["read", "edit"] });
+			const prompt = buildSystemPrompt({}, { selectedTools: ["read", "edit"] });
 			expect(prompt).toContain("Use read to examine files before editing");
 		});
 
 		it("includes edit precision guideline", () => {
-			const prompt = buildSystemPrompt({ selectedTools: ["edit"] });
+			const prompt = buildSystemPrompt({}, { selectedTools: ["edit"] });
 			expect(prompt).toContain("Use edit for precise changes");
 		});
 
 		it("includes write guideline", () => {
-			const prompt = buildSystemPrompt({ selectedTools: ["write"] });
+			const prompt = buildSystemPrompt({}, { selectedTools: ["write"] });
 			expect(prompt).toContain("Use write only for new files");
 		});
 	});
@@ -98,10 +97,12 @@ describe("buildSystemPrompt", () => {
 		});
 
 		it("includes working directory with custom prompt", () => {
-			const prompt = buildSystemPrompt({
-				customPrompt: "Custom.",
-				cwd: "/test/dir",
-			});
+			const prompt = buildSystemPrompt(
+				{
+					customPrompt: "Custom.",
+				},
+				{ cwd: "/test/dir" },
+			);
 			expect(prompt).toContain("Current working directory: /test/dir");
 		});
 	});
@@ -148,6 +149,102 @@ describe("buildSystemPrompt", () => {
 		});
 	});
 
+	describe("skills", () => {
+		it("returns no skills section when no skills are provided", () => {
+			const prompt = buildSystemPrompt({});
+			expect(prompt).not.toContain("<available_skills>");
+		});
+
+		it("includes visible skills in XML format", () => {
+			const prompt = buildSystemPrompt({
+				skills: {
+					codeReview: {
+						description: "Review code for correctness.",
+						filePath: "/tmp/skills/code-review/SKILL.md",
+						disableModelInvocation: false,
+					},
+				},
+			});
+
+			expect(prompt).toContain("<available_skills>");
+			expect(prompt).toContain("<name>codeReview</name>");
+			expect(prompt).toContain("<description>Review code for correctness.</description>");
+			expect(prompt).toContain("<location>/tmp/skills/code-review/SKILL.md</location>");
+			expect(prompt).toContain("The following skills provide specialized instructions");
+			expect(prompt).toContain("Use the read tool to load a skill's file");
+		});
+
+		it("formats multiple visible skills", () => {
+			const prompt = buildSystemPrompt({
+				skills: {
+					skillOne: {
+						description: "First skill.",
+						filePath: "/tmp/skills/one/SKILL.md",
+						disableModelInvocation: false,
+					},
+					skillTwo: {
+						description: "Second skill.",
+						filePath: "/tmp/skills/two/SKILL.md",
+						disableModelInvocation: false,
+					},
+				},
+			});
+
+			expect(prompt).toContain("<name>skillOne</name>");
+			expect(prompt).toContain("<name>skillTwo</name>");
+			expect((prompt.match(/<skill>/g) || []).length).toBe(2);
+		});
+
+		it("does not include skills hidden from model invocation", () => {
+			const prompt = buildSystemPrompt({
+				skills: {
+					hidden: {
+						description: "Internal only.",
+						filePath: "/tmp/skills/hidden/SKILL.md",
+						disableModelInvocation: true,
+					},
+				},
+			});
+
+			expect(prompt).not.toContain("<available_skills>");
+			expect(prompt).not.toContain("<name>hidden</name>");
+		});
+
+		it("escapes XML special characters in skill fields", () => {
+			const prompt = buildSystemPrompt({
+				skills: {
+					securitySkill: {
+						description: 'Use <strict> checks & "safe" defaults.',
+						filePath: "/tmp/skills/security's/SKILL.md",
+						disableModelInvocation: false,
+					},
+				},
+			});
+
+			expect(prompt).toContain("&lt;strict&gt;");
+			expect(prompt).toContain("&amp;");
+			expect(prompt).toContain("&quot;safe&quot;");
+			expect(prompt).toContain("security&apos;s");
+		});
+
+		it("throws when skills are provided without read tool", () => {
+			expect(() =>
+				buildSystemPrompt(
+					{
+						skills: {
+							codeReview: {
+								description: "Review code for correctness.",
+								filePath: "/tmp/skills/code-review/SKILL.md",
+								disableModelInvocation: false,
+							},
+						},
+					},
+					{ selectedTools: [] },
+				),
+			).toThrow('skills require the "read" tool to be enabled in selectedTools');
+		});
+	});
+
 	describe("date, time, and cwd", () => {
 		it("includes current date/time", () => {
 			const prompt = buildSystemPrompt({});
@@ -155,7 +252,7 @@ describe("buildSystemPrompt", () => {
 		});
 
 		it("includes working directory", () => {
-			const prompt = buildSystemPrompt({ cwd: "/my/project" });
+			const prompt = buildSystemPrompt({}, { cwd: "/my/project" });
 			expect(prompt).toContain("Current working directory: /my/project");
 		});
 

@@ -24,6 +24,7 @@ npx tsx examples/05-all-tools.ts
 npx tsx examples/06-web-search-tool.ts
 npx tsx examples/07-sessions.ts
 npx tsx examples/08-compaction.ts
+npx tsx examples/09-skills.ts
 ```
 
 ## Directories
@@ -37,6 +38,7 @@ Examples in this directory demonstrate:
 - Generating a complete PWA (Progressive Web App)
 - Session persistence with CodingAgent
 - Built-in context compaction (auto + manual)
+- Structured skills passed via `systemPromptOptions`
 
 ## Documentation
 

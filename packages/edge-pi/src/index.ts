@@ -17,6 +17,7 @@ export type {
 	CompactionSettings,
 } from "./compaction/compaction.js";
 export { estimateContextTokens, estimateTokens, shouldCompact } from "./compaction/token-estimation.js";
+export type { ContextFile, Skill } from "./prompt-context.js";
 export { buildSessionContext, type SessionContext } from "./session/context.js";
 // Session
 export { SessionManager } from "./session/session-manager.js";
@@ -30,7 +31,11 @@ export type {
 	SessionTreeNode,
 } from "./session/types.js";
 // System prompt
-export { type BuildSystemPromptOptions, buildSystemPrompt } from "./system-prompt.js";
+export {
+	type BuildSystemPromptCallOptions,
+	type BuildSystemPromptOptions,
+	buildSystemPrompt,
+} from "./system-prompt.js";
 export { createBashTool } from "./tools/bash.js";
 export { createEditTool } from "./tools/edit.js";
 export { createFindTool } from "./tools/find.js";

@@ -93,35 +93,20 @@ tmux kill-session -t pi-test
 
 ## Examples
 
-- Prefer streaming (`agent.stream()` + `for await ... of result.textStream`) in examples so users see incremental output.
+- Prefer streaming (`agent.stream()`) in examples.
+- Use `printStream(result)` to show output in examples.
+- Exception: `examples/02-streaming.ts` should demonstrate raw `textStream` usage.
 - Only use non-streaming (`agent.generate()`) when the example specifically needs a final aggregated result object.
 
-## Changelog
+## Changesets
 
-Location: `packages/*/CHANGELOG.md` (each package has its own)
-
-### Format
-
-Use these sections under `## [Unreleased]`:
-
-- `### Breaking Changes` - API changes requiring migration
-- `### Added` - New features
-- `### Changed` - Changes to existing functionality
-- `### Fixed` - Bug fixes
-- `### Removed` - Removed features
+- Do not manually edit `packages/*/CHANGELOG.md`.
+- Use Changesets for all user-facing changes: `npm run changeset`.
 
 ### Rules
 
-- Before adding entries, read the full `[Unreleased]` section to see which subsections already exist
-- New entries ALWAYS go under `## [Unreleased]` section
-- Append to existing subsections (e.g., `### Fixed`), do not create duplicates
-- NEVER modify already-released version sections (e.g., `## [0.12.2]`)
-- Each version section is immutable once released
-
-### Attribution
-
-- **Internal changes (from issues)**: `Fixed foo bar ([#123](https://github.com/marcusschiesser/edge-pi/issues/123))`
-- **External contributions**: `Added feature X ([#456](https://github.com/marcusschiesser/edge-pi/pull/456) by [@username](https://github.com/username))`
+- Create a changeset for any user-facing change.
+- Do not include manual changelog edits in feature PRs.
 
 ## Adding a New LLM Provider
 
@@ -140,7 +125,7 @@ Adding a new provider requires changes in `packages/coding-agent-sdk` and `packa
 ### 3. Coding Agent (`packages/coding-agent/`)
 
 - `README.md` and `docs/providers.md`: Add provider setup instructions
-- `CHANGELOG.md`: Add entry under `## [Unreleased]`
+- Add a changeset via `npm run changeset`
 
 ## Releasing
 
@@ -201,7 +186,7 @@ git status
 
 # 2. Add ONLY your specific files
 git add packages/coding-agent-sdk/src/core/ai-types.ts
-git add packages/coding-agent-sdk/CHANGELOG.md
+git add .changeset/your-change.md
 
 # 3. Commit
 git commit -m "fix(ai): description"

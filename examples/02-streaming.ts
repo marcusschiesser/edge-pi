@@ -23,12 +23,10 @@ const result = await agent.stream({
 	prompt: "Read the package.json in the current directory and summarize what this project does.",
 });
 
-// Stream text tokens as they arrive
 for await (const text of result.textStream) {
 	process.stdout.write(text);
 }
 
-// After stream completes, print stats
 const usage = await result.totalUsage;
 const steps = await result.steps;
 
