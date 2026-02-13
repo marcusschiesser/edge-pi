@@ -1,5 +1,21 @@
 # edge-pi-cli
 
+## 0.1.6
+
+### Patch Changes
+
+- [#24](https://github.com/marcusschiesser/edge-pi/pull/24) [`0ebc242`](https://github.com/marcusschiesser/edge-pi/commit/0ebc24246e8e5d43d35dc595dc5e88214644a147) Thanks [@marcusschiesser](https://github.com/marcusschiesser)! - Add structured SDK support for prompt skills and shared prompt-context types.
+
+  - `BuildSystemPromptOptions` now accepts `skills` in addition to `contextFiles`.
+  - Export shared `Skill` and `ContextFile` types from `edge-pi`.
+  - Move skill prompt formatting into the SDK system prompt builder.
+  - Update CLI wiring to pass loaded skills/context files as structured `systemPromptOptions` input.
+
+  Add a new SDK example for structured skills and update streaming examples to use `printStream`.
+
+- Updated dependencies [[`0ebc242`](https://github.com/marcusschiesser/edge-pi/commit/0ebc24246e8e5d43d35dc595dc5e88214644a147)]:
+  - edge-pi@0.1.6
+
 ## 0.1.5
 
 ### Patch Changes
