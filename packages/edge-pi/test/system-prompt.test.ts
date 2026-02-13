@@ -240,6 +240,24 @@ describe("buildSystemPrompt", () => {
 			expect(prompt).toContain("&quot;safe&quot;");
 			expect(prompt).toContain("security&apos;s");
 		});
+
+		it("throws when skills are provided without read tool", () => {
+			expect(() =>
+				buildSystemPrompt({
+					selectedTools: [],
+					skills: [
+						{
+							name: "code-review",
+							description: "Review code for correctness.",
+							filePath: "/tmp/skills/code-review/SKILL.md",
+							baseDir: "/tmp/skills/code-review",
+							source: "test",
+							disableModelInvocation: false,
+						},
+					],
+				}),
+			).toThrow('skills require the "read" tool to be enabled in selectedTools');
+		});
 	});
 
 	describe("date, time, and cwd", () => {

@@ -56,7 +56,11 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): strin
 	});
 
 	const appendSection = appendSystemPrompt ? `\n\n${appendSystemPrompt}` : "";
+	const tools = (selectedTools || ["read", "bash", "edit", "write"]).filter((t) => t in toolDescriptions);
 	const skillsSection = formatSkillsForPrompt(skills);
+	if (skillsSection && !tools.includes("read")) {
+		throw new Error('skills require the "read" tool to be enabled in selectedTools');
+	}
 
 	const contextFiles = providedContextFiles ?? [];
 
@@ -88,7 +92,6 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): strin
 	}
 
 	// Build tools list based on selected tools (only built-in tools with known descriptions)
-	const tools = (selectedTools || ["read", "bash", "edit", "write"]).filter((t) => t in toolDescriptions);
 	const toolsList = tools.length > 0 ? tools.map((t) => `- ${t}: ${toolDescriptions[t]}`).join("\n") : "(none)";
 
 	// Build guidelines based on which tools are actually available
