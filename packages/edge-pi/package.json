@@ -10,6 +10,14 @@
 			"import": "./dist/index.js"
 		}
 	},
+	"browser": {
+		"./dist/runtime/node-runtime.js": "./src/runtime/node-runtime.browser.ts",
+		"./src/runtime/node-runtime.js": "./src/runtime/node-runtime.browser.ts",
+		"./src/runtime/node-runtime.ts": "./src/runtime/node-runtime.browser.ts",
+		"./dist/session/session-manager.js": "./src/session/session-manager.browser.ts",
+		"./src/session/session-manager.js": "./src/session/session-manager.browser.ts",
+		"./src/session/session-manager.ts": "./src/session/session-manager.browser.ts"
+	},
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/marcusschiesser/edge-pi"

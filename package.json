@@ -9,7 +9,7 @@
 	],
 	"scripts": {
 		"clean": "npm run clean --workspaces",
-		"build": "cd packages/edge-pi && npm run build && cd ../edge-pi-cli && npm run build",
+		"build": "for dir in packages/*; do (cd \"$dir\" && npm run build --if-present) || exit 1; done",
 		"check": "biome check --write --error-on-warnings . && tsgo --noEmit",
 		"test": "npm run test --workspaces --if-present",
 		"prepublishOnly": "npm run clean && npm run build && npm run check",

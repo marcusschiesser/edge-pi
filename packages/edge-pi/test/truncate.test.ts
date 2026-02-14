@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { utf8ByteLength } from "../src/runtime/encoding.js";
 import { formatSize, truncateHead, truncateLine, truncateTail } from "../src/tools/truncate.js";
 
 describe("truncateHead", () => {
@@ -111,7 +112,7 @@ describe("truncateTail", () => {
 
 		expect(result.truncated).toBe(true);
 		expect(result.lastLinePartial).toBe(true);
-		expect(Buffer.byteLength(result.content, "utf-8")).toBeLessThanOrEqual(100);
+		expect(utf8ByteLength(result.content)).toBeLessThanOrEqual(100);
 	});
 });
 

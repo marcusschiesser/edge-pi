@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CodingAgent } from "../src/agent.js";
+import type { EdgePiRuntime } from "../src/runtime/types.js";
 import { SessionManager } from "../src/session/session-manager.js";
 import { assistantMsg, userMsg } from "./utilities.js";
 
@@ -44,6 +45,73 @@ describe("CodingAgent SessionManager integration", () => {
 
 		expect(agent.sessionManager).toBeUndefined();
 		expect(agent.messages).toHaveLength(0);
+	});
+
+	it("uses explicit config.cwd in system prompt", () => {
+		const agent = new CodingAgent({ model: mockModel, cwd: "/explicit-cwd" });
+		const getSystemPrompt = (
+			agent as unknown as {
+				getSystemPrompt: () => string;
+			}
+		).getSystemPrompt;
+
+		const prompt = getSystemPrompt.call(agent);
+		expect(prompt).toContain("Current working directory: /explicit-cwd");
+	});
+
+	it("uses runtime homedir as default cwd when config.cwd is not set", () => {
+		const runtime: EdgePiRuntime = {
+			exec: async () => ({
+				output: "",
+				exitCode: 0,
+				truncated: false,
+				timedOut: false,
+				aborted: false,
+			}),
+			fs: {
+				readFile: async () => "",
+				writeFile: async () => undefined,
+				mkdir: async () => undefined,
+				readdir: async () => [],
+				stat: async () => ({ isDirectory: () => false, isFile: () => true }),
+				access: async () => undefined,
+				exists: async () => false,
+			},
+			path: {
+				join: (...parts) => parts.join("/"),
+				dirname: () => ".",
+				relative: () => ".",
+				resolve: (...parts) => parts.join("/"),
+				isAbsolute: (pathValue) => pathValue.startsWith("/"),
+				basename: () => "",
+			},
+			os: {
+				homedir: () => "/runtime-home",
+				tmpdir: () => "/tmp",
+			},
+		};
+
+		const agent = new CodingAgent({ model: mockModel, runtime });
+		const getSystemPrompt = (
+			agent as unknown as {
+				getSystemPrompt: () => string;
+			}
+		).getSystemPrompt;
+
+		const prompt = getSystemPrompt.call(agent);
+		expect(prompt).toContain("Current working directory: /runtime-home");
+	});
+
+	it("uses process.cwd() when runtime and cwd are not set", () => {
+		const agent = new CodingAgent({ model: mockModel });
+		const getSystemPrompt = (
+			agent as unknown as {
+				getSystemPrompt: () => string;
+			}
+		).getSystemPrompt;
+
+		const prompt = getSystemPrompt.call(agent);
+		expect(prompt).toContain(`Current working directory: ${process.cwd()}`);
 	});
 
 	it("sessionManager setter auto-restores messages", () => {

@@ -18,6 +18,8 @@ export type {
 } from "./compaction/compaction.js";
 export { estimateContextTokens, estimateTokens, shouldCompact } from "./compaction/token-estimation.js";
 export type { ContextFile, Skill } from "./prompt-context.js";
+export { createNodeRuntime } from "./runtime/node-runtime.js";
+export type { EdgePiFs, EdgePiOs, EdgePiPath, EdgePiRuntime, ExecOptions, ExecResult } from "./runtime/types.js";
 export { buildSessionContext, type SessionContext } from "./session/context.js";
 // Session
 export { SessionManager } from "./session/session-manager.js";
