@@ -49,12 +49,10 @@ export function App() {
       const runtime = createWebContainerRuntime(webcontainer);
       const agent = new CodingAgent({
         model,
-        cwd: "/home/project",
         runtime,
       });
 
-      const file = "/home/project/App.jsx";
-      await runtime.fs.mkdir("/home/project", { recursive: true });
+      const file = `App.jsx`;
 
       const result = await agent.generate({
         prompt: `Write a single JSX code file for the app to ${file}. The code will be rendered in the following HTML template: ${htmlTemplate(
@@ -63,11 +61,7 @@ export function App() {
       });
 
       const fileContent = await runtime.fs.readFile(file, "utf-8");
-      setGeneratedCode(
-        typeof fileContent === "string"
-          ? fileContent
-          : new TextDecoder().decode(fileContent),
-      );
+      setGeneratedCode(fileContent);
 
       if (!result.text) {
         setError(

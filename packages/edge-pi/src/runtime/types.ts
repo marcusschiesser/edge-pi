@@ -14,7 +14,8 @@ export interface ExecResult {
 }
 
 export interface EdgePiFs {
-	readFile(path: string, encoding?: BufferEncoding): Promise<string | Uint8Array>;
+	readFile(path: string): Promise<Uint8Array>;
+	readFile(path: string, encoding: BufferEncoding): Promise<string>;
 	writeFile(path: string, content: string | Uint8Array, encoding?: BufferEncoding): Promise<void>;
 	mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
 	readdir(path: string): Promise<string[]>;

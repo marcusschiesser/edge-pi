@@ -23,6 +23,15 @@ const mockModel = {
 	},
 } as any;
 
+function mockReadFile(_path: string): Promise<Uint8Array>;
+function mockReadFile(_path: string, _encoding: BufferEncoding): Promise<string>;
+function mockReadFile(_path: string, encoding?: BufferEncoding): Promise<string | Uint8Array> {
+	if (encoding !== undefined) {
+		return Promise.resolve("");
+	}
+	return Promise.resolve(new Uint8Array());
+}
+
 describe("CodingAgent SessionManager integration", () => {
 	it("constructor auto-restores messages from sessionManager", () => {
 		const session = SessionManager.inMemory();
@@ -69,7 +78,7 @@ describe("CodingAgent SessionManager integration", () => {
 				aborted: false,
 			}),
 			fs: {
-				readFile: async () => "",
+				readFile: mockReadFile,
 				writeFile: async () => undefined,
 				mkdir: async () => undefined,
 				readdir: async () => [],

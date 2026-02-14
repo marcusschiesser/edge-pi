@@ -108,10 +108,19 @@ async function exec(command: string, options?: ExecOptions): Promise<ExecResult>
 }
 
 export function createNodeRuntime(): EdgePiRuntime {
+	function readFile(filePath: string): Promise<Uint8Array>;
+	function readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+	async function readFile(filePath: string, encoding?: BufferEncoding): Promise<string | Uint8Array> {
+		if (encoding !== undefined) {
+			return fs.readFile(filePath, encoding);
+		}
+		return fs.readFile(filePath);
+	}
+
 	return {
 		exec,
 		fs: {
-			readFile: async (filePath, encoding) => (encoding ? fs.readFile(filePath, encoding) : fs.readFile(filePath)),
+			readFile,
 			writeFile: async (filePath, content, encoding) => {
 				if (typeof content === "string") {
 					await fs.writeFile(filePath, content, encoding ?? "utf-8");

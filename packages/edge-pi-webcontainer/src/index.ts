@@ -96,6 +96,21 @@ async function readProcessOutput(process: WebContainerProcess, options?: ExecOpt
 }
 
 export function createWebContainerRuntime(webcontainer: WebContainer): EdgePiRuntime {
+	const pathHelpers = createPathHelpers();
+	const homeDir = "/home/project";
+	const resolveFsPath = (targetPath: string): string =>
+		targetPath.startsWith("/") ? targetPath : pathHelpers.resolve(homeDir, targetPath);
+
+	function readFile(targetPath: string): Promise<Uint8Array>;
+	function readFile(targetPath: string, encoding: BufferEncoding): Promise<string>;
+	async function readFile(targetPath: string, encoding?: BufferEncoding): Promise<string | Uint8Array> {
+		const resolvedPath = resolveFsPath(targetPath);
+		if (encoding !== undefined) {
+			return webcontainer.fs.readFile(resolvedPath, encoding);
+		}
+		return webcontainer.fs.readFile(resolvedPath);
+	}
+
 	return {
 		exec: async (command: string, options?: ExecOptions): Promise<ExecResult> => {
 			const process = await webcontainer.spawn("sh", ["-lc", command], {
@@ -104,37 +119,36 @@ export function createWebContainerRuntime(webcontainer: WebContainer): EdgePiRun
 			return readProcessOutput(process, options);
 		},
 		fs: {
-			readFile: async (targetPath: string, encoding?: BufferEncoding) => {
-				const value = await webcontainer.fs.readFile(targetPath, encoding);
-				return typeof value === "string" ? value : new Uint8Array(value);
-			},
+			readFile,
 			writeFile: async (targetPath: string, content: string | Uint8Array) => {
+				const resolvedPath = resolveFsPath(targetPath);
 				if (typeof content === "string") {
-					await webcontainer.fs.writeFile(targetPath, content);
+					await webcontainer.fs.writeFile(resolvedPath, content);
 					return;
 				}
-				await webcontainer.fs.writeFile(targetPath, new Uint8Array(content));
+				await webcontainer.fs.writeFile(resolvedPath, new Uint8Array(content));
 			},
 			mkdir: async (targetPath: string, options?: { recursive?: boolean }) => {
-				await webcontainer.fs.mkdir(targetPath, { recursive: options?.recursive ?? true });
+				const resolvedPath = resolveFsPath(targetPath);
+				await webcontainer.fs.mkdir(resolvedPath, { recursive: options?.recursive ?? true });
 			},
-			readdir: async (targetPath: string) => webcontainer.fs.readdir(targetPath),
-			stat: async (targetPath: string) => webcontainer.fs.stat(targetPath),
+			readdir: async (targetPath: string) => webcontainer.fs.readdir(resolveFsPath(targetPath)),
+			stat: async (targetPath: string) => webcontainer.fs.stat(resolveFsPath(targetPath)),
 			access: async (targetPath: string) => {
-				await webcontainer.fs.stat(targetPath);
+				await webcontainer.fs.stat(resolveFsPath(targetPath));
 			},
 			exists: async (targetPath: string) => {
 				try {
-					await webcontainer.fs.stat(targetPath);
+					await webcontainer.fs.stat(resolveFsPath(targetPath));
 					return true;
 				} catch {
 					return false;
 				}
 			},
 		},
-		path: createPathHelpers(),
+		path: pathHelpers,
 		os: {
-			homedir: () => "/home/project",
+			homedir: () => homeDir,
 			tmpdir: () => "/tmp",
 		},
 	};
