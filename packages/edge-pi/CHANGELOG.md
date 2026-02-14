@@ -1,5 +1,15 @@
 # edge-pi
 
+## [Unreleased]
+
+### Breaking Changes
+
+- Tool factory signatures now require an options object (`{ cwd, runtime? }`) instead of a plain `cwd` string.
+
+### Added
+
+- Added runtime abstraction (`EdgePiRuntime`) and Node default runtime factory (`createNodeRuntime`) for built-in tools.
+
 ## 0.1.5
 
 ### Patch Changes

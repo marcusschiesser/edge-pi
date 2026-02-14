@@ -26,6 +26,14 @@ npx tsx examples/07-sessions.ts
 npx tsx examples/08-compaction.ts
 ```
 
+Browser example (Vite + WebContainer):
+
+```bash
+cd examples/vite-browser-agent
+npm install
+npm run dev
+```
+
 ## Directories
 
 Examples in this directory demonstrate:
@@ -37,6 +45,7 @@ Examples in this directory demonstrate:
 - Generating a complete PWA (Progressive Web App)
 - Session persistence with CodingAgent
 - Built-in context compaction (auto + manual)
+- Running CodingAgent in the browser with WebContainer (`examples/vite-browser-agent`)
 
 ## Documentation
 

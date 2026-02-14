@@ -28,6 +28,7 @@ import type {
 	UserModelMessage,
 } from "ai";
 import type { CompactionResult, CompactionSettings } from "./compaction/compaction.js";
+import type { EdgePiRuntime } from "./runtime/types.js";
 import type { SessionManager } from "./session/session-manager.js";
 import type { BuildSystemPromptOptions } from "./system-prompt.js";
 
@@ -112,6 +113,8 @@ export interface CodingAgentConfig {
 	toolSet?: "coding" | "readonly" | "all";
 	/** Additional tools to merge in */
 	tools?: ToolSet;
+	/** Runtime adapter for filesystem, shell, path and OS operations. Defaults to Node runtime. */
+	runtime?: EdgePiRuntime;
 	/** Optional provider-specific options forwarded to the model call. */
 	providerOptions?: Record<string, Record<string, JSONValue>>;
 	/**

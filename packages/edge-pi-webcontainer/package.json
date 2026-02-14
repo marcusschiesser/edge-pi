@@ -1,0 +1,28 @@
+{
+  "name": "edge-pi-webcontainer",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsgo -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "test": "vitest --run"
+  },
+  "dependencies": {
+    "@webcontainer/api": "^1.5.1",
+    "edge-pi": "*"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18"
+  }
+}
