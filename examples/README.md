@@ -27,6 +27,14 @@ npx tsx examples/08-compaction.ts
 npx tsx examples/09-skills.ts
 ```
 
+Browser example (Vite + WebContainer):
+
+```bash
+cd examples/vite-browser-agent
+npm install
+npm run dev
+```
+
 ## Directories
 
 Examples in this directory demonstrate:
@@ -39,6 +47,7 @@ Examples in this directory demonstrate:
 - Session persistence with CodingAgent
 - Built-in context compaction (auto + manual)
 - Structured skills passed via `systemPromptOptions`
+- Running CodingAgent in the browser with WebContainer (`examples/vite-browser-agent`)
 
 ## Documentation
 

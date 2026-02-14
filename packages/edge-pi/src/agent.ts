@@ -132,6 +132,7 @@ export class CodingAgent implements Agent<never, ToolSet> {
 	/** Build the system prompt based on config */
 	private getSystemPrompt(): string {
 		const toolSetType = this.config.toolSet ?? "coding";
+		const cwd = this.resolveCwd();
 		const selectedTools =
 			toolSetType === "coding"
 				? ["read", "bash", "edit", "write"]
@@ -141,25 +142,25 @@ export class CodingAgent implements Agent<never, ToolSet> {
 
 		return buildSystemPrompt(this.config.systemPromptOptions, {
 			selectedTools,
-			cwd: this.config.cwd ?? process.cwd(),
+			cwd,
 		});
 	}
 
 	/** Build the tools based on config */
 	private getTools(): ToolSet {
-		const cwd = this.config.cwd ?? process.cwd();
+		const cwd = this.resolveCwd();
 		const toolSetType = this.config.toolSet ?? "coding";
 
 		let tools: ToolSet;
 		switch (toolSetType) {
 			case "coding":
-				tools = createCodingTools(cwd);
+				tools = createCodingTools({ cwd, runtime: this.config.runtime });
 				break;
 			case "readonly":
-				tools = createReadOnlyTools(cwd);
+				tools = createReadOnlyTools({ cwd, runtime: this.config.runtime });
 				break;
 			case "all":
-				tools = createAllTools(cwd);
+				tools = createAllTools({ cwd, runtime: this.config.runtime });
 				break;
 		}
 
@@ -169,6 +170,16 @@ export class CodingAgent implements Agent<never, ToolSet> {
 		}
 
 		return tools;
+	}
+
+	private resolveCwd(): string {
+		if (this.config.cwd) {
+			return this.config.cwd;
+		}
+		if (this.config.runtime) {
+			return this.config.runtime.os.homedir();
+		}
+		return process.cwd();
 	}
 
 	/** Create a ToolLoopAgent for this call */

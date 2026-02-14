@@ -2,9 +2,7 @@
  * Path resolution utilities for tools.
  */
 
-import { accessSync, constants } from "node:fs";
-import * as os from "node:os";
-import { isAbsolute, resolve as resolvePath } from "node:path";
+import type { EdgePiRuntime } from "../runtime/types.js";
 
 const UNICODE_SPACES = /[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g;
 const NARROW_NO_BREAK_SPACE = "\u202F";
@@ -18,76 +16,60 @@ function tryMacOSScreenshotPath(filePath: string): string {
 }
 
 function tryNFDVariant(filePath: string): string {
-	// macOS stores filenames in NFD (decomposed) form, try converting user input to NFD
 	return filePath.normalize("NFD");
 }
 
 function tryCurlyQuoteVariant(filePath: string): string {
-	// macOS uses U+2019 (right single quotation mark) in screenshot names like "Capture d'écran"
-	// Users typically type U+0027 (straight apostrophe)
 	return filePath.replace(/'/g, "\u2019");
 }
 
-function fileExists(filePath: string): boolean {
-	try {
-		accessSync(filePath, constants.F_OK);
-		return true;
-	} catch {
-		return false;
-	}
+async function fileExists(filePath: string, runtime: EdgePiRuntime): Promise<boolean> {
+	return runtime.fs.exists(filePath);
 }
 
-export function expandPath(filePath: string): string {
+export function expandPath(filePath: string, runtime: EdgePiRuntime): string {
 	const normalized = normalizeUnicodeSpaces(filePath);
 	if (normalized === "~") {
-		return os.homedir();
+		return runtime.os.homedir();
 	}
 	if (normalized.startsWith("~/")) {
-		return os.homedir() + normalized.slice(1);
+		return runtime.os.homedir() + normalized.slice(1);
 	}
 	return normalized;
 }
 
-/**
- * Resolve a path relative to the given cwd.
- * Handles ~ expansion and absolute paths.
- */
-export function resolveToCwd(filePath: string, cwd: string): string {
-	const expanded = expandPath(filePath);
-	if (isAbsolute(expanded)) {
+export function resolveToCwd(filePath: string, cwd: string, runtime: EdgePiRuntime): string {
+	const expanded = expandPath(filePath, runtime);
+	if (runtime.path.isAbsolute(expanded)) {
 		return expanded;
 	}
-	return resolvePath(cwd, expanded);
+	return runtime.path.resolve(cwd, expanded);
 }
 
-export function resolveReadPath(filePath: string, cwd: string): string {
-	const resolved = resolveToCwd(filePath, cwd);
+export async function resolveReadPath(filePath: string, cwd: string, runtime: EdgePiRuntime): Promise<string> {
+	const resolved = resolveToCwd(filePath, cwd, runtime);
 
-	if (fileExists(resolved)) {
+	if (await fileExists(resolved, runtime)) {
 		return resolved;
 	}
 
-	// Try macOS AM/PM variant (narrow no-break space before AM/PM)
 	const amPmVariant = tryMacOSScreenshotPath(resolved);
-	if (amPmVariant !== resolved && fileExists(amPmVariant)) {
+	if (amPmVariant !== resolved && (await fileExists(amPmVariant, runtime))) {
 		return amPmVariant;
 	}
 
-	// Try NFD variant (macOS stores filenames in NFD form)
 	const nfdVariant = tryNFDVariant(resolved);
-	if (nfdVariant !== resolved && fileExists(nfdVariant)) {
+	if (nfdVariant !== resolved && (await fileExists(nfdVariant, runtime))) {
 		return nfdVariant;
 	}
 
-	// Try curly quote variant (macOS uses U+2019 in screenshot names)
 	const curlyVariant = tryCurlyQuoteVariant(resolved);
-	if (curlyVariant !== resolved && fileExists(curlyVariant)) {
+	if (curlyVariant !== resolved && (await fileExists(curlyVariant, runtime))) {
 		return curlyVariant;
 	}
 
-	// Try combined NFD + curly quote (for French macOS screenshots like "Capture d'écran")
 	const nfdCurlyVariant = tryCurlyQuoteVariant(nfdVariant);
-	if (nfdCurlyVariant !== resolved && fileExists(nfdCurlyVariant)) {
+	if (nfdCurlyVariant !== resolved && (await fileExists(nfdCurlyVariant, runtime))) {
 		return nfdCurlyVariant;
 	}
 

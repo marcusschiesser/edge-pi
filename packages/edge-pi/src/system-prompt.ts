@@ -30,7 +30,7 @@ export interface BuildSystemPromptOptions {
 export interface BuildSystemPromptCallOptions {
 	/** Tools to include in prompt. Default: [read, bash, edit, write] */
 	selectedTools?: string[];
-	/** Working directory. Default: process.cwd() */
+	/** Working directory. Default: "." */
 	cwd?: string;
 }
 
@@ -41,7 +41,7 @@ export function buildSystemPrompt(
 ): string {
 	const { customPrompt, appendSystemPrompt, contextFiles: providedContextFiles, skills } = options;
 	const { selectedTools, cwd } = callOptions;
-	const resolvedCwd = cwd ?? process.cwd();
+	const resolvedCwd = cwd ?? ".";
 
 	const now = new Date();
 	const dateTime = now.toLocaleString("en-US", {

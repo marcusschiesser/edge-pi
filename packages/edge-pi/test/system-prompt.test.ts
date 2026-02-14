@@ -256,10 +256,10 @@ describe("buildSystemPrompt", () => {
 			expect(prompt).toContain("Current working directory: /my/project");
 		});
 
-		it("uses process.cwd() when no cwd provided", () => {
+		it('uses "." when no cwd provided', () => {
 			const prompt = buildSystemPrompt({});
 			expect(prompt).toContain("Current working directory:");
-			expect(prompt).toContain(process.cwd());
+			expect(prompt).toContain("Current working directory: .");
 		});
 	});
 });
