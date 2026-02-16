@@ -10,6 +10,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     headers: webContainerHeaders,
+    proxy: {
+      "/openai": {
+        target: "https://api.openai.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/openai/, ""),
+      },
+    },
   },
   preview: {
     headers: webContainerHeaders,

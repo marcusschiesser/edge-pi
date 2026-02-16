@@ -1,5 +1,9 @@
-import type { WebContainer, WebContainerProcess } from "@webcontainer/api";
-import type { EdgePiRuntime, ExecOptions, ExecResult } from "edge-pi";
+import type {
+	WebContainer,
+	BufferEncoding as WebContainerBufferEncoding,
+	WebContainerProcess,
+} from "@webcontainer/api";
+import type { EdgePiRuntime, ExecOptions, ExecResult } from "./types.js";
 
 function createPathHelpers() {
 	const normalize = (value: string): string => value.replace(/\\/g, "/").replace(/\/+/g, "/");
@@ -100,13 +104,32 @@ export function createWebContainerRuntime(webcontainer: WebContainer): EdgePiRun
 	const homeDir = "/home/project";
 	const resolveFsPath = (targetPath: string): string =>
 		targetPath.startsWith("/") ? targetPath : pathHelpers.resolve(homeDir, targetPath);
+	const normalizeEncoding = (encoding: BufferEncoding): WebContainerBufferEncoding =>
+		encoding === "utf-16le" ? "utf16le" : (encoding as WebContainerBufferEncoding);
+
+	const stat = async (targetPath: string): Promise<{ isDirectory(): boolean; isFile(): boolean }> => {
+		const resolvedPath = resolveFsPath(targetPath);
+		try {
+			await webcontainer.fs.readdir(resolvedPath);
+			return {
+				isDirectory: () => true,
+				isFile: () => false,
+			};
+		} catch {
+			await webcontainer.fs.readFile(resolvedPath);
+			return {
+				isDirectory: () => false,
+				isFile: () => true,
+			};
+		}
+	};
 
 	function readFile(targetPath: string): Promise<Uint8Array>;
 	function readFile(targetPath: string, encoding: BufferEncoding): Promise<string>;
 	async function readFile(targetPath: string, encoding?: BufferEncoding): Promise<string | Uint8Array> {
 		const resolvedPath = resolveFsPath(targetPath);
 		if (encoding !== undefined) {
-			return webcontainer.fs.readFile(resolvedPath, encoding);
+			return webcontainer.fs.readFile(resolvedPath, normalizeEncoding(encoding));
 		}
 		return webcontainer.fs.readFile(resolvedPath);
 	}
@@ -130,16 +153,20 @@ export function createWebContainerRuntime(webcontainer: WebContainer): EdgePiRun
 			},
 			mkdir: async (targetPath: string, options?: { recursive?: boolean }) => {
 				const resolvedPath = resolveFsPath(targetPath);
-				await webcontainer.fs.mkdir(resolvedPath, { recursive: options?.recursive ?? true });
+				if (options?.recursive) {
+					await webcontainer.fs.mkdir(resolvedPath, { recursive: true });
+					return;
+				}
+				await webcontainer.fs.mkdir(resolvedPath);
 			},
 			readdir: async (targetPath: string) => webcontainer.fs.readdir(resolveFsPath(targetPath)),
-			stat: async (targetPath: string) => webcontainer.fs.stat(resolveFsPath(targetPath)),
+			stat,
 			access: async (targetPath: string) => {
-				await webcontainer.fs.stat(resolveFsPath(targetPath));
+				await stat(targetPath);
 			},
 			exists: async (targetPath: string) => {
 				try {
-					await webcontainer.fs.stat(resolveFsPath(targetPath));
+					await stat(targetPath);
 					return true;
 				} catch {
 					return false;
