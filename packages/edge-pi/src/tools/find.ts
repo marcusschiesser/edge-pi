@@ -6,7 +6,7 @@ import { resolveToCwd } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, formatSize, truncateHead } from "./truncate.js";
 
 const findSchema = z.object({
-	pattern: z.string().describe("Glob pattern to match files"),
+	pattern: z.string().describe("Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'"),
 	path: z.string().describe("Directory to search in (default: current directory)").optional(),
 	limit: z.number().describe("Maximum number of results (default: 1000)").optional(),
 });
@@ -20,7 +20,7 @@ export function createFindTool(options: ToolOptions) {
 	const runtime = options.runtime ?? createNodeRuntime();
 	const cwd = options.cwd;
 	return tool({
-		description: `Search for files by glob pattern. Output is truncated to ${DEFAULT_LIMIT} results or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).`,
+		description: `Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} results or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).`,
 		inputSchema: findSchema,
 		execute: async ({ pattern, path: searchDir, limit }, { abortSignal }) => {
 			if (abortSignal?.aborted) throw new Error("Operation aborted");

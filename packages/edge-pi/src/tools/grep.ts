@@ -9,11 +9,11 @@ import { DEFAULT_MAX_BYTES, formatSize, GREP_MAX_LINE_LENGTH, truncateHead, trun
 const grepSchema = z.object({
 	pattern: z.string().describe("Search pattern (regex or literal string)"),
 	path: z.string().describe("Directory or file to search (default: current directory)").optional(),
-	glob: z.string().describe("Filter files by glob pattern").optional(),
+	glob: z.string().describe("Filter files by glob pattern, e.g. '*.ts' or '**/*.spec.ts'").optional(),
 	ignoreCase: z.boolean().describe("Case-insensitive search (default: false)").optional(),
-	literal: z.boolean().describe("Treat pattern as literal string").optional(),
-	context: z.number().describe("Number of lines before/after each match").optional(),
-	limit: z.number().describe("Maximum number of matches (default: 100)").optional(),
+	literal: z.boolean().describe("Treat pattern as literal string instead of regex (default: false)").optional(),
+	context: z.number().describe("Number of lines to show before and after each match (default: 0)").optional(),
+	limit: z.number().describe("Maximum number of matches to return (default: 100)").optional(),
 });
 const DEFAULT_LIMIT = 100;
 interface ToolOptions {
@@ -25,7 +25,7 @@ export function createGrepTool(options: ToolOptions) {
 	const runtime = options.runtime ?? createNodeRuntime();
 	const cwd = options.cwd;
 	return tool({
-		description: "Search file contents for a pattern.",
+		description: `Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} matches or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Long lines are truncated to ${GREP_MAX_LINE_LENGTH} chars.`,
 		inputSchema: grepSchema,
 		execute: async ({ pattern, path: searchDir, glob, ignoreCase, literal, context, limit }, { abortSignal }) => {
 			const searchPath = resolveToCwd(searchDir || ".", cwd, runtime);
