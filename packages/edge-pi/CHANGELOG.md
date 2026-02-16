@@ -1,5 +1,15 @@
 # edge-pi
 
+## 0.3.0
+
+### Minor Changes
+
+- [#32](https://github.com/marcusschiesser/edge-pi/pull/32) [`51d7916`](https://github.com/marcusschiesser/edge-pi/commit/51d79168d4263a4cff2a0ec1288f6615c5a213d5) Thanks [@marcusschiesser](https://github.com/marcusschiesser)! - Merge WebContainer runtime support into `edge-pi` and expose it via `edge-pi/webcontainer`, replacing the separate `edge-pi-webcontainer` workspace package.
+
+### Patch Changes
+
+- [`17f4aac`](https://github.com/marcusschiesser/edge-pi/commit/17f4aacd3893a851bca9652d8e9877d0e3f4a8fb) Thanks [@marcusschiesser](https://github.com/marcusschiesser)! - Restore detailed built-in tool prompt descriptions for `bash`, `find`, and `grep` in the edge-pi SDK.
+
 ## 0.2.0
 
 ### Minor Changes
