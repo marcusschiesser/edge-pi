@@ -1,5 +1,12 @@
 # edge-pi-cli
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies [[`17f4aac`](https://github.com/marcusschiesser/edge-pi/commit/17f4aacd3893a851bca9652d8e9877d0e3f4a8fb), [`51d7916`](https://github.com/marcusschiesser/edge-pi/commit/51d79168d4263a4cff2a0ec1288f6615c5a213d5)]:
+  - edge-pi@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes
