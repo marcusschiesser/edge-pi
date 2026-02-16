@@ -11,7 +11,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^3.0.26",
     "@webcontainer/api": "^1.5.1",
-    "edge-pi": "file:../../packages/edge-pi",
+    "edge-pi": "^0.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
