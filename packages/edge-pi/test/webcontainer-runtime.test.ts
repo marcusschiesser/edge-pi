@@ -1,5 +1,6 @@
+import type { WebContainer, WebContainerProcess } from "@webcontainer/api";
 import { describe, expect, it } from "vitest";
-import { createWebContainerRuntime } from "../src/index.js";
+import { createWebContainerRuntime } from "../src/runtime/webcontainer-runtime.js";
 
 function mockReadFile(_path: string): Promise<Uint8Array>;
 function mockReadFile(_path: string, _encoding: BufferEncoding): Promise<string>;
@@ -21,22 +22,27 @@ function streamFrom(chunks: string[]): ReadableStream<string> {
 	});
 }
 
+function createProcess(chunks: string[], exitCode = 0): WebContainerProcess {
+	return {
+		output: streamFrom(chunks),
+		exit: Promise.resolve(exitCode),
+		input: new WritableStream<string>(),
+		kill: () => undefined,
+		resize: () => undefined,
+	};
+}
+
 describe("createWebContainerRuntime", () => {
 	it("exec returns combined output and exit code", async () => {
 		const runtime = createWebContainerRuntime({
-			spawn: async () => ({
-				output: streamFrom(["hello", " world"]),
-				exit: Promise.resolve(0),
-				kill: () => undefined,
-			}),
+			spawn: async () => createProcess(["hello", " world"]),
 			fs: {
 				readFile: mockReadFile,
 				writeFile: async () => undefined,
 				mkdir: async () => undefined,
 				readdir: async () => [],
-				stat: async () => ({ isDirectory: () => false, isFile: () => true }),
 			},
-		});
+		} as unknown as WebContainer);
 
 		const result = await runtime.exec("echo hi");
 		expect(result.output).toBe("hello world");
@@ -46,21 +52,18 @@ describe("createWebContainerRuntime", () => {
 
 	it("fs.exists returns false for missing paths", async () => {
 		const runtime = createWebContainerRuntime({
-			spawn: async () => ({
-				output: streamFrom([]),
-				exit: Promise.resolve(0),
-				kill: () => undefined,
-			}),
+			spawn: async () => createProcess([]),
 			fs: {
-				readFile: mockReadFile,
+				readFile: async () => {
+					throw new Error("missing");
+				},
 				writeFile: async () => undefined,
 				mkdir: async () => undefined,
-				readdir: async () => [],
-				stat: async () => {
+				readdir: async () => {
 					throw new Error("missing");
 				},
 			},
-		});
+		} as unknown as WebContainer);
 
 		expect(await runtime.fs.exists("/missing")).toBe(false);
 	});
@@ -78,19 +81,14 @@ describe("createWebContainerRuntime", () => {
 		}
 
 		const runtime = createWebContainerRuntime({
-			spawn: async () => ({
-				output: streamFrom([]),
-				exit: Promise.resolve(0),
-				kill: () => undefined,
-			}),
+			spawn: async () => createProcess([]),
 			fs: {
 				readFile: captureReadFile,
 				writeFile: async () => undefined,
 				mkdir: async () => undefined,
 				readdir: async () => [],
-				stat: async () => ({ isDirectory: () => false, isFile: () => true }),
 			},
-		});
+		} as unknown as WebContainer);
 
 		await runtime.fs.readFile("App.jsx", "utf-8");
 		expect(readPath).toBe("/home/project/App.jsx");

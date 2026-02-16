@@ -12,7 +12,6 @@
     "@ai-sdk/openai": "^3.0.26",
     "@webcontainer/api": "^1.5.1",
     "edge-pi": "file:../../packages/edge-pi",
-    "edge-pi-webcontainer": "file:../../packages/edge-pi-webcontainer",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

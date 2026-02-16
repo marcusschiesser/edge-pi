@@ -8,6 +8,14 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./node": {
+			"types": "./dist/node.d.ts",
+			"import": "./dist/node.js"
+		},
+		"./webcontainer": {
+			"types": "./dist/webcontainer.d.ts",
+			"import": "./dist/webcontainer.js"
 		}
 	},
 	"browser": {
@@ -38,7 +46,16 @@
 		"proper-lockfile": "^4.1.2",
 		"zod": "^4.1.8"
 	},
+	"peerDependencies": {
+		"@webcontainer/api": "^1.5.1"
+	},
+	"peerDependenciesMeta": {
+		"@webcontainer/api": {
+			"optional": true
+		}
+	},
 	"devDependencies": {
+		"@webcontainer/api": "^1.5.1",
 		"@types/diff": "^7.0.2",
 		"@types/proper-lockfile": "^4.1.4",
 		"vitest": "^4.0.18"

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createOpenAI } from "@ai-sdk/openai";
 import { WebContainer } from "@webcontainer/api";
 import { CodingAgent } from "edge-pi";
-import { createWebContainerRuntime } from "edge-pi-webcontainer";
+import { createWebContainerRuntime } from "edge-pi/webcontainer";
 
 const defaultPrompt =
   "Create a colorful card with a title and short description.";
@@ -32,7 +32,7 @@ export function App() {
 
   const apiKey = apiKeyInput.trim();
   const model = useMemo(() => {
-    const provider = createOpenAI({ apiKey });
+    const provider = createOpenAI({ apiKey, baseURL: "/openai/v1" });
     return provider("gpt-5.2-codex");
   }, [apiKey]);
 
@@ -106,6 +106,16 @@ export function App() {
           style={{ flex: 1 }}
         />
       </div>
+      <p style={{ marginTop: 0, marginBottom: 12 }}>
+        Get an API key:{" "}
+        <a
+          href="https://platform.openai.com/api-keys"
+          target="_blank"
+          rel="noreferrer"
+        >
+          platform.openai.com/api-keys
+        </a>
+      </p>
       <textarea
         value={prompt}
         onChange={(event) => setPrompt(event.target.value)}
