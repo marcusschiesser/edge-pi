@@ -16,15 +16,23 @@
 		"./webcontainer": {
 			"types": "./dist/webcontainer.d.ts",
 			"import": "./dist/webcontainer.js"
+		},
+		"./agent": {
+			"types": "./dist/agent.d.ts",
+			"import": "./dist/agent.js"
+		},
+		"./vercel-sandbox": {
+			"types": "./dist/vercel-sandbox.d.ts",
+			"import": "./dist/vercel-sandbox.js"
 		}
 	},
 	"browser": {
-		"./dist/runtime/node-runtime.js": "./src/runtime/node-runtime.browser.ts",
-		"./src/runtime/node-runtime.js": "./src/runtime/node-runtime.browser.ts",
-		"./src/runtime/node-runtime.ts": "./src/runtime/node-runtime.browser.ts",
-		"./dist/session/session-manager.js": "./src/session/session-manager.browser.ts",
-		"./src/session/session-manager.js": "./src/session/session-manager.browser.ts",
-		"./src/session/session-manager.ts": "./src/session/session-manager.browser.ts"
+		"./dist/runtime/node-runtime.js": "./dist/runtime/node-runtime.browser.js",
+		"./src/runtime/node-runtime.js": "./dist/runtime/node-runtime.browser.js",
+		"./src/runtime/node-runtime.ts": "./dist/runtime/node-runtime.browser.js",
+		"./dist/session/session-manager.js": "./dist/session/session-manager.browser.js",
+		"./src/session/session-manager.js": "./dist/session/session-manager.browser.js",
+		"./src/session/session-manager.ts": "./dist/session/session-manager.browser.js"
 	},
 	"repository": {
 		"type": "git",
@@ -47,14 +55,19 @@
 		"zod": "^4.1.8"
 	},
 	"peerDependencies": {
+		"@vercel/sandbox": "^1.5.0",
 		"@webcontainer/api": "^1.5.1"
 	},
 	"peerDependenciesMeta": {
+		"@vercel/sandbox": {
+			"optional": true
+		},
 		"@webcontainer/api": {
 			"optional": true
 		}
 	},
 	"devDependencies": {
+		"@vercel/sandbox": "^1.5.0",
 		"@webcontainer/api": "^1.5.1",
 		"@types/diff": "^7.0.2",
 		"@types/proper-lockfile": "^4.1.4",

@@ -25,6 +25,7 @@ npx tsx examples/06-web-search-tool.ts
 npx tsx examples/07-sessions.ts
 npx tsx examples/08-compaction.ts
 npx tsx examples/09-skills.ts
+npx tsx examples/10-vercel-sandbox-runtime.ts
 ```
 
 Browser example (Vite + WebContainer):
@@ -48,6 +49,7 @@ Examples in this directory demonstrate:
 - Built-in context compaction (auto + manual)
 - Structured skills passed via `systemPromptOptions`
 - Running CodingAgent in the browser with WebContainer (`examples/vite-browser-agent`)
+- Running CodingAgent in Vercel Sandbox (`examples/10-vercel-sandbox-runtime.ts`)
 
 ## Documentation
 

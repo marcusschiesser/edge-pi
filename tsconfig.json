@@ -9,6 +9,9 @@
 			"edge-pi": [
 				"./packages/edge-pi/src/index.ts"
 			],
+			"edge-pi/vercel-sandbox": [
+				"./packages/edge-pi/src/vercel-sandbox.ts"
+			],
 			"edge-pi/*": [
 				"./packages/edge-pi/src/*"
 			],
