@@ -1,5 +1,11 @@
 # edge-pi
 
+## 0.3.1
+
+### Patch Changes
+
+- [#33](https://github.com/marcusschiesser/edge-pi/pull/33) [`040a847`](https://github.com/marcusschiesser/edge-pi/commit/040a8472d3847df4599aa34454bd99e52b743a77) Thanks [@marcusschiesser](https://github.com/marcusschiesser)! - Add a new Vercel Sandbox runtime adapter via `createVercelSandboxRuntime`, including a dedicated `edge-pi/vercel-sandbox` export.
+
 ## 0.3.0
 
 ### Minor Changes
