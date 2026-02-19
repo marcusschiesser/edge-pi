@@ -2,6 +2,7 @@ export interface WorkspacePathResolverOptions {
 	rootdir: string;
 	resolvePath: (...parts: string[]) => string;
 	finalizeAbsolute?: (absolutePath: string) => string;
+	collapseNestedRootPrefix?: boolean;
 }
 
 function normalizePathSeparators(value: string): string {
@@ -12,6 +13,7 @@ export function createWorkspacePathResolver(
 	options: WorkspacePathResolverOptions,
 ): (targetPath: string, resolveOptions?: { cwd?: string }) => string {
 	const { rootdir, resolvePath, finalizeAbsolute } = options;
+	const collapseNestedRootPrefix = options.collapseNestedRootPrefix ?? true;
 	const rootdirWithoutLeadingSlash = rootdir.startsWith("/") ? rootdir.slice(1) : rootdir;
 
 	const resolveWorkspacePath = (targetPath: string, resolveOptions?: { cwd?: string }): string => {
@@ -28,10 +30,12 @@ export function createWorkspacePathResolver(
 		}
 
 		if (normalized.startsWith("/")) {
-			const rootdirPrefix = rootdir.endsWith("/") ? rootdir : `${rootdir}/`;
-			const nestedIndex = normalized.indexOf(rootdirPrefix);
-			if (nestedIndex > 0) {
-				return normalized.slice(nestedIndex);
+			if (collapseNestedRootPrefix) {
+				const rootdirPrefix = rootdir.endsWith("/") ? rootdir : `${rootdir}/`;
+				const nestedIndex = normalized.indexOf(rootdirPrefix);
+				if (nestedIndex > 0) {
+					return normalized.slice(nestedIndex);
+				}
 			}
 			return finalizeAbsolute ? finalizeAbsolute(normalized) : normalized;
 		}

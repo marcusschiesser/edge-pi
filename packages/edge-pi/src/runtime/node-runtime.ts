@@ -114,6 +114,7 @@ export function createNodeRuntime(): EdgePiRuntime {
 		rootdir,
 		resolvePath: (...parts: string[]) => path.resolve(...parts),
 		finalizeAbsolute: (absolutePath: string) => path.resolve(absolutePath),
+		collapseNestedRootPrefix: false,
 	});
 
 	function readFile(filePath: string): Promise<Uint8Array>;
