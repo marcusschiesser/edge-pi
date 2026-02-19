@@ -1,5 +1,35 @@
 # edge-pi-cli
 
+## 0.4.0
+
+### Minor Changes
+
+- [#35](https://github.com/marcusschiesser/edge-pi/pull/35) [`dbc450b`](https://github.com/marcusschiesser/edge-pi/commit/dbc450b3613fd0d112bd40f036383dc4fcd2879f) Thanks [@marcusschiesser](https://github.com/marcusschiesser)! - Refactor runtime path handling around explicit workspace roots and make runtime usage explicit.
+
+  ## edge-pi
+
+  - Add `runtime.rootdir` and `runtime.resolveWorkspacePath(...)` to unify workspace path resolution.
+  - Require explicit runtime injection for `CodingAgent` and tool factories.
+  - Keep `CodingAgent` and tools on the root entrypoint, but move `SessionManager` to `edge-pi/session`.
+  - Add explicit `./session` export and runtime-specific options for `createWebContainerRuntime` and `createVercelSandboxRuntime`.
+  - Improve cross-runtime path normalization for generated paths like `home/project/...` and duplicated absolute prefixes.
+
+  ### Breaking changes
+
+  - `CodingAgentConfig.runtime` is now required.
+  - Tool factory options now require `runtime`.
+  - `SessionManager` is no longer exported from `edge-pi`; import from `edge-pi/session`.
+  - Runtime contract changed from `os.homedir()`-based defaults to `rootdir` + `resolveWorkspacePath(...)`.
+
+  ## edge-pi-cli
+
+  - Update CLI to the new edge-pi runtime/session API (`createNodeRuntime` + `edge-pi/session`).
+
+### Patch Changes
+
+- Updated dependencies [[`dbc450b`](https://github.com/marcusschiesser/edge-pi/commit/dbc450b3613fd0d112bd40f036383dc4fcd2879f)]:
+  - edge-pi@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes
