@@ -1,6 +1,6 @@
 ---
-"edge-pi": major
-"edge-pi-cli": major
+"edge-pi": minor
+"edge-pi-cli": minor
 ---
 
 Refactor runtime path handling around explicit workspace roots and make runtime usage explicit.
@@ -23,4 +23,3 @@ Refactor runtime path handling around explicit workspace roots and make runtime 
 ## edge-pi-cli
 
 - Update CLI to the new edge-pi runtime/session API (`createNodeRuntime` + `edge-pi/session`).
-
