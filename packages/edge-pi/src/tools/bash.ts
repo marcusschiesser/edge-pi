@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { createNodeRuntime } from "../runtime/node-runtime.js";
 import type { EdgePiRuntime } from "../runtime/types.js";
+import { resolveCwd } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize } from "./truncate.js";
 
 const bashSchema = z.object({
@@ -11,12 +11,12 @@ const bashSchema = z.object({
 
 interface ToolOptions {
 	cwd: string;
-	runtime?: EdgePiRuntime;
+	runtime: EdgePiRuntime;
 }
 
 export function createBashTool(options: ToolOptions) {
-	const runtime = options.runtime ?? createNodeRuntime();
-	const cwd = options.cwd;
+	const runtime = options.runtime;
+	const cwd = resolveCwd(options.cwd, runtime);
 	return tool({
 		description: `Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
 		inputSchema: bashSchema,

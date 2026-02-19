@@ -8,10 +8,12 @@
 import { fileURLToPath } from "node:url";
 import { anthropic } from "@ai-sdk/anthropic";
 import { CodingAgent } from "edge-pi";
+import { createNodeRuntime } from "edge-pi/node";
 import { printStream } from "./utils.js";
 
 const agent = new CodingAgent({
 	model: anthropic("claude-sonnet-4-5"),
+	runtime: createNodeRuntime(),
 	systemPromptOptions: {
 		skills: {
 			codeReview: {

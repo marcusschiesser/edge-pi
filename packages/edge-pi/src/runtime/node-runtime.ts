@@ -5,6 +5,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, truncateTail } from "../tools/truncate.js";
 import type { EdgePiRuntime, ExecOptions, ExecResult } from "./types.js";
+import { createWorkspacePathResolver } from "./workspace-path-resolver.js";
 
 function getTempFilePath(): string {
 	const id = randomBytes(8).toString("hex");
@@ -108,6 +109,14 @@ async function exec(command: string, options?: ExecOptions): Promise<ExecResult>
 }
 
 export function createNodeRuntime(): EdgePiRuntime {
+	const rootdir = process.cwd();
+	const resolveWorkspacePath = createWorkspacePathResolver({
+		rootdir,
+		resolvePath: (...parts: string[]) => path.resolve(...parts),
+		finalizeAbsolute: (absolutePath: string) => path.resolve(absolutePath),
+		collapseNestedRootPrefix: false,
+	});
+
 	function readFile(filePath: string): Promise<Uint8Array>;
 	function readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
 	async function readFile(filePath: string, encoding?: BufferEncoding): Promise<string | Uint8Array> {
@@ -118,25 +127,32 @@ export function createNodeRuntime(): EdgePiRuntime {
 	}
 
 	return {
-		exec,
+		exec: (command, options) =>
+			exec(command, {
+				...options,
+				cwd: options?.cwd ? resolveWorkspacePath(options.cwd) : rootdir,
+			}),
+		resolveWorkspacePath,
+		rootdir,
 		fs: {
 			readFile,
 			writeFile: async (filePath, content, encoding) => {
+				const resolvedPath = resolveWorkspacePath(filePath);
 				if (typeof content === "string") {
-					await fs.writeFile(filePath, content, encoding ?? "utf-8");
+					await fs.writeFile(resolvedPath, content, encoding ?? "utf-8");
 					return;
 				}
-				await fs.writeFile(filePath, content);
+				await fs.writeFile(resolvedPath, content);
 			},
 			mkdir: async (dirPath, options) => {
-				await fs.mkdir(dirPath, options);
+				await fs.mkdir(resolveWorkspacePath(dirPath), options);
 			},
-			readdir: async (dirPath) => fs.readdir(dirPath),
-			stat: async (statPath) => fs.stat(statPath),
-			access: async (accessPath, mode) => fs.access(accessPath, mode ?? constants.F_OK),
+			readdir: async (dirPath) => fs.readdir(resolveWorkspacePath(dirPath)),
+			stat: async (statPath) => fs.stat(resolveWorkspacePath(statPath)),
+			access: async (accessPath, mode) => fs.access(resolveWorkspacePath(accessPath), mode ?? constants.F_OK),
 			exists: async (existsPath) => {
 				try {
-					await fs.access(existsPath, constants.F_OK);
+					await fs.access(resolveWorkspacePath(existsPath), constants.F_OK);
 					return true;
 				} catch {
 					return false;

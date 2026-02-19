@@ -17,6 +17,10 @@
 			"types": "./dist/webcontainer.d.ts",
 			"import": "./dist/webcontainer.js"
 		},
+		"./session": {
+			"types": "./dist/session.d.ts",
+			"import": "./dist/session.js"
+		},
 		"./vercel-sandbox": {
 			"types": "./dist/vercel-sandbox.d.ts",
 			"import": "./dist/vercel-sandbox.js"

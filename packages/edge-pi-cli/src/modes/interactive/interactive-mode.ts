@@ -31,7 +31,8 @@ import {
 import type { ImagePart, ModelMessage } from "ai";
 import chalk from "chalk";
 import type { CodingAgent, CodingAgentConfig } from "edge-pi";
-import { type CompactionResult, estimateContextTokens, SessionManager as SessionManagerClass } from "edge-pi";
+import { type CompactionResult, estimateContextTokens } from "edge-pi";
+import { SessionManager as SessionManagerClass } from "edge-pi/session";
 import type { AuthStorage } from "../../auth/auth-storage.js";
 import type { ContextFile } from "../../context.js";
 import { getLatestModels } from "../../model-factory.js";

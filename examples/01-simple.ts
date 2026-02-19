@@ -9,9 +9,11 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { stepCountIs } from "ai";
 import { CodingAgent } from "edge-pi";
+import { createNodeRuntime } from "edge-pi/node";
 
 const agent = new CodingAgent({
 	model: anthropic("claude-sonnet-4-5-20250929"),
+	runtime: createNodeRuntime(),
 	stopWhen: stepCountIs(5),
 });
 

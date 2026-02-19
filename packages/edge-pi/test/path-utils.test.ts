@@ -6,15 +6,32 @@ import { createNodeRuntime } from "../src/runtime/node-runtime.js";
 import { expandPath, resolveReadPath, resolveToCwd } from "../src/tools/path-utils.js";
 
 const runtime = createNodeRuntime();
+const webLikeRuntime = {
+	...runtime,
+	rootdir: "/home/project",
+	resolveWorkspacePath: (targetPath: string, options?: { cwd?: string }) => {
+		if (targetPath === "home/project" || targetPath.startsWith("home/project/")) {
+			return `/${targetPath}`;
+		}
+		if (targetPath.startsWith("/home/id/home/project/")) {
+			return targetPath.slice("/home/id".length);
+		}
+		if (targetPath.startsWith("/")) {
+			return targetPath;
+		}
+		const base = options?.cwd ?? "/home/project";
+		return `${base}/${targetPath}`.replace(/\/+/g, "/");
+	},
+};
 
 describe("path-utils", () => {
 	describe("expandPath", () => {
-		it("should expand ~ to home directory", () => {
+		it("should expand ~ to runtime root directory", () => {
 			const result = expandPath("~", runtime);
 			expect(result).not.toContain("~");
 		});
 
-		it("should expand ~/path to home directory", () => {
+		it("should expand ~/path to runtime root directory", () => {
 			const result = expandPath("~/Documents/file.txt", runtime);
 			expect(result).not.toContain("~/");
 		});
@@ -35,6 +52,16 @@ describe("path-utils", () => {
 		it("should resolve relative paths against cwd", () => {
 			const result = resolveToCwd("relative/file.txt", "/some/cwd", runtime);
 			expect(result).toBe("/some/cwd/relative/file.txt");
+		});
+
+		it("should normalize home/project pseudo-absolute paths", () => {
+			const result = resolveToCwd("home/project/app.jsx", "/some/cwd", webLikeRuntime);
+			expect(result).toBe("/home/project/app.jsx");
+		});
+
+		it("should collapse duplicated absolute home prefixes", () => {
+			const result = resolveToCwd("/home/id/home/project/app.jsx", "/some/cwd", webLikeRuntime);
+			expect(result).toBe("/home/project/app.jsx");
 		});
 	});
 

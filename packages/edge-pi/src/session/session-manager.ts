@@ -7,6 +7,7 @@ import { randomUUID } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { ModelMessage } from "ai";
+import type { SessionManagerLike } from "../types.js";
 import { buildSessionContext, type SessionContext } from "./context.js";
 import type {
 	BranchSummaryEntry,
@@ -73,7 +74,7 @@ export function loadEntriesFromFile(filePath: string): FileEntry[] {
  * Branching moves the leaf to an earlier entry, allowing new branches without
  * modifying history.
  */
-export class SessionManager {
+export class SessionManager implements SessionManagerLike {
 	private sessionId = "";
 	private sessionFile: string | undefined;
 	private sessionDir: string;

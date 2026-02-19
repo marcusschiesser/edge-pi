@@ -8,6 +8,7 @@
 import { openai } from "@ai-sdk/openai";
 import { stepCountIs } from "ai";
 import { CodingAgent } from "edge-pi";
+import { createNodeRuntime } from "edge-pi/node";
 import { printStream } from "./utils.js";
 
 const model = openai("gpt-5.2-codex");
@@ -16,6 +17,7 @@ const PROMPT = `Make an app to scan the nutrition label (macros and ingredients 
 
 const agent = new CodingAgent({
 	model,
+	runtime: createNodeRuntime(),
 	stopWhen: stepCountIs(30),
 });
 

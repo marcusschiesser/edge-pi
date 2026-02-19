@@ -30,20 +30,33 @@ async function fileExists(filePath: string, runtime: EdgePiRuntime): Promise<boo
 export function expandPath(filePath: string, runtime: EdgePiRuntime): string {
 	const normalized = normalizeUnicodeSpaces(filePath);
 	if (normalized === "~") {
-		return runtime.os.homedir();
+		return runtime.rootdir;
 	}
 	if (normalized.startsWith("~/")) {
-		return runtime.os.homedir() + normalized.slice(1);
+		return runtime.rootdir + normalized.slice(1);
 	}
 	return normalized;
 }
 
+/**
+ * Resolve the configured working directory into a canonical absolute path.
+ *
+ * This is step 1 of path resolution: establish a stable base directory that
+ * tools can use for all subsequent path argument resolution.
+ */
+export function resolveCwd(cwd: string, runtime: EdgePiRuntime): string {
+	return runtime.resolveWorkspacePath(expandPath(cwd, runtime));
+}
+
+/**
+ * Resolve an input path relative to the canonical working directory.
+ *
+ * This is step 2 of path resolution: after `resolveCwd` defines the base,
+ * tool-specific file/dir arguments are resolved consistently against it.
+ */
 export function resolveToCwd(filePath: string, cwd: string, runtime: EdgePiRuntime): string {
-	const expanded = expandPath(filePath, runtime);
-	if (runtime.path.isAbsolute(expanded)) {
-		return expanded;
-	}
-	return runtime.path.resolve(cwd, expanded);
+	const resolvedCwd = resolveCwd(cwd, runtime);
+	return runtime.resolveWorkspacePath(expandPath(filePath, runtime), { cwd: resolvedCwd });
 }
 
 export async function resolveReadPath(filePath: string, cwd: string, runtime: EdgePiRuntime): Promise<string> {

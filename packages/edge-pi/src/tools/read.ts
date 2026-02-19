@@ -1,9 +1,8 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { bytesToBase64, toUint8Array, toUtf8String, utf8ByteLength } from "../runtime/encoding.js";
-import { createNodeRuntime } from "../runtime/node-runtime.js";
 import type { EdgePiRuntime } from "../runtime/types.js";
-import { resolveReadPath } from "./path-utils.js";
+import { expandPath, resolveCwd, resolveReadPath } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, truncateHead } from "./truncate.js";
 
 const readSchema = z.object({
@@ -30,20 +29,34 @@ interface ReadResult {
 
 interface ToolOptions {
 	cwd: string;
-	runtime?: EdgePiRuntime;
+	runtime: EdgePiRuntime;
 }
 
 export function createReadTool(options: ToolOptions) {
-	const runtime = options.runtime ?? createNodeRuntime();
-	const cwd = options.cwd;
+	const runtime = options.runtime;
+	const cwd = resolveCwd(options.cwd, runtime);
 	return tool({
 		description: `Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.`,
 		inputSchema: readSchema,
 		execute: async ({ path, offset, limit }, { abortSignal }): Promise<ReadResult> => {
+			const normalizedPath = runtime.resolveWorkspacePath(expandPath(path, runtime), { cwd });
 			const absolutePath = await resolveReadPath(path, cwd, runtime);
 			if (abortSignal?.aborted) throw new Error("Operation aborted");
-			await runtime.fs.access(absolutePath);
-			const fileValue = await runtime.fs.readFile(absolutePath);
+			try {
+				await runtime.fs.access(absolutePath);
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				throw new Error(
+					`File not found: ${path} (normalized: ${normalizedPath}, resolved: ${absolutePath})\n${message}`,
+				);
+			}
+			let fileValue: string | Uint8Array;
+			try {
+				fileValue = await runtime.fs.readFile(absolutePath);
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				throw new Error(`Failed to read file: ${path} (resolved: ${absolutePath})\n${message}`);
+			}
 			const bytes = toUint8Array(fileValue);
 			const ext = path.toLowerCase().split(".").pop() ?? "";
 			const mimeType = IMAGE_EXTENSIONS[ext];

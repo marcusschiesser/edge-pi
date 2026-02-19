@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createNodeRuntime } from "../src/runtime/node-runtime.js";
 import { createAllTools, createCodingTools, createReadOnlyTools } from "../src/tools/index.js";
 
 /** Vercel AI SDK tools expect a second arg with { abortSignal }. */
@@ -9,13 +10,15 @@ const ctx = () => ({ abortSignal: new AbortController().signal });
 
 describe("Coding Agent Tools", () => {
 	let testDir: string;
+	let runtime: ReturnType<typeof createNodeRuntime>;
 	// ToolSet = Record<string, Tool> makes execute possibly undefined; use any for test ergonomics
 	let tools: any;
 
 	beforeEach(() => {
 		testDir = join(tmpdir(), `edge-pi-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 		mkdirSync(testDir, { recursive: true });
-		tools = createAllTools({ cwd: testDir });
+		runtime = createNodeRuntime();
+		tools = createAllTools({ cwd: testDir, runtime });
 	});
 
 	afterEach(() => {
@@ -291,7 +294,7 @@ describe("Coding Agent Tools", () => {
 
 	describe("tool factory functions", () => {
 		it("createCodingTools returns read, bash, edit, write", () => {
-			const codingTools = createCodingTools({ cwd: testDir });
+			const codingTools = createCodingTools({ cwd: testDir, runtime });
 			expect(codingTools).toHaveProperty("read");
 			expect(codingTools).toHaveProperty("bash");
 			expect(codingTools).toHaveProperty("edit");
@@ -302,7 +305,7 @@ describe("Coding Agent Tools", () => {
 		});
 
 		it("createReadOnlyTools returns read, grep, find, ls", () => {
-			const readOnlyTools = createReadOnlyTools({ cwd: testDir });
+			const readOnlyTools = createReadOnlyTools({ cwd: testDir, runtime });
 			expect(readOnlyTools).toHaveProperty("read");
 			expect(readOnlyTools).toHaveProperty("grep");
 			expect(readOnlyTools).toHaveProperty("find");
@@ -313,7 +316,7 @@ describe("Coding Agent Tools", () => {
 		});
 
 		it("createAllTools returns all 7 tools", () => {
-			const allTools = createAllTools({ cwd: testDir });
+			const allTools = createAllTools({ cwd: testDir, runtime });
 			expect(Object.keys(allTools)).toHaveLength(7);
 			expect(allTools).toHaveProperty("read");
 			expect(allTools).toHaveProperty("bash");

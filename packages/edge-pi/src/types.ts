@@ -29,7 +29,8 @@ import type {
 } from "ai";
 import type { CompactionResult, CompactionSettings } from "./compaction/compaction.js";
 import type { EdgePiRuntime } from "./runtime/types.js";
-import type { SessionManager } from "./session/session-manager.js";
+import type { SessionContext } from "./session/context.js";
+import type { SessionEntry } from "./session/types.js";
 import type { BuildSystemPromptOptions } from "./system-prompt.js";
 
 // Re-export Vercel AI types consumers need
@@ -82,13 +83,22 @@ export interface CompactionConfig {
 	onCompactionError?: (error: Error) => void;
 }
 
+export interface SessionManagerLike {
+	buildSessionContext(): SessionContext;
+	appendMessage(message: ModelMessage): string;
+	appendCompaction<T = unknown>(summary: string, firstKeptEntryId: string, tokensBefore: number, details?: T): string;
+	getBranch(fromId?: string): SessionEntry[];
+	getEntries(): SessionEntry[];
+	getSessionFile(): string | undefined;
+}
+
 /**
  * Configuration for the CodingAgent.
  */
 export interface CodingAgentConfig {
 	/** Vercel AI LanguageModel passed directly by consumer */
 	model: LanguageModel;
-	/** Working directory. Default: runtime.os.homedir() when runtime is set, otherwise process.cwd() */
+	/** Working directory. Relative values are resolved from runtime.rootdir. Default: runtime.rootdir. */
 	cwd?: string;
 	/**
 	 * Optional stop condition(s) for the agent loop.
@@ -101,7 +111,7 @@ export interface CodingAgentConfig {
 	 * @example
 	 * ```ts
 	 * import { stepCountIs } from "ai";
-	 * const agent = new CodingAgent({ model, stopWhen: stepCountIs(10) });
+	 * const agent = new CodingAgent({ model, runtime, stopWhen: stepCountIs(10) });
 	 * ```
 	 */
 	stopWhen?: StopCondition<ToolSet> | Array<StopCondition<ToolSet>>;
@@ -111,8 +121,8 @@ export interface CodingAgentConfig {
 	toolSet?: "coding" | "readonly" | "all";
 	/** Additional tools to merge in */
 	tools?: ToolSet;
-	/** Runtime adapter for filesystem, shell, path and OS operations. Defaults to Node runtime. */
-	runtime?: EdgePiRuntime;
+	/** Runtime adapter for filesystem, shell, path and OS operations. Required. */
+	runtime: EdgePiRuntime;
 	/** Optional provider-specific options forwarded to the model call. */
 	providerOptions?: Record<string, Record<string, JSONValue>>;
 	/**
@@ -120,7 +130,7 @@ export interface CodingAgentConfig {
 	 * When provided, messages are auto-restored from the session on construction
 	 * and auto-persisted after generate() and stream() calls.
 	 */
-	sessionManager?: SessionManager;
+	sessionManager?: SessionManagerLike;
 	/** Optional compaction configuration for automatic/manual context compaction. */
 	compaction?: CompactionConfig;
 }

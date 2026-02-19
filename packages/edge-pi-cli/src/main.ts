@@ -10,7 +10,9 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import chalk from "chalk";
 import type { CodingAgentConfig, Skill as PromptSkill } from "edge-pi";
-import { CodingAgent, SessionManager } from "edge-pi";
+import { CodingAgent } from "edge-pi";
+import { createNodeRuntime } from "edge-pi/node";
+import { SessionManager } from "edge-pi/session";
 import {
 	AuthStorage,
 	anthropicOAuthProvider,
@@ -264,6 +266,7 @@ export async function main(args: string[]) {
 	// Create agent config
 	const agentConfig: CodingAgentConfig = {
 		model,
+		runtime: createNodeRuntime(),
 		cwd,
 		toolSet: parsed.toolSet ?? "coding",
 		providerOptions: buildProviderOptions(provider, parsed.thinking),

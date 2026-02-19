@@ -1,7 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { toUtf8String } from "../runtime/encoding.js";
-import { createNodeRuntime } from "../runtime/node-runtime.js";
 import type { EdgePiRuntime } from "../runtime/types.js";
 import {
 	detectLineEnding,
@@ -12,7 +11,7 @@ import {
 	restoreLineEndings,
 	stripBom,
 } from "./edit-diff.js";
-import { resolveToCwd } from "./path-utils.js";
+import { resolveCwd, resolveToCwd } from "./path-utils.js";
 
 const editSchema = z.object({
 	path: z.string().describe("Path to the file to edit (relative or absolute)"),
@@ -22,12 +21,12 @@ const editSchema = z.object({
 
 interface ToolOptions {
 	cwd: string;
-	runtime?: EdgePiRuntime;
+	runtime: EdgePiRuntime;
 }
 
 export function createEditTool(options: ToolOptions) {
-	const runtime = options.runtime ?? createNodeRuntime();
-	const cwd = options.cwd;
+	const runtime = options.runtime;
+	const cwd = resolveCwd(options.cwd, runtime);
 	return tool({
 		description:
 			"Edit a file by replacing exact text. The oldText must match exactly (including whitespace). Use this for precise, surgical edits.",

@@ -18,12 +18,14 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { stepCountIs } from "ai";
 import { CodingAgent } from "edge-pi";
+import { createNodeRuntime } from "edge-pi/node";
 import { printStream } from "./utils.js";
 
 const model = anthropic("claude-sonnet-4-5-20250929");
 
 const agent = new CodingAgent({
 	model,
+	runtime: createNodeRuntime(),
 	stopWhen: stepCountIs(10),
 	toolSet: "all",
 });

@@ -9,7 +9,9 @@
 
 import { anthropic } from "@ai-sdk/anthropic";
 import { stepCountIs } from "ai";
-import { CodingAgent, SessionManager } from "edge-pi";
+import { CodingAgent } from "edge-pi";
+import { createNodeRuntime } from "edge-pi/node";
+import { SessionManager } from "edge-pi/session";
 
 const model = anthropic("claude-sonnet-4-5-20250929");
 const cwd = process.cwd();
@@ -21,6 +23,7 @@ const session = SessionManager.create(cwd, sessionsDir);
 // --- First agent: ask a question ---
 const agent1 = new CodingAgent({
 	model,
+	runtime: createNodeRuntime(),
 	stopWhen: stepCountIs(3),
 	sessionManager: session,
 });
@@ -38,6 +41,7 @@ console.log(`\nMessages after agent 1: ${session.getEntries().length}`);
 // --- Second agent: same session, state is restored ---
 const agent2 = new CodingAgent({
 	model,
+	runtime: createNodeRuntime(),
 	stopWhen: stepCountIs(3),
 	sessionManager: session,
 });

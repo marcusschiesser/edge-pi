@@ -68,7 +68,7 @@ describe("createWebContainerRuntime", () => {
 		expect(await runtime.fs.exists("/missing")).toBe(false);
 	});
 
-	it("resolves relative fs paths against runtime homedir", async () => {
+	it("resolves relative fs paths against runtime rootdir", async () => {
 		let readPath = "";
 		function captureReadFile(path: string): Promise<Uint8Array>;
 		function captureReadFile(path: string, _encoding: BufferEncoding): Promise<string>;
@@ -91,6 +91,78 @@ describe("createWebContainerRuntime", () => {
 		} as unknown as WebContainer);
 
 		await runtime.fs.readFile("App.jsx", "utf-8");
+		expect(runtime.rootdir).toBe("/home/project");
 		expect(readPath).toBe("/home/project/App.jsx");
+	});
+
+	it("normalizes pseudo-absolute home/project paths", async () => {
+		let readPath = "";
+		function captureReadFile(path: string): Promise<Uint8Array>;
+		function captureReadFile(path: string, _encoding: BufferEncoding): Promise<string>;
+		async function captureReadFile(path: string, encoding?: BufferEncoding): Promise<string | Uint8Array> {
+			readPath = path;
+			if (encoding !== undefined) {
+				return "";
+			}
+			return new Uint8Array();
+		}
+
+		const runtime = createWebContainerRuntime({
+			spawn: async () => createProcess([]),
+			fs: {
+				readFile: captureReadFile,
+				writeFile: async () => undefined,
+				mkdir: async () => undefined,
+				readdir: async () => [],
+			},
+		} as unknown as WebContainer);
+
+		await runtime.fs.readFile("home/project/app.jsx", "utf-8");
+		expect(readPath).toBe("/home/project/app.jsx");
+	});
+
+	it("collapses duplicated absolute home prefixes", async () => {
+		let readPath = "";
+		function captureReadFile(path: string): Promise<Uint8Array>;
+		function captureReadFile(path: string, _encoding: BufferEncoding): Promise<string>;
+		async function captureReadFile(path: string, encoding?: BufferEncoding): Promise<string | Uint8Array> {
+			readPath = path;
+			if (encoding !== undefined) {
+				return "";
+			}
+			return new Uint8Array();
+		}
+
+		const runtime = createWebContainerRuntime({
+			spawn: async () => createProcess([]),
+			fs: {
+				readFile: captureReadFile,
+				writeFile: async () => undefined,
+				mkdir: async () => undefined,
+				readdir: async () => [],
+			},
+		} as unknown as WebContainer);
+
+		await runtime.fs.readFile("/home/id/home/project/app.jsx", "utf-8");
+		expect(readPath).toBe("/home/project/app.jsx");
+	});
+
+	it("resolves exec cwd relative to rootdir", async () => {
+		let spawnCwd = "";
+		const runtime = createWebContainerRuntime({
+			spawn: async (_cmd: string, _args: string[], options?: { cwd?: string }) => {
+				spawnCwd = options?.cwd ?? "";
+				return createProcess([]);
+			},
+			fs: {
+				readFile: mockReadFile,
+				writeFile: async () => undefined,
+				mkdir: async () => undefined,
+				readdir: async () => [],
+			},
+		} as unknown as WebContainer);
+
+		await runtime.exec("echo hi", { cwd: "src" });
+		expect(spawnCwd).toBe("/home/project/src");
 	});
 });
