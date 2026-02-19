@@ -9,12 +9,21 @@
 			"edge-pi": [
 				"./packages/edge-pi/src/index.ts"
 			],
-			"edge-pi/vercel-sandbox": [
-				"./packages/edge-pi/src/vercel-sandbox.ts"
-			],
-			"edge-pi/*": [
-				"./packages/edge-pi/src/*"
-			],
+				"edge-pi/vercel-sandbox": [
+					"./packages/edge-pi/src/vercel-sandbox.ts"
+				],
+				"edge-pi/node": [
+					"./packages/edge-pi/src/node.ts"
+				],
+				"edge-pi/session": [
+					"./packages/edge-pi/src/session.ts"
+				],
+				"edge-pi/webcontainer": [
+					"./packages/edge-pi/src/webcontainer.ts"
+				],
+				"edge-pi/*": [
+					"./packages/edge-pi/src/*"
+				],
 			"edge-pi-cli": [
 				"./packages/edge-pi-cli/src/main.ts"
 			],
