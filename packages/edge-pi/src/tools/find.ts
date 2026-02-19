@@ -1,8 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { createNodeRuntime } from "../runtime/node-runtime.js";
 import type { EdgePiRuntime } from "../runtime/types.js";
-import { resolveToCwd } from "./path-utils.js";
+import { resolveCwd, resolveToCwd } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, formatSize, truncateHead } from "./truncate.js";
 
 const findSchema = z.object({
@@ -13,12 +12,12 @@ const findSchema = z.object({
 const DEFAULT_LIMIT = 1000;
 interface ToolOptions {
 	cwd: string;
-	runtime?: EdgePiRuntime;
+	runtime: EdgePiRuntime;
 }
 
 export function createFindTool(options: ToolOptions) {
-	const runtime = options.runtime ?? createNodeRuntime();
-	const cwd = options.cwd;
+	const runtime = options.runtime;
+	const cwd = resolveCwd(options.cwd, runtime);
 	return tool({
 		description: `Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} results or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).`,
 		inputSchema: findSchema,

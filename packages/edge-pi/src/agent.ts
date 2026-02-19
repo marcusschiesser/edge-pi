@@ -28,9 +28,9 @@ import {
 	prepareCompaction,
 } from "./compaction/compaction.js";
 import { estimateContextTokens, shouldCompact } from "./compaction/token-estimation.js";
-import type { SessionManager } from "./session/session-manager.js";
 import { buildSystemPrompt } from "./system-prompt.js";
 import { createAllTools, createCodingTools, createReadOnlyTools } from "./tools/index.js";
+import { resolveCwd } from "./tools/path-utils.js";
 import type { CodingAgentConfig, CompactionConfig } from "./types.js";
 
 /**
@@ -50,7 +50,7 @@ export class CodingAgent implements Agent<never, ToolSet> {
 	readonly version = "agent-v1" as const;
 	private config: CodingAgentConfig;
 	private _messages: ModelMessage[] = [];
-	private _sessionManager: SessionManager | undefined;
+	private _sessionManager: CodingAgentConfig["sessionManager"];
 	private steeringQueue: ModelMessage[] = [];
 	private abortController: AbortController | null = null;
 	private isCompacting = false;
@@ -85,12 +85,12 @@ export class CodingAgent implements Agent<never, ToolSet> {
 	}
 
 	/** Get the current session manager (or undefined). */
-	get sessionManager(): SessionManager | undefined {
+	get sessionManager(): CodingAgentConfig["sessionManager"] {
 		return this._sessionManager;
 	}
 
 	/** Set (or replace) the session manager. Auto-restores messages from the new session. */
-	set sessionManager(sm: SessionManager | undefined) {
+	set sessionManager(sm: CodingAgentConfig["sessionManager"]) {
 		this._sessionManager = sm;
 		if (sm) {
 			const context = sm.buildSessionContext();
@@ -174,12 +174,9 @@ export class CodingAgent implements Agent<never, ToolSet> {
 
 	private resolveCwd(): string {
 		if (this.config.cwd) {
-			return this.config.cwd;
+			return resolveCwd(this.config.cwd, this.config.runtime);
 		}
-		if (this.config.runtime) {
-			return this.config.runtime.os.homedir();
-		}
-		return process.cwd();
+		return this.config.runtime.rootdir;
 	}
 
 	/** Create a ToolLoopAgent for this call */

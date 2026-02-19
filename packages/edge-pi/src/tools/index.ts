@@ -18,7 +18,7 @@ export { createWriteTool } from "./write.js";
 
 export interface ToolFactoryOptions {
 	cwd: string;
-	runtime?: EdgePiRuntime;
+	runtime: EdgePiRuntime;
 }
 
 export function createCodingTools(options: ToolFactoryOptions): ToolSet {

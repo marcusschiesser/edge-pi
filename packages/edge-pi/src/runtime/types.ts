@@ -34,12 +34,20 @@ export interface EdgePiPath {
 }
 
 export interface EdgePiOs {
-	homedir(): string;
 	tmpdir(): string;
 }
 
 export interface EdgePiRuntime {
 	exec(command: string, options?: ExecOptions): Promise<ExecResult>;
+	/**
+	 * Resolve a path into a canonical workspace path.
+	 *
+	 * Absolute inputs are normalized and returned as absolute paths.
+	 * Relative inputs are resolved against `options.cwd` when provided,
+	 * otherwise against `rootdir`.
+	 */
+	resolveWorkspacePath(path: string, options?: { cwd?: string }): string;
+	rootdir: string;
 	fs: EdgePiFs;
 	path: EdgePiPath;
 	os: EdgePiOs;

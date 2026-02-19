@@ -8,13 +8,16 @@
  */
 
 import { anthropic } from "@ai-sdk/anthropic";
-import { CodingAgent, SessionManager } from "edge-pi";
+import { CodingAgent } from "edge-pi";
+import { createNodeRuntime } from "edge-pi/node";
+import { SessionManager } from "edge-pi/session";
 
 const model = anthropic("claude-sonnet-4-5");
 const session = SessionManager.inMemory();
 
 const agent = new CodingAgent({
 	model,
+	runtime: createNodeRuntime(),
 	sessionManager: session,
 	compaction: {
 		// Small window so a single run can exceed compaction threshold.

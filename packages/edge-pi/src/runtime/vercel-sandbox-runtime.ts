@@ -1,56 +1,11 @@
 import { constants as fsConstants } from "node:fs";
 import type { Sandbox } from "@vercel/sandbox";
+import { createPosixPathHelpers } from "./posix-path-helpers.js";
 import type { EdgePiRuntime, ExecOptions, ExecResult } from "./types.js";
+import { createWorkspacePathResolver } from "./workspace-path-resolver.js";
 
-function createPathHelpers() {
-	const normalize = (value: string): string => value.replace(/\\/g, "/").replace(/\/+/g, "/");
-	const join = (...parts: string[]): string => normalize(parts.filter(Boolean).join("/"));
-
-	return {
-		join,
-		dirname: (targetPath: string) => {
-			const normalized = normalize(targetPath);
-			const pieces = normalized.split("/").filter((piece) => piece.length > 0);
-			if (pieces.length <= 1) {
-				return normalized.startsWith("/") ? "/" : ".";
-			}
-			const prefix = normalized.startsWith("/") ? "/" : "";
-			return `${prefix}${pieces.slice(0, -1).join("/")}`;
-		},
-		relative: (from: string, to: string) => {
-			const fromParts = normalize(from).split("/").filter(Boolean);
-			const toParts = normalize(to).split("/").filter(Boolean);
-			let index = 0;
-			while (index < fromParts.length && index < toParts.length && fromParts[index] === toParts[index]) {
-				index += 1;
-			}
-			const back = new Array(fromParts.length - index).fill("..");
-			const next = toParts.slice(index);
-			const value = [...back, ...next].join("/");
-			return value.length > 0 ? value : ".";
-		},
-		resolve: (...parts: string[]) => {
-			const normalized = normalize(parts.join("/"));
-			const absolute = normalized.startsWith("/");
-			const stack: string[] = [];
-			for (const part of normalized.split("/")) {
-				if (!part || part === ".") continue;
-				if (part === "..") {
-					stack.pop();
-					continue;
-				}
-				stack.push(part);
-			}
-			const result = `${absolute ? "/" : ""}${stack.join("/")}`;
-			return result || (absolute ? "/" : ".");
-		},
-		isAbsolute: (targetPath: string) => normalize(targetPath).startsWith("/"),
-		basename: (targetPath: string) => {
-			const normalized = normalize(targetPath).replace(/\/$/, "");
-			const parts = normalized.split("/");
-			return parts[parts.length - 1] || normalized;
-		},
-	};
+export interface VercelSandboxRuntimeOptions {
+	rootdir?: string;
 }
 
 function createAbortController(options?: ExecOptions): {
@@ -101,12 +56,13 @@ function shellFlagForMode(mode: number): string[] {
 	return flags;
 }
 
-export function createVercelSandboxRuntime(sandbox: Sandbox): EdgePiRuntime {
-	const pathHelpers = createPathHelpers();
-	const homeDir = "/vercel/sandbox";
-
-	const resolveFsPath = (targetPath: string): string =>
-		targetPath.startsWith("/") ? targetPath : pathHelpers.resolve(homeDir, targetPath);
+export function createVercelSandboxRuntime(sandbox: Sandbox, options: VercelSandboxRuntimeOptions = {}): EdgePiRuntime {
+	const pathHelpers = createPosixPathHelpers();
+	const rootdir = options.rootdir ?? "/vercel/sandbox";
+	const resolveWorkspacePath = createWorkspacePathResolver({
+		rootdir,
+		resolvePath: (...parts: string[]) => pathHelpers.resolve(...parts),
+	});
 
 	const runTest = async (flag: string, targetPath: string): Promise<boolean> => {
 		const result = await sandbox.runCommand({
@@ -119,7 +75,7 @@ export function createVercelSandboxRuntime(sandbox: Sandbox): EdgePiRuntime {
 	function readFile(targetPath: string): Promise<Uint8Array>;
 	function readFile(targetPath: string, encoding: BufferEncoding): Promise<string>;
 	async function readFile(targetPath: string, encoding?: BufferEncoding): Promise<string | Uint8Array> {
-		const resolvedPath = resolveFsPath(targetPath);
+		const resolvedPath = resolveWorkspacePath(targetPath);
 		const data = await sandbox.readFileToBuffer({ path: resolvedPath });
 		if (!data) {
 			throw new Error(`No such file or directory: ${resolvedPath}`);
@@ -131,13 +87,15 @@ export function createVercelSandboxRuntime(sandbox: Sandbox): EdgePiRuntime {
 	}
 
 	return {
+		resolveWorkspacePath,
+		rootdir,
 		exec: async (command: string, options?: ExecOptions): Promise<ExecResult> => {
 			const { signal, cleanup, hasTimedOut } = createAbortController(options);
 			try {
 				const result = await sandbox.runCommand({
 					cmd: "bash",
 					args: ["-lc", command],
-					cwd: options?.cwd,
+					cwd: options?.cwd ? resolveWorkspacePath(options.cwd) : rootdir,
 					signal,
 				});
 
@@ -169,12 +127,12 @@ export function createVercelSandboxRuntime(sandbox: Sandbox): EdgePiRuntime {
 		fs: {
 			readFile,
 			writeFile: async (targetPath: string, content: string | Uint8Array, encoding?: BufferEncoding) => {
-				const resolvedPath = resolveFsPath(targetPath);
+				const resolvedPath = resolveWorkspacePath(targetPath);
 				const data = typeof content === "string" ? Buffer.from(content, encoding ?? "utf-8") : Buffer.from(content);
 				await sandbox.writeFiles([{ path: resolvedPath, content: data }]);
 			},
 			mkdir: async (targetPath: string, options?: { recursive?: boolean }) => {
-				const resolvedPath = resolveFsPath(targetPath);
+				const resolvedPath = resolveWorkspacePath(targetPath);
 				if (options?.recursive) {
 					await sandbox.runCommand({
 						cmd: "mkdir",
@@ -185,7 +143,7 @@ export function createVercelSandboxRuntime(sandbox: Sandbox): EdgePiRuntime {
 				await sandbox.mkDir(resolvedPath);
 			},
 			readdir: async (targetPath: string) => {
-				const resolvedPath = resolveFsPath(targetPath);
+				const resolvedPath = resolveWorkspacePath(targetPath);
 				const result = await sandbox.runCommand({
 					cmd: "ls",
 					args: ["-A1", resolvedPath],
@@ -201,7 +159,7 @@ export function createVercelSandboxRuntime(sandbox: Sandbox): EdgePiRuntime {
 					.filter((line) => line.length > 0);
 			},
 			stat: async (targetPath: string) => {
-				const resolvedPath = resolveFsPath(targetPath);
+				const resolvedPath = resolveWorkspacePath(targetPath);
 				if (await runTest("-d", resolvedPath)) {
 					return {
 						isDirectory: () => true,
@@ -217,7 +175,7 @@ export function createVercelSandboxRuntime(sandbox: Sandbox): EdgePiRuntime {
 				throw new Error(`No such file or directory: ${resolvedPath}`);
 			},
 			access: async (targetPath: string, mode?: number) => {
-				const resolvedPath = resolveFsPath(targetPath);
+				const resolvedPath = resolveWorkspacePath(targetPath);
 				const flags = shellFlagForMode(mode ?? fsConstants.F_OK);
 				for (const flag of flags) {
 					const accessible = await runTest(flag, resolvedPath);
@@ -227,13 +185,12 @@ export function createVercelSandboxRuntime(sandbox: Sandbox): EdgePiRuntime {
 				}
 			},
 			exists: async (targetPath: string) => {
-				const resolvedPath = resolveFsPath(targetPath);
+				const resolvedPath = resolveWorkspacePath(targetPath);
 				return runTest("-e", resolvedPath);
 			},
 		},
 		path: pathHelpers,
 		os: {
-			homedir: () => homeDir,
 			tmpdir: () => "/tmp",
 		},
 	};

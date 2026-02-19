@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CodingAgent } from "../src/agent.js";
+import { createNodeRuntime } from "../src/runtime/node-runtime.js";
 import type { EdgePiRuntime } from "../src/runtime/types.js";
 import { SessionManager } from "../src/session/session-manager.js";
 import { assistantMsg, userMsg } from "./utilities.js";
@@ -32,6 +33,8 @@ function mockReadFile(_path: string, encoding?: BufferEncoding): Promise<string 
 	return Promise.resolve(new Uint8Array());
 }
 
+const nodeRuntime = createNodeRuntime();
+
 describe("CodingAgent SessionManager integration", () => {
 	it("constructor auto-restores messages from sessionManager", () => {
 		const session = SessionManager.inMemory();
@@ -40,6 +43,7 @@ describe("CodingAgent SessionManager integration", () => {
 
 		const agent = new CodingAgent({
 			model: mockModel,
+			runtime: nodeRuntime,
 			sessionManager: session,
 		});
 
@@ -49,15 +53,15 @@ describe("CodingAgent SessionManager integration", () => {
 		expect(agent.sessionManager).toBe(session);
 	});
 
-	it("works without sessionManager (backwards compatible)", () => {
-		const agent = new CodingAgent({ model: mockModel });
+	it("works without sessionManager", () => {
+		const agent = new CodingAgent({ model: mockModel, runtime: nodeRuntime });
 
 		expect(agent.sessionManager).toBeUndefined();
 		expect(agent.messages).toHaveLength(0);
 	});
 
 	it("uses explicit config.cwd in system prompt", () => {
-		const agent = new CodingAgent({ model: mockModel, cwd: "/explicit-cwd" });
+		const agent = new CodingAgent({ model: mockModel, runtime: nodeRuntime, cwd: "/explicit-cwd" });
 		const getSystemPrompt = (
 			agent as unknown as {
 				getSystemPrompt: () => string;
@@ -68,7 +72,7 @@ describe("CodingAgent SessionManager integration", () => {
 		expect(prompt).toContain("Current working directory: /explicit-cwd");
 	});
 
-	it("uses runtime homedir as default cwd when config.cwd is not set", () => {
+	it("uses runtime rootdir as default cwd when config.cwd is not set", () => {
 		const runtime: EdgePiRuntime = {
 			exec: async () => ({
 				output: "",
@@ -77,6 +81,11 @@ describe("CodingAgent SessionManager integration", () => {
 				timedOut: false,
 				aborted: false,
 			}),
+			resolveWorkspacePath: (targetPath: string, options?: { cwd?: string }) => {
+				const base = options?.cwd ?? "/runtime-root";
+				return targetPath.startsWith("/") ? targetPath : `${base}/${targetPath}`;
+			},
+			rootdir: "/runtime-root",
 			fs: {
 				readFile: mockReadFile,
 				writeFile: async () => undefined,
@@ -95,7 +104,6 @@ describe("CodingAgent SessionManager integration", () => {
 				basename: () => "",
 			},
 			os: {
-				homedir: () => "/runtime-home",
 				tmpdir: () => "/tmp",
 			},
 		};
@@ -108,11 +116,11 @@ describe("CodingAgent SessionManager integration", () => {
 		).getSystemPrompt;
 
 		const prompt = getSystemPrompt.call(agent);
-		expect(prompt).toContain("Current working directory: /runtime-home");
+		expect(prompt).toContain("Current working directory: /runtime-root");
 	});
 
-	it("uses process.cwd() when runtime and cwd are not set", () => {
-		const agent = new CodingAgent({ model: mockModel });
+	it("uses runtime rootdir when cwd is not set", () => {
+		const agent = new CodingAgent({ model: mockModel, runtime: nodeRuntime });
 		const getSystemPrompt = (
 			agent as unknown as {
 				getSystemPrompt: () => string;
@@ -120,11 +128,11 @@ describe("CodingAgent SessionManager integration", () => {
 		).getSystemPrompt;
 
 		const prompt = getSystemPrompt.call(agent);
-		expect(prompt).toContain(`Current working directory: ${process.cwd()}`);
+		expect(prompt).toContain(`Current working directory: ${nodeRuntime.rootdir}`);
 	});
 
 	it("sessionManager setter auto-restores messages", () => {
-		const agent = new CodingAgent({ model: mockModel });
+		const agent = new CodingAgent({ model: mockModel, runtime: nodeRuntime });
 		expect(agent.messages).toHaveLength(0);
 
 		const session = SessionManager.inMemory();
@@ -144,6 +152,7 @@ describe("CodingAgent SessionManager integration", () => {
 
 		const agent = new CodingAgent({
 			model: mockModel,
+			runtime: nodeRuntime,
 			sessionManager: session,
 		});
 		expect(agent.messages).toHaveLength(1);
@@ -165,6 +174,7 @@ describe("CodingAgent SessionManager integration", () => {
 
 		const agent = new CodingAgent({
 			model: mockModel,
+			runtime: nodeRuntime,
 			sessionManager: session1,
 		});
 		expect(agent.messages).toHaveLength(1);
@@ -183,6 +193,7 @@ describe("CodingAgent SessionManager integration", () => {
 
 		const agent = new CodingAgent({
 			model: mockModel,
+			runtime: nodeRuntime,
 			sessionManager: session,
 		});
 
@@ -195,7 +206,7 @@ describe("CodingAgent SessionManager integration", () => {
 	});
 
 	it("exposes and updates compaction config at runtime", () => {
-		const agent = new CodingAgent({ model: mockModel });
+		const agent = new CodingAgent({ model: mockModel, runtime: nodeRuntime });
 
 		expect(agent.compaction).toBeUndefined();
 
@@ -215,7 +226,7 @@ describe("CodingAgent SessionManager integration", () => {
 	});
 
 	it("compact() throws when compaction is not configured", async () => {
-		const agent = new CodingAgent({ model: mockModel });
+		const agent = new CodingAgent({ model: mockModel, runtime: nodeRuntime });
 
 		await expect(agent.compact()).rejects.toThrow("Compaction not configured");
 	});
@@ -223,6 +234,7 @@ describe("CodingAgent SessionManager integration", () => {
 	it("compact() returns undefined when no session manager is attached", async () => {
 		const agent = new CodingAgent({
 			model: mockModel,
+			runtime: nodeRuntime,
 			compaction: {
 				contextWindow: 200000,
 				mode: "manual",
@@ -233,7 +245,7 @@ describe("CodingAgent SessionManager integration", () => {
 	});
 
 	it("stream() preserves async-iterable fullStream when wrapping response", async () => {
-		const agent = new CodingAgent({ model: mockModel });
+		const agent = new CodingAgent({ model: mockModel, runtime: nodeRuntime });
 
 		class FakeStreamResult {
 			get fullStream(): AsyncIterable<{ type: string; text: string }> {

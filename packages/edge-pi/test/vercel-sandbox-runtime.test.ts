@@ -78,7 +78,7 @@ describe("createVercelSandboxRuntime", () => {
 		expect(await runtime.fs.exists("/missing")).toBe(false);
 	});
 
-	it("resolves relative fs paths against runtime homedir", async () => {
+	it("resolves relative fs paths against runtime rootdir", async () => {
 		let readPath = "";
 		const runtime = createVercelSandboxRuntime(
 			createSandbox({
@@ -90,6 +90,7 @@ describe("createVercelSandboxRuntime", () => {
 		);
 
 		await runtime.fs.readFile("README.md", "utf-8");
+		expect(runtime.rootdir).toBe("/vercel/sandbox");
 		expect(readPath).toBe("/vercel/sandbox/README.md");
 	});
 });
