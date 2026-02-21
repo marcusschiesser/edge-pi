@@ -66,8 +66,16 @@ export function createWebContainerRuntime(
 	});
 	const normalizeEncoding = (encoding: BufferEncoding): WebContainerBufferEncoding =>
 		encoding === "utf-16le" ? "utf16le" : (encoding as WebContainerBufferEncoding);
+	let ensureRootdirPromise: Promise<void> | null = null;
+	const ensureRootdir = async (): Promise<void> => {
+		if (ensureRootdirPromise === null) {
+			ensureRootdirPromise = webcontainer.fs.mkdir(rootdir, { recursive: true }).then(() => undefined);
+		}
+		await ensureRootdirPromise;
+	};
 
 	const stat = async (targetPath: string): Promise<{ isDirectory(): boolean; isFile(): boolean }> => {
+		await ensureRootdir();
 		const resolvedPath = resolveWorkspacePath(targetPath);
 		try {
 			await webcontainer.fs.readdir(resolvedPath);
@@ -87,6 +95,7 @@ export function createWebContainerRuntime(
 	function readFile(targetPath: string): Promise<Uint8Array>;
 	function readFile(targetPath: string, encoding: BufferEncoding): Promise<string>;
 	async function readFile(targetPath: string, encoding?: BufferEncoding): Promise<string | Uint8Array> {
+		await ensureRootdir();
 		const resolvedPath = resolveWorkspacePath(targetPath);
 		if (encoding !== undefined) {
 			return webcontainer.fs.readFile(resolvedPath, normalizeEncoding(encoding));
@@ -98,6 +107,7 @@ export function createWebContainerRuntime(
 		resolveWorkspacePath,
 		rootdir,
 		exec: async (command: string, options?: ExecOptions): Promise<ExecResult> => {
+			await ensureRootdir();
 			const process = await webcontainer.spawn("sh", ["-lc", command], {
 				cwd: options?.cwd ? resolveWorkspacePath(options.cwd) : rootdir,
 			});
@@ -106,6 +116,7 @@ export function createWebContainerRuntime(
 		fs: {
 			readFile,
 			writeFile: async (targetPath: string, content: string | Uint8Array) => {
+				await ensureRootdir();
 				const resolvedPath = resolveWorkspacePath(targetPath);
 				if (typeof content === "string") {
 					await webcontainer.fs.writeFile(resolvedPath, content);
@@ -114,6 +125,7 @@ export function createWebContainerRuntime(
 				await webcontainer.fs.writeFile(resolvedPath, new Uint8Array(content));
 			},
 			mkdir: async (targetPath: string, options?: { recursive?: boolean }) => {
+				await ensureRootdir();
 				const resolvedPath = resolveWorkspacePath(targetPath);
 				if (options?.recursive) {
 					await webcontainer.fs.mkdir(resolvedPath, { recursive: true });
@@ -121,7 +133,10 @@ export function createWebContainerRuntime(
 				}
 				await webcontainer.fs.mkdir(resolvedPath);
 			},
-			readdir: async (targetPath: string) => webcontainer.fs.readdir(resolveWorkspacePath(targetPath)),
+			readdir: async (targetPath: string) => {
+				await ensureRootdir();
+				return webcontainer.fs.readdir(resolveWorkspacePath(targetPath));
+			},
 			stat,
 			access: async (targetPath: string) => {
 				await stat(targetPath);

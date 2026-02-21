@@ -165,4 +165,56 @@ describe("createWebContainerRuntime", () => {
 		await runtime.exec("echo hi", { cwd: "src" });
 		expect(spawnCwd).toBe("/home/project/src");
 	});
+
+	it("ensures rootdir exists before writeFile", async () => {
+		const mkdirCalls: Array<{ path: string; recursive?: boolean }> = [];
+		let writePath = "";
+
+		const runtime = createWebContainerRuntime({
+			spawn: async () => createProcess([]),
+			fs: {
+				readFile: mockReadFile,
+				writeFile: async (path: string) => {
+					writePath = path;
+				},
+				mkdir: async (path: string, options?: { recursive?: boolean }) => {
+					mkdirCalls.push({ path, recursive: options?.recursive });
+				},
+				readdir: async () => [],
+			},
+		} as unknown as WebContainer);
+
+		await runtime.fs.writeFile("nested/app.jsx", "export default null;");
+
+		expect(mkdirCalls).toContainEqual({
+			path: "/home/project",
+			recursive: true,
+		});
+		expect(writePath).toBe("/home/project/nested/app.jsx");
+	});
+
+	it("ensures rootdir exists before exec", async () => {
+		const calls: string[] = [];
+
+		const runtime = createWebContainerRuntime({
+			spawn: async () => {
+				calls.push("spawn");
+				return createProcess([]);
+			},
+			fs: {
+				readFile: mockReadFile,
+				writeFile: async () => undefined,
+				mkdir: async (path: string) => {
+					if (path === "/home/project") {
+						calls.push("mkdir-root");
+					}
+				},
+				readdir: async () => [],
+			},
+		} as unknown as WebContainer);
+
+		await runtime.exec("echo hi");
+		expect(calls[0]).toBe("mkdir-root");
+		expect(calls[1]).toBe("spawn");
+	});
 });
