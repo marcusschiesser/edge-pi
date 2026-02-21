@@ -1,5 +1,15 @@
 # edge-pi
 
+## 0.4.1
+
+### Patch Changes
+
+- [`e220086`](https://github.com/marcusschiesser/edge-pi/commit/e2200860d8370222c9b0a386c843e29deabcc240) Thanks [@marcusschiesser](https://github.com/marcusschiesser)! - Fix `createWebContainerRuntime` to ensure the configured `rootdir` exists before runtime operations.
+
+  - Bootstrap `rootdir` once via `mkdir(..., { recursive: true })` inside runtime creation flow.
+  - Keep `fs.writeFile` focused on writing files (no implicit parent directory creation).
+  - Add tests asserting rootdir bootstrap before `writeFile` and `exec`.
+
 ## 0.4.0
 
 ### Minor Changes
