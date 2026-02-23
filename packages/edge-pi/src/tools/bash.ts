@@ -16,7 +16,7 @@ interface ToolOptions {
 
 export function createBashTool(options: ToolOptions) {
 	const runtime = options.runtime;
-	const exec = runtime.exec;
+	const exec = runtime.exec?.bind(runtime);
 	if (!exec) throw new Error("createBashTool requires a runtime with exec support");
 	const cwd = resolveCwd(options.cwd, runtime);
 	return tool({
