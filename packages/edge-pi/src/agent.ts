@@ -141,7 +141,7 @@ export class CodingAgent implements Agent<never, ToolSet> {
 					: ["read", "bash", "edit", "write", "grep", "find", "ls"];
 
 		if (!this.config.runtime.exec) {
-			selectedTools = selectedTools.filter((t) => t !== "bash");
+			selectedTools = selectedTools.filter((t) => t !== "bash" && t !== "grep" && t !== "find");
 		}
 
 		return buildSystemPrompt(this.config.systemPromptOptions, {

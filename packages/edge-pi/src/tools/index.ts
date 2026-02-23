@@ -42,11 +42,15 @@ export function createReadOnlyTools(options: ToolFactoryOptions): ToolSet {
 export function createAllTools(options: ToolFactoryOptions): ToolSet {
 	return {
 		read: createReadTool(options),
-		...(options.runtime.exec ? { bash: createBashTool(options) } : {}),
+		...(options.runtime.exec
+			? {
+					bash: createBashTool(options),
+					grep: createGrepTool(options),
+					find: createFindTool(options),
+				}
+			: {}),
 		edit: createEditTool(options),
 		write: createWriteTool(options),
-		grep: createGrepTool(options),
-		find: createFindTool(options),
 		ls: createLsTool(options),
 	};
 }
