@@ -1,11 +1,11 @@
 /**
- * Null Runtime Example
+ * Memory Runtime Example
  *
  * Demonstrates running CodingAgent with a virtual in-memory filesystem and
  * no exec capability. The agent can read, search, and write files entirely
  * in memory — no disk access, no shell commands.
  *
- * The null runtime is useful for:
+ * The memory runtime is useful for:
  *   - Testing agents without touching the real filesystem
  *   - Sandboxed environments where exec is not allowed
  *   - Browser contexts where shell access is unavailable
@@ -127,7 +127,7 @@ function createMemoryFs(initialFiles: Record<string, string> = {}): {
 // Null runtime factory
 // ---------------------------------------------------------------------------
 
-function createNullRuntime(initialFiles: Record<string, string> = {}): EdgePiRuntime {
+function createMemoryRuntime(initialFiles: Record<string, string> = {}): EdgePiRuntime {
 	const rootdir = "/workspace";
 	const { fs } = createMemoryFs(initialFiles);
 
@@ -166,7 +166,7 @@ function createNullRuntime(initialFiles: Record<string, string> = {}): EdgePiRun
 // ---------------------------------------------------------------------------
 
 // Seed the virtual filesystem with a small project
-const runtime = createNullRuntime({
+const runtime = createMemoryRuntime({
 	"README.md": `# Virtual Project
 
 A simple project living entirely in memory.
@@ -208,7 +208,7 @@ const agent = new CodingAgent({
 	stopWhen: stepCountIs(8),
 });
 
-console.log("Running agent against virtual in-memory filesystem (no exec)...\n");
+console.log("Running agent against memory runtime (no exec)...\n");
 
 const result = await agent.stream({
 	prompt:
