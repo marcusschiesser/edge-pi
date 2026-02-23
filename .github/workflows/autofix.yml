@@ -1,0 +1,60 @@
+name: Autofix
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run biome check (read-only)
+        id: check
+        run: npx biome check --error-on-warnings .
+        continue-on-error: true
+
+      - name: Apply biome fixes
+        if: steps.check.outcome == 'failure'
+        run: npx biome check --write --error-on-warnings .
+
+      - name: Create autofix PR
+        if: steps.check.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git diff --quiet && exit 0
+
+          BASE_BRANCH="${{ github.head_ref || github.ref_name }}"
+          FIX_BRANCH="autofix/${BASE_BRANCH//\//-}-${{ github.run_id }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$FIX_BRANCH"
+          git add -A
+          git commit -m "chore: apply biome autofix"
+          git push origin "$FIX_BRANCH"
+
+          gh pr create \
+            --base "$BASE_BRANCH" \
+            --head "$FIX_BRANCH" \
+            --title "chore: apply biome autofix" \
+            --body "Automated biome fixes for \`$BASE_BRANCH\`. Triggered by run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
