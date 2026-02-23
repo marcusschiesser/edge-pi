@@ -1,5 +1,15 @@
 # edge-pi
 
+## 0.4.2
+
+### Patch Changes
+
+- [#38](https://github.com/marcusschiesser/edge-pi/pull/38) [`9a932f4`](https://github.com/marcusschiesser/edge-pi/commit/9a932f444c4fa8f9e5c6612ec1589e4c6e288825) Thanks [@marcusschiesser](https://github.com/marcusschiesser)! - Make `exec` optional on `EdgePiRuntime`; add `createMemoryRuntime`.
+
+  - `EdgePiRuntime.exec` is now an optional property — runtimes without shell support no longer need a throwing stub.
+  - The default `"coding"` toolset automatically adapts: `bash` is included when `exec` is present, `ls` when it is not. `grep` and `find` are likewise gated on `exec` in the `"readonly"` and `"all"` toolsets.
+  - New `createMemoryRuntime({ initialFiles? })` export: an in-memory runtime with a virtual filesystem, no disk access, and no exec. Useful for testing, sandboxed environments, and browser contexts.
+
 ## 0.4.1
 
 ### Patch Changes
