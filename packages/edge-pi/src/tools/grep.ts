@@ -22,6 +22,8 @@ interface ToolOptions {
 
 export function createGrepTool(options: ToolOptions) {
 	const runtime = options.runtime;
+	const exec = runtime.exec;
+	if (!exec) throw new Error("createGrepTool requires a runtime with exec support");
 	const cwd = resolveCwd(options.cwd, runtime);
 	return tool({
 		description: `Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} matches or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Long lines are truncated to ${GREP_MAX_LINE_LENGTH} chars.`,
@@ -34,7 +36,7 @@ export function createGrepTool(options: ToolOptions) {
 			if (literal) flags.push("-F");
 			if (glob) flags.push(`-g ${JSON.stringify(glob)}`);
 			const cmd = `rg ${flags.join(" ")} ${JSON.stringify(pattern)} ${JSON.stringify(searchPath)} | head -n ${effectiveLimit}`;
-			const result = await runtime.exec(cmd, { cwd, abortSignal });
+			const result = await exec(cmd, { cwd, abortSignal });
 			if (!result.output.trim()) return "No matches found";
 			let linesTruncated = false;
 			const contextValue = context && context > 0 ? context : 0;

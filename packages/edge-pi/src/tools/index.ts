@@ -24,7 +24,7 @@ export interface ToolFactoryOptions {
 export function createCodingTools(options: ToolFactoryOptions): ToolSet {
 	return {
 		read: createReadTool(options),
-		bash: createBashTool(options),
+		...(options.runtime.exec ? { bash: createBashTool(options) } : {}),
 		edit: createEditTool(options),
 		write: createWriteTool(options),
 	};
@@ -42,7 +42,7 @@ export function createReadOnlyTools(options: ToolFactoryOptions): ToolSet {
 export function createAllTools(options: ToolFactoryOptions): ToolSet {
 	return {
 		read: createReadTool(options),
-		bash: createBashTool(options),
+		...(options.runtime.exec ? { bash: createBashTool(options) } : {}),
 		edit: createEditTool(options),
 		write: createWriteTool(options),
 		grep: createGrepTool(options),

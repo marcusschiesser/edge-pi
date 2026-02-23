@@ -44,7 +44,7 @@ describe("createWebContainerRuntime", () => {
 			},
 		} as unknown as WebContainer);
 
-		const result = await runtime.exec("echo hi");
+		const result = await runtime.exec!("echo hi");
 		expect(result.output).toBe("hello world");
 		expect(result.exitCode).toBe(0);
 		expect(result.aborted).toBe(false);
@@ -162,7 +162,7 @@ describe("createWebContainerRuntime", () => {
 			},
 		} as unknown as WebContainer);
 
-		await runtime.exec("echo hi", { cwd: "src" });
+		await runtime.exec!("echo hi", { cwd: "src" });
 		expect(spawnCwd).toBe("/home/project/src");
 	});
 
@@ -213,7 +213,7 @@ describe("createWebContainerRuntime", () => {
 			},
 		} as unknown as WebContainer);
 
-		await runtime.exec("echo hi");
+		await runtime.exec!("echo hi");
 		expect(calls[0]).toBe("mkdir-root");
 		expect(calls[1]).toBe("spawn");
 	});

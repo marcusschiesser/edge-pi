@@ -38,7 +38,7 @@ export interface EdgePiOs {
 }
 
 export interface EdgePiRuntime {
-	exec(command: string, options?: ExecOptions): Promise<ExecResult>;
+	exec?: (command: string, options?: ExecOptions) => Promise<ExecResult>;
 	/**
 	 * Resolve a path into a canonical workspace path.
 	 *
