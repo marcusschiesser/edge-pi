@@ -133,16 +133,19 @@ export class CodingAgent implements Agent<never, ToolSet> {
 	private getSystemPrompt(): string {
 		const toolSetType = this.config.toolSet ?? "coding";
 		const cwd = this.resolveCwd();
-		let selectedTools =
+		const hasExec = !!this.config.runtime.exec;
+		const selectedTools =
 			toolSetType === "coding"
-				? ["read", "bash", "edit", "write", "ls"]
+				? hasExec
+					? ["read", "bash", "edit", "write"]
+					: ["read", "ls", "edit", "write"]
 				: toolSetType === "readonly"
-					? ["read", "grep", "find", "ls"]
-					: ["read", "bash", "edit", "write", "grep", "find", "ls"];
-
-		if (!this.config.runtime.exec) {
-			selectedTools = selectedTools.filter((t) => t !== "bash" && t !== "grep" && t !== "find");
-		}
+					? hasExec
+						? ["read", "grep", "find", "ls"]
+						: ["read", "ls"]
+					: hasExec
+						? ["read", "bash", "edit", "write", "grep", "find", "ls"]
+						: ["read", "ls", "edit", "write"];
 
 		return buildSystemPrompt(this.config.systemPromptOptions, {
 			selectedTools,
