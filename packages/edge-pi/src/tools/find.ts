@@ -17,6 +17,8 @@ interface ToolOptions {
 
 export function createFindTool(options: ToolOptions) {
 	const runtime = options.runtime;
+	const exec = runtime.exec?.bind(runtime);
+	if (!exec) throw new Error("createFindTool requires a runtime with exec support");
 	const cwd = resolveCwd(options.cwd, runtime);
 	return tool({
 		description: `Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} results or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).`,
@@ -26,7 +28,7 @@ export function createFindTool(options: ToolOptions) {
 			const searchPath = resolveToCwd(searchDir || ".", cwd, runtime);
 			const effectiveLimit = limit ?? DEFAULT_LIMIT;
 			const cmd = `rg --files -g ${JSON.stringify(pattern)} . | head -n ${effectiveLimit}`;
-			const result = await runtime.exec(cmd, { cwd: searchPath, abortSignal });
+			const result = await exec(cmd, { cwd: searchPath, abortSignal });
 			if (result.exitCode !== 0 && !result.output.trim()) {
 				return "No files found matching pattern";
 			}

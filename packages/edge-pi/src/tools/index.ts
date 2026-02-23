@@ -24,7 +24,7 @@ export interface ToolFactoryOptions {
 export function createCodingTools(options: ToolFactoryOptions): ToolSet {
 	return {
 		read: createReadTool(options),
-		bash: createBashTool(options),
+		...(options.runtime.exec ? { bash: createBashTool(options) } : { ls: createLsTool(options) }),
 		edit: createEditTool(options),
 		write: createWriteTool(options),
 	};
@@ -33,8 +33,12 @@ export function createCodingTools(options: ToolFactoryOptions): ToolSet {
 export function createReadOnlyTools(options: ToolFactoryOptions): ToolSet {
 	return {
 		read: createReadTool(options),
-		grep: createGrepTool(options),
-		find: createFindTool(options),
+		...(options.runtime.exec
+			? {
+					grep: createGrepTool(options),
+					find: createFindTool(options),
+				}
+			: {}),
 		ls: createLsTool(options),
 	};
 }
@@ -42,11 +46,15 @@ export function createReadOnlyTools(options: ToolFactoryOptions): ToolSet {
 export function createAllTools(options: ToolFactoryOptions): ToolSet {
 	return {
 		read: createReadTool(options),
-		bash: createBashTool(options),
+		...(options.runtime.exec
+			? {
+					bash: createBashTool(options),
+					grep: createGrepTool(options),
+					find: createFindTool(options),
+				}
+			: {}),
 		edit: createEditTool(options),
 		write: createWriteTool(options),
-		grep: createGrepTool(options),
-		find: createFindTool(options),
 		ls: createLsTool(options),
 	};
 }

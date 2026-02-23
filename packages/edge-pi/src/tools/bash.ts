@@ -16,6 +16,8 @@ interface ToolOptions {
 
 export function createBashTool(options: ToolOptions) {
 	const runtime = options.runtime;
+	const exec = runtime.exec?.bind(runtime);
+	if (!exec) throw new Error("createBashTool requires a runtime with exec support");
 	const cwd = resolveCwd(options.cwd, runtime);
 	return tool({
 		description: `Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
@@ -24,7 +26,7 @@ export function createBashTool(options: ToolOptions) {
 			if (!(await runtime.fs.exists(cwd))) {
 				throw new Error(`Working directory does not exist: ${cwd}\nCannot execute bash commands.`);
 			}
-			const result = await runtime.exec(command, { cwd, timeoutSeconds: timeout, abortSignal });
+			const result = await exec(command, { cwd, timeoutSeconds: timeout, abortSignal });
 			let output = result.output || "(no output)";
 			if (result.truncated && result.fullOutputRef) {
 				output += `\n\n[Output truncated (${formatSize(DEFAULT_MAX_BYTES)} limit). Full output: ${result.fullOutputRef}]`;

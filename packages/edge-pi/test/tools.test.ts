@@ -293,15 +293,15 @@ describe("Coding Agent Tools", () => {
 	});
 
 	describe("tool factory functions", () => {
-		it("createCodingTools returns read, bash, edit, write", () => {
+		it("createCodingTools returns read, bash, edit, write (with exec)", () => {
 			const codingTools = createCodingTools({ cwd: testDir, runtime });
 			expect(codingTools).toHaveProperty("read");
 			expect(codingTools).toHaveProperty("bash");
 			expect(codingTools).toHaveProperty("edit");
 			expect(codingTools).toHaveProperty("write");
+			expect(codingTools).not.toHaveProperty("ls");
 			expect(codingTools).not.toHaveProperty("grep");
 			expect(codingTools).not.toHaveProperty("find");
-			expect(codingTools).not.toHaveProperty("ls");
 		});
 
 		it("createReadOnlyTools returns read, grep, find, ls", () => {
