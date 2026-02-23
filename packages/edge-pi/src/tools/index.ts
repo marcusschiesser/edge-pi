@@ -27,14 +27,19 @@ export function createCodingTools(options: ToolFactoryOptions): ToolSet {
 		...(options.runtime.exec ? { bash: createBashTool(options) } : {}),
 		edit: createEditTool(options),
 		write: createWriteTool(options),
+		ls: createLsTool(options),
 	};
 }
 
 export function createReadOnlyTools(options: ToolFactoryOptions): ToolSet {
 	return {
 		read: createReadTool(options),
-		grep: createGrepTool(options),
-		find: createFindTool(options),
+		...(options.runtime.exec
+			? {
+					grep: createGrepTool(options),
+					find: createFindTool(options),
+				}
+			: {}),
 		ls: createLsTool(options),
 	};
 }

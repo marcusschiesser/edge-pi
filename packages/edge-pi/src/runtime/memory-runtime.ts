@@ -34,6 +34,11 @@ function createMemoryFs(rootdir: string, initialFiles: Record<string, string>): 
 	async function readFile(path: string, encoding?: BufferEncoding): Promise<string | Uint8Array> {
 		const data = files.get(path);
 		if (!data) {
+			if (dirs.has(path)) {
+				throw Object.assign(new Error(`EISDIR: illegal operation on a directory, read '${path}'`), {
+					code: "EISDIR",
+				});
+			}
 			throw Object.assign(new Error(`ENOENT: no such file or directory: ${path}`), { code: "ENOENT" });
 		}
 		return encoding ? decoder.decode(data) : data;

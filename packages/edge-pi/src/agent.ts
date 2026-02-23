@@ -135,7 +135,7 @@ export class CodingAgent implements Agent<never, ToolSet> {
 		const cwd = this.resolveCwd();
 		let selectedTools =
 			toolSetType === "coding"
-				? ["read", "bash", "edit", "write"]
+				? ["read", "bash", "edit", "write", "ls"]
 				: toolSetType === "readonly"
 					? ["read", "grep", "find", "ls"]
 					: ["read", "bash", "edit", "write", "grep", "find", "ls"];
