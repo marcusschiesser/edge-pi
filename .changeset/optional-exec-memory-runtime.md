@@ -1,5 +1,5 @@
 ---
-"edge-pi": minor
+"edge-pi": patch
 ---
 
 Make `exec` optional on `EdgePiRuntime`; add `createMemoryRuntime`.
